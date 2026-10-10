@@ -1,0 +1,171 @@
+@import 'tailwindcss';
+
+/*
+ * 清新简约设计 tokens（Tailwind v4）
+ * 底层变量在 :root / 暗色媒体查询中切换；@theme inline 让 utility 直接引用变量
+ * 运行时 accent 由站点配置注入（BaseLayout 在 <html style> 上覆盖 --qy-accent）
+ */
+:root {
+  --qy-paper: #faf9f5;
+  --qy-surface: #ffffff;
+  --qy-ink: #2f2e2b;
+  --qy-ink-muted: #8a877e;
+  --qy-line: #e8e6e0;
+  --qy-accent: #4a9d8f;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --qy-paper: #1c1b19;
+    --qy-surface: #232220;
+    --qy-ink: #d6d3cc;
+    --qy-ink-muted: #8f8c85;
+    --qy-line: #35332f;
+    --qy-accent: #6fb5a8;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--qy-paper);
+  --color-surface: var(--qy-surface);
+  --color-ink: var(--qy-ink);
+  --color-muted: var(--qy-ink-muted);
+  --color-line: var(--qy-line);
+  --color-accent: var(--qy-accent);
+
+  --font-sans:
+    system-ui, -apple-system, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+    'Noto Sans CJK SC', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--qy-paper);
+  color: var(--qy-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--qy-accent) 25%, transparent);
+}
+
+/* ---- 文章正文排版（清新简约：细分隔线、紧凑行高、无卡片阴影） ---- */
+.qy-prose {
+  font-size: 1rem;
+  line-height: 1.85;
+  color: var(--qy-ink);
+}
+
+.qy-prose > * + * {
+  margin-top: 1em;
+}
+
+.qy-prose h2,
+.qy-prose h3,
+.qy-prose h4 {
+  font-weight: 600;
+  line-height: 1.4;
+  margin-top: 2em;
+}
+
+.qy-prose h2 {
+  font-size: 1.35rem;
+  padding-bottom: 0.4em;
+  border-bottom: 1px solid var(--qy-line);
+}
+
+.qy-prose h3 {
+  font-size: 1.15rem;
+}
+
+.qy-prose a {
+  color: var(--qy-accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--qy-accent) 40%, transparent);
+  text-underline-offset: 3px;
+}
+
+.qy-prose a:hover {
+  text-decoration-color: var(--qy-accent);
+}
+
+.qy-prose blockquote {
+  border-left: 3px solid var(--qy-accent);
+  padding: 0.1em 0 0.1em 1em;
+  color: var(--qy-ink-muted);
+}
+
+.qy-prose code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: color-mix(in srgb, var(--qy-ink) 6%, transparent);
+  border-radius: 4px;
+  padding: 0.15em 0.4em;
+}
+
+.qy-prose pre {
+  background: var(--qy-surface);
+  border: 1px solid var(--qy-line);
+  border-radius: 8px;
+  padding: 1em 1.25em;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.qy-prose pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.qy-prose ul,
+.qy-prose ol {
+  padding-left: 1.4em;
+}
+
+.qy-prose ul {
+  list-style: disc;
+}
+
+.qy-prose ol {
+  list-style: decimal;
+}
+
+.qy-prose li + li {
+  margin-top: 0.35em;
+}
+
+.qy-prose img {
+  border-radius: 8px;
+  max-width: 100%;
+}
+
+.qy-prose hr {
+  border: none;
+  border-top: 1px solid var(--qy-line);
+  margin: 2.5em 0;
+}
+
+.qy-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.925rem;
+}
+
+.qy-prose th,
+.qy-prose td {
+  border-bottom: 1px solid var(--qy-line);
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+.qy-prose th {
+  font-weight: 600;
+}

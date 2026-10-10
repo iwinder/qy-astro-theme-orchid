@@ -1,0 +1,40 @@
+---
+import type { CollectionEntry } from 'astro';
+import { formatDate } from '../utils.js';
+
+interface Props {
+  post: CollectionEntry<'posts'>;
+}
+
+const { post } = Astro.props;
+const { title, description, published, tags } = post.data;
+---
+
+<article class="group">
+  <a href={`/posts/${post.id}`} class="block py-5">
+    <div class="flex items-baseline justify-between gap-4">
+      <h2 class="text-[17px] font-semibold text-ink transition-colors group-hover:text-accent">
+        {title}
+      </h2>
+      <time datetime={published.toISOString()} class="shrink-0 text-[12px] text-muted">
+        {formatDate(published)}
+      </time>
+    </div>
+    {
+      description && (
+        <p class="mt-1.5 line-clamp-2 text-[14px] leading-relaxed text-muted">{description}</p>
+      )
+    }
+    {
+      tags.length > 0 && (
+        <div class="mt-2.5 flex flex-wrap gap-2">
+          {tags.map((tag) => (
+            <span class="rounded-full px-2 py-0.5 text-[11px] text-accent ring-1 ring-line">
+              {tag}
+            </span>
+          ))}
+        </div>
+      )
+    }
+  </a>
+</article>

@@ -1,0 +1,16 @@
+{
+  "name": "qy-astro-theme-orchid",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "@windcoder/astro-theme-orchid 主题包与示例站点的 monorepo",
+  "scripts": {
+    "dev": "pnpm --filter site dev",
+    "build": "pnpm --filter site build",
+    "preview": "pnpm --filter site preview",
+    "sync": "pnpm --filter site sync"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

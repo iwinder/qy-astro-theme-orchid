@@ -1,0 +1,31 @@
+{
+  "name": "@windcoder/astro-theme-orchid",
+  "version": "0.1.0",
+  "description": "清新简约的 Astro 博客主题，以 Integration 形式提供，支持版本化升级与组件覆盖",
+  "type": "module",
+  "keywords": [
+    "astro",
+    "astro-integration",
+    "blog",
+    "theme",
+    "tailwindcss"
+  ],
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema.ts",
+    "./routes/*": "./src/routes/*",
+    "./components/*": "./src/components/*",
+    "./styles/*": "./src/styles/*"
+  },
+  "files": [
+    "src"
+  ],
+  "peerDependencies": {
+    "astro": "^7.0.0"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.2",
+    "tailwindcss": "^4.3.2"
+  }
+}

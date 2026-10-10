@@ -1,0 +1,34 @@
+---
+import Header from 'virtual:theme/components/Header.astro';
+import Footer from 'virtual:theme/components/Footer.astro';
+import config from 'virtual:theme/config';
+import '@windcoder/astro-theme-orchid/styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const { title, description = config.description } = Astro.props;
+const pageTitle = title ? `${title} · ${config.title}` : config.title;
+---
+
+<!doctype html>
+<html lang="zh-CN" style={`--qy-accent: ${config.accentColor}`}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="author" content={config.author} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="flex min-h-screen flex-col">
+    <Header />
+    <main class="mx-auto w-full max-w-[720px] flex-1 px-5">
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

@@ -1,0 +1,30 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
+import PostCard from 'virtual:theme/components/PostCard.astro';
+import config from 'virtual:theme/config';
+
+const posts = (await getCollection('posts', ({ data }) =>
+  import.meta.env.PROD ? !data.draft : true,
+))
+  .sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf())
+  .sort((a, b) => Number(b.data.pinned) - Number(a.data.pinned));
+---
+
+<BaseLayout>
+  {
+    config.description && (
+      <section class="pt-12 pb-8">
+        <p class="text-[15px] leading-relaxed text-muted">{config.description}</p>
+      </section>
+    )
+  }
+  <section class="border-t border-line">
+    {posts.map((post) => <PostCard {post} />)}
+    {
+      posts.length === 0 && (
+        <p class="py-16 text-center text-[14px] text-muted">还没有文章，去 content/posts 里写一篇吧。</p>
+      )
+    }
+  </section>
+</BaseLayout>

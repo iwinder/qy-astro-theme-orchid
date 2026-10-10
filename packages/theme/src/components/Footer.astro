@@ -1,0 +1,13 @@
+---
+import config from 'virtual:theme/config';
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-line">
+  <div
+    class="mx-auto flex w-full max-w-[720px] flex-col gap-1 px-5 py-8 text-[12px] text-muted"
+  >
+    <p>© {year} {config.author || config.title} · 由 {config.title} 驱动</p>
+    {config.footerText && <p>{config.footerText}</p>}
+  </div>
+</footer>

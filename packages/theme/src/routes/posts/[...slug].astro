@@ -1,0 +1,48 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
+import { formatDate } from '../../utils.js';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts', ({ data }) =>
+    import.meta.env.PROD ? !data.draft : true,
+  );
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { title, description, published, updated, tags, category, pinned } = post.data;
+const { Content } = await render(post);
+---
+
+<BaseLayout title={title} description={description}>
+  <article class="pt-12 pb-16">
+    <header class="pb-8">
+      <h1 class="text-[26px] leading-snug font-semibold text-ink">{title}</h1>
+      <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted">
+        <time datetime={published.toISOString()}>发布于 {formatDate(published)}</time>
+        {
+          updated && (
+            <time datetime={updated.toISOString()}>更新于 {formatDate(updated)}</time>
+          )
+        }
+        {category && <span>{category}</span>}
+        {pinned && <span class="text-accent">置顶</span>}
+      </div>
+      {
+        tags.length > 0 && (
+          <div class="mt-3 flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <span class="rounded-full px-2 py-0.5 text-[11px] text-accent ring-1 ring-line">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )
+      }
+    </header>
+    <div class="qy-prose">
+      <Content />
+    </div>
+  </article>
+</BaseLayout>

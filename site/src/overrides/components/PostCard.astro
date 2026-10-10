@@ -1,0 +1,26 @@
+---
+// 站点覆盖示例：PostCard
+// 覆盖路径镜像虚拟模块路径：virtual:theme/components/PostCard.astro
+//   → site/src/overrides/components/PostCard.astro
+// 文件内 import 同一虚拟路径时拿到的是包内默认实现，可直接包装复用。
+import DefaultCard from 'virtual:theme/components/PostCard.astro';
+import type { CollectionEntry } from 'astro';
+
+interface Props {
+  post: CollectionEntry<'posts'>;
+}
+
+const { post } = Astro.props;
+---
+
+<div class="relative">
+  <DefaultCard {post} />
+  <!--
+    站点附加元素示例：这里加一个小圆点标记。
+    删除本文件即回到主题默认渲染，主题升级不影响这个行为。
+  -->
+  <span
+    class="absolute top-7 -left-3.5 h-1.5 w-1.5 rounded-full bg-accent"
+    title="此卡片由站点 override 渲染"
+  ></span>
+</div>
