@@ -2,7 +2,7 @@
 
 > 清新简约个人博客主题。目标：**主题以 npm 包形式独立升级版本号，站点定制不被升级覆盖**。
 > 参考项目：`orchid-blog`（Firefly 模板 v6.13.7）——只对齐功能，不复制代码与视觉。
-> 状态：M1 已完成并通过 dev 验证；功能分级（P1 部分）待确认。
+> 状态：M1 已完成并通过 dev 验证；功能取舍已确认（见第 6 节决策记录，2026-10-11）。当前阶段：**高保真 HTML 原型定视觉**。
 
 ---
 
@@ -85,7 +85,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 ## 4. 功能清单（源自 orchid-blog 全量盘点）
 
-> 复杂度 = 迁移到本主题的工作量粗估。分级为建议值，**最终以第 6 节决策为准**。
+> 复杂度 = 迁移到本主题的工作量粗估。P0/P1/P2 为初始建议分级，**实际取舍见第 6 节决策记录**（2026-10-11 已确认）。
 
 ### 4.1 P0 —— 主题核心，默认实现（M3a）
 
@@ -104,11 +104,11 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | 返回顶部 | 右下角悬浮按钮 | `controls/BackToTop.astro` | 低 |
 | 页面过渡 | 路由切换动画（用 Astro 内置 View Transitions，不引入 swup） | `@swup/astro`（本主题改用内置方案） | 低 |
 
-### 4.2 P1 —— 可选功能，待确认取舍（M3b）
+### 4.2 P1 —— 已确认全部采用（M3b）
 
 | # | 功能 | 具体内容 | orchid-blog 实现 | 复杂度 | 建议 |
 |---|---|---|---|---|---|
-| 1 | 评论系统 | 5 套可切换：Artalk/Twikoo/Waline/Giscus/Disqus | `components/comment/`、`commentConfig.ts` | 中 | **建议要**，M3b 先实现 1 套（用哪套见决策点 2） |
+| 1 | 评论系统 | 5 套可切换：Artalk/Twikoo/Waline/Giscus/Disqus | `components/comment/`、`commentConfig.ts` | 中 | **已确认**：M3b 先实现 Artalk（站点当前在用），其余 4 套留出统一实现口（评论适配层） |
 | 2 | 搜索 | Pagefind 构建后静态索引 + 导航栏即时搜索（独立高级搜索页可不做） | `pagefind.yml`、`controls/Search.svelte` | 中 | **建议要**（纯静态、零后端） |
 | 3 | 加密文章 | 构建时 AES-256-GCM + PBKDF2 加密、客户端 Web Crypto 解密、密码 sessionStorage 缓存、密码提示 | `utils/crypto-utils.ts`、`features/EncryptedPost.astro` | 高 | schema 字段 M1 已预留；功能复杂度高，看你是否真会写加密文章 |
 | 4 | 友链页 | 数据驱动（标题/头像/描述/权重/启用/随机排序） | `pages/friends.astro`、`friendsConfig.ts` | 低 | 成本很低，建议要 |
@@ -121,12 +121,26 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | 11 | OG 分享图 | satori 构建时生成每篇文章分享图 | `pages/og/[...slug].ts` | 中 | 可选（默认关） |
 | 12 | 相关文章推荐 | 文章底部 5 篇 | `misc/RecommendedPost.astro` | 中 | 可选 |
 | 13 | 分享海报 | 文章生成分享图（含二维码） | `misc/SharePoster.svelte` | 中 | 可选 |
-| 14 | 图片体系 | LQIP 占位图构建生成、随机封面 API 回退 | `scripts/generate-lqips.ts`、`coverImageConfig.ts` | 中 | LQIP 建议要；随机封面与简约风不符，建议弃 |
+| 14 | 图片体系 | LQIP 占位图构建生成、随机封面 API 回退 | `scripts/generate-lqips.ts`、`coverImageConfig.ts` | 中 | **已确认要 LQIP**；随机封面与简约风不符，维持舍弃 |
 | 15 | 字体子集化 | Astro Font API + 构建时 subset-font | `config/fontConfig.ts`、`scripts/subset-fonts.ts` | 中 | 中文字体性能关键，M4 做 |
 | 16 | 站点统计 | GA / Umami / Clarity / 51la（四选几） | `analyticsConfig.ts`、`components/analytics/` | 低 | 成本低 |
 | 17 | 公告栏 | 侧边栏公告小部件 | `widget/Announcement.astro` | 低 | 成本低 |
 
-### 4.3 P2 —— 建议舍弃（与「清新简约」定位冲突 / 维护成本高）
+### 4.3 P2 —— 拆分处理（2026-10-11 已确认：保留 5 项、暂时舍弃 4 项）
+
+原建议整体舍弃，经确认拆分如下。
+
+**保留（排期靠后，建议 M3b 内或之后穿插）**：
+
+| 功能 | orchid-blog 实现 | 备注 |
+|---|---|---|
+| hue 动态调色面板（oklch + `--hue` 运行时调节） | `variables.styl`、`DisplaySettings.svelte` | 与静态 `accentColor` 配置共存；提供预设色板 + 自定义 hue |
+| i18n | `src/i18n/` | 先建中/英两语框架（可扩展），UI 文案收敛为语言包 |
+| PlantUML（服务器渲染） | `plugins/remark-plantuml.js` | 依赖外部渲染服务，文档标注部署要求 |
+| 广告位小部件 | `widget/Advertisement.astro` | 可选开关，默认关闭 |
+| 邮箱防爬混淆 | `plugins/rehype-email-protection.js` | 成本低 |
+
+**暂时舍弃（不进排期，记录于此便于将来回捞）**：
 
 | 功能 | orchid-blog 实现 | 舍弃理由 |
 |---|---|---|
@@ -134,11 +148,6 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | 看板娘（Spine + Live2D） | `pioConfig.ts`、`features/SpineModel.astro`、`Live2DWidget.astro` | 同上 |
 | 番组/追番页（Bangumi/Bilibili/TMDB API） | `pages/bangumi.astro`、`anime.astro` | 外部 API 依赖重 |
 | 背景壁纸系统（4 模式/背景视频/水波纹/樱花/轮播/打字机） | `backgroundWallpaper.ts`、`features/SakuraEffect.astro` | 特效堆砌 |
-| hue 动态调色面板（oklch + --hue 运行时调节） | `variables.styl`、`DisplaySettings.svelte` | 用主题配置 `accentColor`（静态 hex）替代，够用 |
-| i18n 六语言 | `src/i18n/` | 单人博客收益低；如需可后补 |
-| PlantUML（服务器渲染） | `plugins/remark-plantuml.js` | 依赖外部服务器；mermaid 覆盖大部分场景 |
-| 广告位小部件 | `widget/Advertisement.astro` | 不需要 |
-| 邮箱防爬混淆 | `plugins/rehype-email-protection.js` | 如有需要再加 |
 
 > 备注：orchid-blog **没有**「动态/说说」功能（仅灯箱里有 `.moment-images` 兼容残留）、**没有**外链中转确认页（仅 `_blank + noopener`）。这两个如果想要属于全新开发，工作量另计。
 
@@ -161,17 +170,19 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | 里程碑 | 内容 | 状态 |
 |---|---|---|
 | **M1 骨架** | monorepo + defineTheme 闭环（首页/文章页/config 校验/override 示例） | ✅ 完成 |
+| **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | 进行中 |
 | **M2 内容迁移** | orchid-blog 文章迁入 `site/content/posts`；`definePostSchema` 对齐全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包；图片/LQIP 策略 | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = 第 6 节确认后的 P1 项 | 待开始 |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | 待开始 |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
 
-## 6. 待决策点
+## 6. 决策记录（2026-10-11 确认）
 
-1. **P1 取舍**：4.2 表 17 项选哪些？（划掉不要的即可）
-2. **评论方案**：Giscus（GitHub Discussions）/ Twikoo（自部署）/ Artalk（自部署，orchid-blog 当前在用）三选一，M3b 只先做一套
-3. **视觉基线**：强调色暂定青瓷绿 `#4a9d8f`（配置可改）；标题/正文字体偏好？（orchid-blog 用 Zen Maru Gothic / Inter / JetBrains Mono）
-4. **发布渠道**：npm 公开发布 / Gitee 仓库 + 私有 registry / 仅本地 workspace
-5. **是否先出高保真 HTML 原型**定视觉，还是直接进 M2
+1. **先出高保真 HTML 原型定视觉**，再进 M2 —— 当前阶段
+2. **P1 全部采用**：4.2 表 17 项都要（含 LQIP；随机封面维持舍弃）
+3. **评论方案**：先实现 Artalk（站点当前在用）；Twikoo/Waline/Giscus/Disqus 留出统一实现口（评论适配层）
+4. **P2 拆分**：保留 hue 动态调色 / i18n / PlantUML / 广告位 / 邮箱防爬；暂时舍弃音乐播放器 / 看板娘 / 番组追番 / 背景壁纸特效
+5. **视觉基线**：强调色默认青瓷绿 `#4a9d8f`（配置可改 + hue 预设切换），字体方案随原型确认后冻结
+6. **发布渠道**：待定（npm 公开 / Gitee + 私有 registry / 仅本地 workspace），不阻塞开发
 
 ## 7. 工程备忘
 
