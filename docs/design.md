@@ -469,6 +469,26 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - astro.config.ts 258 行 → 15 行：仅 `site: siteConfig.siteUrl` + `orchidTheme(themeConfig)`；`site` 是 Astro 全局键不属主题入参，故 siteUrl 放在 siteConfig 内
 - 验证：7 个独立页（归档/标签/画廊/关于/友链/留言板/打赏）+ 首页 + 文章页全部正常渲染，配置数据完整进入主题；`pnpm build` 62 页 exit 0；控制台仅 Artalk 占位服务器预期报错
 
+### 4.8 侧栏 widget 双向显隐配置（✅ 2026-10-12 完成）
+
+源自用户需求：首页侧栏与内容页侧栏应可分别配置显隐（对齐参考模板 orchid-blog `sidebarConfig.ts` 的 `showOnPostPage` / `hideOnNonPostPage` 双布尔模型）。
+
+**发现的语义 bug**：Sidebar.astro 旧过滤 `isPost ? true : w.showOnPost` 实际效果与 schema 注释**完全相反**——`showOnPost: false` 的 widget 被列表页过滤、只在文章页显示，注释却写「不进文章页侧栏」。
+
+**修复：双布尔正交模型**（单份 widgets 配置派生两页显隐，与参考模板同构）：
+
+| 配置 | 效果 | 参考模板对应 |
+|---|---|---|
+| 缺省 | 列表页 + 文章页侧栏都显示 | 双 true |
+| `showOnPost: false` | 仅首页/列表页显示 | `showOnPostPage: false` |
+| `postOnly: true` | 仅文章页侧栏显示（如 toc） | `hideOnNonPostPage: true` |
+
+- schema.ts：widget 对象新增 `postOnly`（默认 false）并修正 `showOnPost` 注释；两处默认 widgets 数组（数组级 default + Zod v4 section 级完整字面量 default）的 toc 均改为 `{ type: "toc", postOnly: true }`
+- Sidebar.astro 过滤改为 `w.enabled && (isPost ? w.showOnPost : !w.postOnly)`；文章页侧栏整体开关仍由 `sidebar.onPost`（路由层）把关
+- site/config/sidebarConfig.ts：toc 标注 `postOnly: true`，注释重写为双向显隐语义说明
+
+验证记录：`postOnly`（toc）——首页 6 卡（公告/分类/标签/友链/日历/站点信息）无目录，文章页 7 卡含「目录」✓；`showOnPost: false`（临时挂 announcement 实测）——文章页公告消失、首页保留，验证后还原 ✓；`pnpm build` exit 0（115 html / Pagefind 62 页索引）无回归。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
@@ -510,3 +530,4 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - Astro 组件 frontmatter（`---` 区）**不能包含 JSX**（返回 JSX 的箭头函数会在 vite import analysis 报 invalid JS syntax），JSX 片段只能写在模板区
 - ⚠️ **Astro 7.3.8 捆绑 Zod v4：`.default({})` 不解析内层默认值**（`.default({})` 命中即短路返回 `{}` 原值，内层字段的 default 全部丢失，实测 `z.object({a: z.boolean().default(true), b: z.object({c: z.number().default(3)}).default({})}).parse({})` → `{a: true, b: {}}`）。schema.ts 惯用法：**object section 的 default 必须写显式完整默认值字面量**（如 `.default({ enabled: true, name: '...' })`），嵌套层同理；新增配置 section 时一并遵守，否则该 section 缺省配置时站点运行期 `undefined` 500
 - 主题包版本升级策略：功能进 `minor`、修复进 `patch`、破坏性配置变更进 `major` 并保留 default 回退
+- ⚠️ **astro.config.ts 的传递依赖（`site/config/*.ts`）变更不触发 dev server 自动重启**——astro 只 watch astro.config.ts 本身的 mtime，其 import 依赖图（config 拆分文件）变化不产生 restart 日志（与参考模板 config 为 src 内组件级 import 有 HMR 的架构不同）；改配置后必须手动重启 dev server 再验证（§4.8 实测）

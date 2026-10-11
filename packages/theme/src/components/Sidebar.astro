@@ -27,9 +27,10 @@ const tags = [...collectTags(posts).keys()];
 const runDays = config.since ? daysSince(config.since) : null;
 
 // widget 开关与顺序（P2 侧栏改造）：config.sidebar.widgets 数组即渲染顺序；
-// 列表页过滤 showOnPost=false 的项（toc 只在文章页有意义），文章页整体开关由路由层 onPost 把关
+// 两个方向的显隐（对齐参考模板 showOnPostPage/hideOnNonPostPage）：
+// showOnPost=false 仅列表页显示；postOnly=true 仅文章页侧栏显示；文章页整体开关由路由层 onPost 把关
 const widgets = config.sidebar.widgets.filter((w) =>
-	w.enabled && (isPost ? true : w.showOnPost),
+	w.enabled && (isPost ? w.showOnPost : !w.postOnly),
 );
 
 // 公告 widget（P1-17）：content 留空整卡不渲染

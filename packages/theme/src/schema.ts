@@ -229,7 +229,8 @@ export const themeConfigSchema = z.object({
 	 * 侧栏 widget 体系（P2 侧栏改造）：
 	 * - widgets 数组即渲染顺序，可自由增删/排序/开关；类型：
 	 *   announcement / categories / tags / friends / calendar / toc / siteInfo / advertisement
-	 * - enabled=false 跳过该 widget；showOnPost=false 的 widget 不进文章页侧栏
+	 * - enabled=false 跳过该 widget；两个方向的显隐（对齐参考模板 showOnPostPage/hideOnNonPostPage）：
+	 *   showOnPost=false 仅列表页显示；postOnly=true 仅文章页侧栏显示（如 toc）
 	 * - onPost=false 时文章详情页不渲染侧栏（TOC 保持正文右侧原位）
 	 */
 	sidebar: z
@@ -251,8 +252,10 @@ export const themeConfigSchema = z.object({
 							"advertisement",
 						]),
 						enabled: z.boolean().default(true),
-						/** 文章页侧栏是否保留该 widget */
+						/** 文章页侧栏是否保留该 widget（false = 仅首页/列表页显示） */
 						showOnPost: z.boolean().default(true),
+						/** 仅文章页侧栏显示（true = 首页/列表页不出现，如 toc） */
+						postOnly: z.boolean().default(false),
 					}),
 				)
 				.default([
@@ -261,7 +264,7 @@ export const themeConfigSchema = z.object({
 					{ type: "tags" },
 					{ type: "friends" },
 					{ type: "calendar" },
-					{ type: "toc" },
+					{ type: "toc", postOnly: true },
 					{ type: "siteInfo" },
 					{ type: "advertisement" },
 				]),
@@ -282,7 +285,7 @@ export const themeConfigSchema = z.object({
 				{ type: "tags" },
 				{ type: "friends" },
 				{ type: "calendar" },
-				{ type: "toc" },
+				{ type: "toc", postOnly: true },
 				{ type: "siteInfo" },
 				{ type: "advertisement" },
 			],
