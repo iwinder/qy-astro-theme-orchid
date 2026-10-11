@@ -16,6 +16,17 @@ const { posts } = Astro.props;
 const cats = [...collectCategories(posts).entries()];
 const tags = [...collectTags(posts).keys()];
 const runDays = config.since ? daysSince(config.since) : null;
+
+// 友链 widget（决策 8）：与友链页同源 themeConfig.friends.list
+const fw = config.sidebar.friends;
+let sideFriends: typeof config.friends.list = [];
+if (fw.enabled) {
+  const enabled = config.friends.list.filter((f) => f.enabled);
+  const pool = fw.random
+    ? [...enabled].sort(() => Math.random() - 0.5)
+    : [...enabled].sort((a, b) => b.weight - a.weight);
+  sideFriends = pool.slice(0, fw.count);
+}
 ---
 
 <aside class="sidebar">
@@ -42,6 +53,25 @@ const runDays = config.since ? daysSince(config.since) : null;
           {tags.map((tag) => (
             <a class="chip" href={`/tags/${encodeURIComponent(tag)}/`}>
               {tag}
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+  {
+    sideFriends.length > 0 && (
+      <section class="side-card card reveal">
+        <h3>友链</h3>
+        <div class="side-friends">
+          {sideFriends.map((f) => (
+            <a href={f.site} target="_blank" rel="noopener" title={f.title}>
+              {f.image ? (
+                <img src={f.image} alt={f.title} loading="lazy" />
+              ) : (
+                <span class="avatar-fallback">{f.title.slice(0, 1)}</span>
+              )}
+              <span>{f.title}</span>
             </a>
           ))}
         </div>

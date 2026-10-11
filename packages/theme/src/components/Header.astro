@@ -8,6 +8,10 @@ function navKey(href: string): string | null {
   if (href === '/') return 'home';
   if (href === '/archive' || href.startsWith('/archive/')) return 'archive';
   if (href === '/tags' || href.startsWith('/tags/')) return 'tags';
+  if (href === '/about' || href.startsWith('/about/')) return 'about';
+  if (href === '/friends' || href.startsWith('/friends/')) return 'friends';
+  if (href === '/guestbook' || href.startsWith('/guestbook/')) return 'guestbook';
+  if (href === '/sponsor' || href.startsWith('/sponsor/')) return 'sponsor';
   return null;
 }
 ---

@@ -558,6 +558,49 @@ html.dark .friend-card:hover .friend-name { color: var(--accent); }
 .friend-apply { margin-top: 20px; padding: 24px 26px; display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
 .friend-apply .fa-title { font-family: var(--font-display); font-weight: 700; font-size: 17px; }
 .friend-apply .fa-desc { margin-top: 4px; font-size: 14px; color: var(--muted); }
+.friend-tags { margin-top: 7px; display: flex; flex-wrap: wrap; gap: 4px; }
+.friend-tags .chip { font-size: 11px; padding: 1px 9px; }
+
+/* ---------- 10.1 字头像兜底（友链/打赏名单无图时） ---------- */
+.avatar-fallback {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--accent-soft); color: var(--accent-ink);
+  font-weight: 700; user-select: none;
+}
+.friend-avatar .avatar-fallback { width: 100%; height: 100%; font-size: 20px; font-family: var(--font-display); }
+.side-friends .avatar-fallback { width: 24px; height: 24px; font-size: 12px; border-radius: 50%; border: 1px solid var(--border); flex: none; }
+.sponsor-item-avatar.avatar-fallback { border-radius: 50%; font-size: 14px; }
+
+/* ---------- 10.2 独立页（关于/留言板）正文卡 ---------- */
+.page-card { margin-top: 26px; padding: 26px 30px; }
+.page-card .prose > :first-child,
+.prose.page-card > :first-child { margin-top: 0; }
+.comment-placeholder { text-align: center; color: var(--muted); font-size: 14px; }
+.comment-placeholder p { margin: 8px 0; }
+
+/* ---------- 10.3 打赏页 ---------- */
+.sponsor-usage {
+  margin-top: 26px; padding: 14px 18px;
+  font-size: 14px; color: var(--ink-2); line-height: 1.7;
+  background: var(--accent-soft);
+  border: 1px solid hsl(var(--accent-h) 30% 60% / .45);
+}
+.sponsor-grid { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; }
+.sponsor-method { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 26px 22px; text-align: center; }
+.sponsor-method .sm-name { font-family: var(--font-display); font-weight: 700; font-size: 17px; display: flex; align-items: center; gap: 8px; }
+.sponsor-method .sm-icon { font-size: 20px; }
+.sponsor-method .sm-desc { margin: 0; font-size: 13.5px; color: var(--muted); }
+.sponsor-qr { width: 180px; height: 180px; padding: 12px; background: #fff; border: 1px solid var(--border); border-radius: 12px; object-fit: contain; }
+.sponsor-qr-empty { display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; }
+.sponsor-method .sm-link { margin-top: auto; }
+.sponsor-list-title { font-family: var(--font-display); font-size: 17px; font-weight: 700; margin: 0 0 14px; }
+.sponsor-list-title .sl-count { margin-left: 8px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; font-weight: 400; }
+.sponsor-list { display: grid; gap: 10px; }
+.sponsor-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--border); border-radius: 14px; }
+.sponsor-item-avatar { flex: none; width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border); }
+.sponsor-item-name { font-size: 14px; font-weight: 600; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.sponsor-item-name .sl-amount { color: var(--accent-ink); font-size: 13px; }
+.sponsor-item-date { font-size: 12.5px; color: var(--muted); }
 
 /* ---------- 11. Footer ---------- */
 .site-footer { border-top: 1px solid var(--border); background: var(--bg-soft); }

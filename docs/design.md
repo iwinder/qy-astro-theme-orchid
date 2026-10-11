@@ -139,6 +139,30 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | 16 | 站点统计 | GA / Umami / Clarity / 51la（四选几） | `analyticsConfig.ts`、`components/analytics/` | 低 | 成本低 |
 | 17 | 公告栏 | 侧边栏公告小部件 | `widget/Announcement.astro` | 低 | 成本低 |
 
+**M3b 批次划分**：b0 环境修复 → b1 独立页四件套（P1-4/5/6/7 + 侧栏友链 widget）→ b2 评论适配层（P1-1，先 Artalk）→ b3 公告/广告/站点统计（P1-16/17 + P2 广告位）→ b4 内容插件（P1-9/10 + P2 PlantUML/邮箱防爬）→ b5 hue 调色 + i18n（P2）→ b6 搜索（P1-2）→ b7 加密文章（P1-3）→ b8 画廊（P1-8）→ b9 LQIP/OG/相关文章/分享海报（P1-11/12/13/14）
+
+**M3b-b1 实现记录**（✅ 2026-10-11）：
+
+| 功能 | 实现 |
+|---|---|
+| 关于页 /friends 同模式 | `/about` 路由 + `getEntry('spec','about')`，spec 集合或条目缺失时降级为占位提示（不 throw，比 orchid-blog 更健壮） |
+| 友链页（P1-4） | `/friends` 路由，数据驱动 `friends.list`（title/image/desc/tags/weight/enabled）；`sort: 'weight'`（降序）或 `'random'`（构建期）；头像留空渲染 title 首字字头像兜底；`friends.apply` 卡片（title 留空不渲染）；正文可来自 `spec/friends.md` |
+| 留言板（P1-6） | `/guestbook` 路由 + spec 正文 + 评论占位（b2 评论适配层接入后替换） |
+| 打赏页（P1-7） | `/sponsor` 路由：usage 说明 + methods 网格三态（image 收款码 / link 跳转按钮 / 双空占位框）+ 打赏者名单（首字母头像兜底） |
+| 侧栏友链 widget（决策 8） | 与友链页同源 `friends.list`；`sidebar.friends: { enabled: true, count: 3, random: false }` 默认开 |
+| 独立页开关 | `pages.about/friends/guestbook/sponsor`（默认全开），关闭则 integration 阶段**完全不注入路由**（非运行期跳转） |
+| spec 集合 | site 侧 `content.config.ts` 新增 `spec` 集合（`z.object({})` 空 schema，md 可无 frontmatter，与 orchid-blog 一致）；site 新增 about/friends/guestbook 三篇中性示例文 |
+
+**M3b-b1 偏差清单**：
+
+| 偏差 | 原因 | 主题实现 |
+|---|---|---|
+| 打赏无文章内按钮 | orchid-blog 的 `showButtonInPost` 依赖打赏浮层；与简约风不符 | 仅独立 `/sponsor` 页；后续需要再评估 |
+| 评论占位而非评论区 | b2 评论适配层尚未实现 | guestbook 页预留 `comment-placeholder`，b2 替换 |
+| 无独立路由配置项（路径固定 /about 等） | orchid-blog 路径同样固定 | 站点改路径需求用 Astro `routes` 覆盖即可，不设配置 |
+
+**M3b-b1 验证记录**（dev 实测，2026-10-11）：`/`（侧栏友链 widget 显示 weight 前三）、`/about/`、`/friends/`（5 条全渲染、字头像兜底、apply 卡、tags）、`/guestbook/`（spec 正文 + 评论占位）、`/sponsor/`（link 型 + 双空占位型 method、打赏名单）、`/404`（404）、`/archive/`、`/tags/`、文章页回归全通过；dev 日志无 ERROR。
+
 ### 4.3 P2 —— 拆分处理（2026-10-11 已确认：保留 5 项、暂时舍弃 4 项）
 
 原建议整体舍弃，经确认拆分如下。
@@ -186,7 +210,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | ✅ 完成 |
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 待开始 |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1 ✅ 2026-10-11，批次划分见 §4.2） |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
 
 ## 6. 决策记录（2026-10-11 确认）
@@ -206,13 +230,14 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 ## 7. 工程备忘
 
 - 开发：仓库根 `pnpm --filter site dev`；构建：`pnpm --filter site build`
-- 依赖安装（TRAE 沙箱环境，实测有效版）：
+- 依赖安装（TRAE 沙箱环境，实测有效版；**pnpm 数据只允许落在 `/Volumes/zhitai/Work/repositories/pnpm`，禁止在项目内建 store/cache**）：
   ```bash
-  pnpm_config_store_dir="$PWD/.tmp-m3a/store" pnpm_config_cache_dir="$PWD/.tmp-m3a/cache" pnpm install --no-frozen-lockfile
+  pnpm_config_store_dir=/Volumes/zhitai/Work/repositories/pnpm/bin/store pnpm_config_cache_dir=/Volumes/zhitai/Work/repositories/pnpm/cache pnpm install --no-frozen-lockfile
   ```
-  要点：① pnpm 11 对**非 `~/` 开头的显式 store 路径跳过探测**（探测会在挂载根建 `_tmp_*` 硬链接探针被沙箱拦截）；② env 前缀是 `pnpm_config_` 且**必须下划线形式**（`npm_config_*`、连字符变体均无效）；③ TRAE 终端被判定 CI → frozen-lockfile 默认 true，锁文件有变更时加 `--no-frozen-lockfile`；④ 首次重定向安装需把现有 store 复制进目标目录（`cp -R` 本机 store）。本机终端正常装包不受此影响
+  要点：① pnpm 11 对**非 `~/` 开头的显式 store 路径跳过探测**（探测会在挂载根建 `_tmp_*` 硬链接探针被沙箱拦截）；② env 前缀是 `pnpm_config_` 且**必须下划线形式**（`npm_config_*`、连字符变体均无效）；③ TRAE 终端被判定 CI → frozen-lockfile 默认 true，锁文件有变更时加 `--no-frozen-lockfile`。本机终端正常装包不受此影响
 - ⚠️ TRAE 沙箱拦截 unlink/rmdir（EXDEV）：`astro build` 的正常清理、astro dev 的 `.astro/dev.json` 锁清理、pnpm store WAL 清理均会失败——锁文件被拦时用 IDE 删除工具清掉再重启；**build 请在本机终端跑**；删除文件/目录一律走 IDE 删除工具
 - override 新增/移动文件后需重启 dev server（Vite 虚拟模块 resolveId 缓存）；**修改主题包内 integration/index.ts 后也需重启**（Vite 不监听 workspace 包内文件）
 - Astro 7 markdown：JS 插件必须走 `markdown.processor: unified({...})`（`@astrojs/markdown-remark`），legacy `remarkPlugins/rehypePlugins` 字段只触发警告不生效
 - Astro 组件 frontmatter（`---` 区）**不能包含 JSX**（返回 JSX 的箭头函数会在 vite import analysis 报 invalid JS syntax），JSX 片段只能写在模板区
+- ⚠️ **Astro 7.3.8 捆绑 Zod v4：`.default({})` 不解析内层默认值**（`.default({})` 命中即短路返回 `{}` 原值，内层字段的 default 全部丢失，实测 `z.object({a: z.boolean().default(true), b: z.object({c: z.number().default(3)}).default({})}).parse({})` → `{a: true, b: {}}`）。schema.ts 惯用法：**object section 的 default 必须写显式完整默认值字面量**（如 `.default({ enabled: true, name: '...' })`），嵌套层同理；新增配置 section 时一并遵守，否则该 section 缺省配置时站点运行期 `undefined` 500
 - 主题包版本升级策略：功能进 `minor`、修复进 `patch`、破坏性配置变更进 `major` 并保留 default 回退

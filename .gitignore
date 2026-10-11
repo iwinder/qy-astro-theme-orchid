@@ -7,8 +7,6 @@ dist/
 .env.*
 .idea/
 
-# 沙箱环境 pnpm store/cache 重定向目录（约 420MB，仅本机安装用）
-.tmp-m3a/
 # pnpm store 探测残留的硬链接探针
 _tmp_*
 

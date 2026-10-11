@@ -29,7 +29,7 @@ export const themeConfigSchema = z.object({
       quote: z.string().default(''),
       sub: z.string().default(''),
     })
-    .default({}),
+    .default({ quote: '', sub: '' }),
   /** 文章列表 */
   postList: z
     .object({
@@ -40,13 +40,13 @@ export const themeConfigSchema = z.object({
       /** 无图文章的兜底封面图（可选；不配置则降级为纯文字卡） */
       fallbackCover: z.string().optional(),
     })
-    .default({}),
+    .default({ style: 'cover', pageSize: 10 }),
   /** 文章页目录 */
   toc: z
     .object({
       enabled: z.boolean().default(true),
     })
-    .default({}),
+    .default({ enabled: true }),
   /** 版权声明（文章级 licenseName/licenseUrl 可覆盖；enabled=false 全站关闭） */
   license: z
     .object({
@@ -54,7 +54,11 @@ export const themeConfigSchema = z.object({
       name: z.string().default('CC BY-NC-SA 4.0'),
       url: z.string().default('https://creativecommons.org/licenses/by-nc-sa/4.0/'),
     })
-    .default({}),
+    .default({
+      enabled: true,
+      name: 'CC BY-NC-SA 4.0',
+      url: 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
+    }),
   /** 建站日期（YYYY-MM-DD，站点信息卡「已运行」；不配置则不显示该行） */
   since: z.string().optional(),
   /** 顶部导航 */
@@ -63,6 +67,110 @@ export const themeConfigSchema = z.object({
     .default([]),
   /** 页脚附加文案 */
   footerText: z.string().default(''),
+  /** 独立页开关：关闭后主题不注入对应路由（路由完全不生成） */
+  pages: z
+    .object({
+      about: z.boolean().default(true),
+      friends: z.boolean().default(true),
+      guestbook: z.boolean().default(true),
+      sponsor: z.boolean().default(true),
+    })
+    .default({ about: true, friends: true, guestbook: true, sponsor: true }),
+  /**
+   * 友链数据源（决策 8）：同时驱动友链页全量渲染与首页侧栏友链 widget。
+   * 头像 image 留空时以 title 首字渲染字头像兜底。
+   */
+  friends: z
+    .object({
+      /** 友链页标题 */
+      title: z.string().default('友链'),
+      /** 友链页副标题描述 */
+      description: z.string().default(''),
+      /** 页面级排序：weight 权重降序 / random 随机（构建期） */
+      sort: z.enum(['weight', 'random']).default('weight'),
+      /** 申请友链卡片（title 留空则整卡不渲染） */
+      apply: z
+        .object({
+          title: z.string().default(''),
+          description: z.string().default(''),
+          /** 申请入口链接（mailto 或表单页） */
+          link: z.string().default(''),
+          label: z.string().default('申请友链'),
+        })
+        .default({ title: '', description: '', link: '', label: '申请友链' }),
+      list: z
+        .array(
+          z.object({
+            title: z.string(),
+            site: z.string().url(),
+            /** 头像图（外链或 public 路径；留空用字头像） */
+            image: z.string().default(''),
+            desc: z.string().default(''),
+            tags: z.array(z.string()).default([]),
+            /** 权重，越大越靠前（sort=weight 时生效） */
+            weight: z.number().default(0),
+            enabled: z.boolean().default(true),
+          }),
+        )
+        .default([]),
+    })
+    .default({ title: '友链', description: '', sort: 'weight', apply: { title: '', description: '', link: '', label: '申请友链' }, list: [] }),
+  /** 侧栏 widget（决策 8：友链 widget 默认开、显示 3 条） */
+  sidebar: z
+    .object({
+      friends: z
+        .object({
+          enabled: z.boolean().default(true),
+          count: z.number().int().min(1).default(3),
+          /** 构建期随机取样；false 则按 weight 降序取前 count 个 */
+          random: z.boolean().default(false),
+        })
+        .default({ enabled: true, count: 3, random: false }),
+    })
+    .default({ friends: { enabled: true, count: 3, random: false } }),
+  /** 打赏页（收款码 image 与跳转 link 至少配一个；均为空渲染占位框） */
+  sponsor: z
+    .object({
+      title: z.string().default('打赏'),
+      description: z.string().default(''),
+      /** 打赏用途说明（留空不渲染） */
+      usage: z.string().default(''),
+      showSponsorsList: z.boolean().default(true),
+      methods: z
+        .array(
+          z.object({
+            name: z.string(),
+            /** 文本/emoji 角标（主题不内置图标依赖） */
+            icon: z.string().default(''),
+            /** 收款码图片（public 路径或外链） */
+            image: z.string().default(''),
+            /** 跳转链接（爱发电/ko-fi 等） */
+            link: z.string().default(''),
+            description: z.string().default(''),
+            enabled: z.boolean().default(true),
+          }),
+        )
+        .default([]),
+      /** 打赏者名单（date 用 YYYY-MM-DD） */
+      sponsors: z
+        .array(
+          z.object({
+            name: z.string(),
+            avatar: z.string().default(''),
+            amount: z.string().default(''),
+            date: z.string().default(''),
+          }),
+        )
+        .default([]),
+    })
+    .default({
+      title: '打赏',
+      description: '',
+      usage: '',
+      showSponsorsList: true,
+      methods: [],
+      sponsors: [],
+    }),
 });
 
 export type ThemeConfig = z.input<typeof themeConfigSchema>;

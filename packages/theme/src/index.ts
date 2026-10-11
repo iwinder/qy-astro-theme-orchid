@@ -72,6 +72,11 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
           ['/robots.txt', 'robots.txt.ts'],
           ['/404', '404.astro'],
         ];
+        // 独立页按开关注入（关闭则完全不生成对应路由，而非运行期 404 跳转）
+        if (config.pages.about) routes.push(['/about', 'about.astro']);
+        if (config.pages.friends) routes.push(['/friends', 'friends.astro']);
+        if (config.pages.guestbook) routes.push(['/guestbook', 'guestbook.astro']);
+        if (config.pages.sponsor) routes.push(['/sponsor', 'sponsor.astro']);
         for (const [pattern, file] of routes) {
           injectRoute({
             pattern,

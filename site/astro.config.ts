@@ -28,8 +28,103 @@ export default defineConfig({
         { label: '首页', href: '/' },
         { label: '归档', href: '/archive/' },
         { label: '标签', href: '/tags/' },
+        { label: '关于', href: '/about/' },
+        { label: '友链', href: '/friends/' },
+        { label: '留言板', href: '/guestbook/' },
       ],
       footerText: 'Built with Astro & @windcoder/astro-theme-orchid',
+      // 独立页开关：置 false 后主题不注入对应路由（演示站全部开启）
+      pages: { about: true, friends: true, guestbook: true, sponsor: true },
+      // 友链数据源：同时驱动友链页与首页侧栏 widget（决策 8）。
+      // 以下均为中性演示数据；image 留空时用首字字头像兜底
+      friends: {
+        title: '友链',
+        description: '山不在高，有仙则名。',
+        sort: 'weight',
+        apply: {
+          title: '想和清言集交换链接？',
+          description:
+            '欢迎写信给我，附上站点名称、链接、头像和一句话介绍。认真经营的博客，我都会回访。',
+          link: 'mailto:hi@example.com',
+          label: '申请友链',
+        },
+        list: [
+          {
+            title: '青山不改',
+            site: 'https://example.com/qingshan',
+            image:
+              'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20green%20mountain%20and%20moon%20badge%2C%20celadon%20green%20palette&image_size=square',
+            desc: '山中岁月长，林间无事忙',
+            weight: 10,
+          },
+          {
+            title: '拾光者',
+            site: 'https://example.com/shiguang',
+            image:
+              'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20vintage%20camera%2C%20warm%20amber%20palette&image_size=square',
+            desc: '用镜头收藏时间的碎片',
+            weight: 8,
+          },
+          {
+            title: '码农手记',
+            site: 'https://example.com/codenote',
+            image:
+              'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20laptop%20with%20code%20brackets%2C%20indigo%20palette&image_size=square',
+            desc: '代码之外，还有生活',
+            tags: ['技术'],
+            weight: 6,
+          },
+          {
+            title: '一苇渡江',
+            site: 'https://example.com/yiwei',
+            // 无头像：演示首字字头像兜底
+            image: '',
+            desc: '读书、行路、渡自己',
+            weight: 4,
+          },
+          {
+            title: '蘑菇房',
+            site: 'https://example.com/mushroom',
+            image:
+              'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20cute%20mushroom%20house%2C%20soft%20red%20and%20cream%20palette&image_size=square',
+            desc: '种花、做饭、慢慢长大',
+            tags: ['生活'],
+            weight: 2,
+            // enabled: false 的条目两处（页面/侧栏）都不渲染
+            enabled: true,
+          },
+        ],
+      },
+      // 打赏页：image（收款码）与 link（跳转）至少配一个；均为空渲染占位框
+      sponsor: {
+        title: '打赏',
+        description: '如果内容对你有帮助，请作者喝杯茶。',
+        usage: '你的打赏将用于服务器维护、内容创作与功能开发。',
+        showSponsorsList: true,
+        methods: [
+          {
+            name: '支付宝',
+            icon: '',
+            // 收款码图放 site/public/ 后填路径，如 /assets/images/sponsor/alipay.png
+            image: '',
+            link: 'https://example.com/sponsor',
+            description: '跳转链接打赏演示',
+            enabled: true,
+          },
+          {
+            name: '微信',
+            icon: '',
+            image: '',
+            link: '',
+            description: '收款码占位演示',
+            enabled: true,
+          },
+        ],
+        sponsors: [
+          { name: '青山不改', avatar: '', amount: '¥66', date: '2026-09-01' },
+          { name: '拾光者', avatar: '', amount: '¥30', date: '2026-09-15' },
+        ],
+      },
     }),
   ],
 });

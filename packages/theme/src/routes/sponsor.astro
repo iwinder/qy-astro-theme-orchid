@@ -1,0 +1,83 @@
+---
+import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
+import config from 'virtual:theme/config';
+
+const cfg = config.sponsor;
+const methods = cfg.methods.filter((m) => m.enabled);
+const sponsors = cfg.sponsors;
+---
+
+<BaseLayout title={cfg.title} page="sponsor">
+  <header class="archive-head reveal">
+    <h1 class="page-title">{cfg.title}</h1>
+    {cfg.description && <p class="page-sub">{cfg.description}</p>}
+  </header>
+
+  {
+    cfg.usage && (
+      <div class="sponsor-usage card reveal">
+        {cfg.usage}
+      </div>
+    )
+  }
+
+  {
+    methods.length > 0 && (
+      <div class="sponsor-grid reveal">
+        {methods.map((m) => (
+          <div class="sponsor-method card">
+            <div class="sm-name">
+              {m.icon && <span class="sm-icon">{m.icon}</span>}
+              {m.name}
+            </div>
+            {m.description && <p class="sm-desc">{m.description}</p>}
+            {m.image ? (
+              <img class="sponsor-qr" src={m.image} alt={`${m.name} 收款码`} loading="lazy" />
+            ) : m.link ? (
+              <a class="btn sm-link" href={m.link} target="_blank" rel="noopener">
+                前往打赏
+              </a>
+            ) : (
+              <div class="sponsor-qr sponsor-qr-empty" aria-hidden="true">
+                收款码占位
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    cfg.showSponsorsList && (
+      <section class="card page-card reveal">
+        <h3 class="sponsor-list-title">
+          打赏名单
+          {sponsors.length > 0 && <span class="sl-count">{sponsors.length}</span>}
+        </h3>
+        {sponsors.length > 0 ? (
+          <div class="sponsor-list">
+            {sponsors.map((s) => (
+              <div class="sponsor-item">
+                {s.avatar ? (
+                  <img class="sponsor-item-avatar" src={s.avatar} alt={s.name} loading="lazy" />
+                ) : (
+                  <span class="sponsor-item-avatar avatar-fallback">{s.name.slice(0, 1)}</span>
+                )}
+                <div class="sponsor-item-info">
+                  <div class="sponsor-item-name">
+                    {s.name}
+                    {s.amount && <b class="sl-amount">{s.amount}</b>}
+                  </div>
+                  {s.date && <time class="sponsor-item-date">{s.date}</time>}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p class="tag-empty">还没有打赏，快来做第一个吧</p>
+        )}
+      </section>
+    )
+  }
+</BaseLayout>
