@@ -9,6 +9,7 @@ import PostNav from 'virtual:theme/components/PostNav.astro';
 import Comment from 'virtual:theme/components/Comment.astro';
 import config from 'virtual:theme/config';
 import { formatDate, getSortedPosts } from '../../utils.js';
+import { t } from '../../i18n/index.js';
 
 export async function getStaticPaths() {
   const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
@@ -45,11 +46,11 @@ const jsonLd = {
     {d.category && <a class="chip" href={`/categories/${encodeURIComponent(d.category)}/`}>{d.category}</a>}
     <h1 class="post-title-lg">{d.title}</h1>
     <div class="post-meta">
-      <span>{formatDate(d.published)} 发布</span>
-      {d.updated && <span class="dot">{formatDate(d.updated)} 更新</span>}
-      {words ? <span class="dot">{words} 字</span> : null}
-      {minutes ? <span class="dot">约 {minutes} 分钟</span> : null}
-      {d.pinned && <span class="dot pin-flag">置顶</span>}
+      <span>{t('publishedOn', { date: formatDate(d.published) })}</span>
+      {d.updated && <span class="dot">{t('updatedOn', { date: formatDate(d.updated) })}</span>}
+      {words ? <span class="dot">{t('wordsCount', { n: words })}</span> : null}
+      {minutes ? <span class="dot">{t('minutesCount', { n: minutes })}</span> : null}
+      {d.pinned && <span class="dot pin-flag">{t('pinned')}</span>}
     </div>
   </header>
   {

@@ -1,5 +1,6 @@
 ---
 import type { PostLike } from '../utils.js';
+import { t } from '../i18n/index.js';
 
 interface Props {
   prev?: PostLike;
@@ -9,30 +10,30 @@ interface Props {
 const { prev, next } = Astro.props;
 ---
 
-<nav class="post-nav" aria-label="上下篇">
+<nav class="post-nav" aria-label={t('prevNext')}>
   {
     prev ? (
       <a href={`/posts/${prev.id}/`}>
-        <div class="pn-label">上一篇</div>
+        <div class="pn-label">{t('prevPost')}</div>
         <div class="pn-title">{prev.data.title}</div>
       </a>
     ) : (
       <div class="pn-disabled">
-        <div class="pn-label">上一篇</div>
-        <div class="pn-title">已经是最早的一篇</div>
+        <div class="pn-label">{t('prevPost')}</div>
+        <div class="pn-title">{t('firstPost')}</div>
       </div>
     )
   }
   {
     next ? (
       <a class="next" href={`/posts/${next.id}/`}>
-        <div class="pn-label">下一篇</div>
+        <div class="pn-label">{t('nextPost')}</div>
         <div class="pn-title">{next.data.title}</div>
       </a>
     ) : (
       <div class="pn-disabled">
-        <div class="pn-label">下一篇</div>
-        <div class="pn-title">已经是最新的一篇</div>
+        <div class="pn-label">{t('nextPost')}</div>
+        <div class="pn-title">{t('lastPost')}</div>
       </div>
     )
   }

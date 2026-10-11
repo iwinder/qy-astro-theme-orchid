@@ -2,16 +2,17 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
 import { collectCategories, getSortedPosts } from '../../utils.js';
+import { t } from '../../i18n/index.js';
 
 // 分类云：复用 tag-cloud 样式，分类内文章数 > 1 用大字号
 const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
 const cats = [...collectCategories(getSortedPosts(all)).entries()];
 ---
 
-<BaseLayout title="分类" page="categories">
+<BaseLayout title={t('categories')} page="categories">
   <header class="archive-head reveal">
-    <h1 class="page-title">分类</h1>
-    <p class="page-sub">共 {cats.length} 个分类</p>
+    <h1 class="page-title">{t('categories')}</h1>
+    <p class="page-sub">{t('totalCategories', { n: cats.length })}</p>
   </header>
   <div class="tag-cloud card reveal">
     {

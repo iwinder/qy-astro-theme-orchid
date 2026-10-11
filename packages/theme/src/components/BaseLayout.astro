@@ -5,6 +5,7 @@ import Footer from 'virtual:theme/components/Footer.astro';
 import Analytics from 'virtual:theme/components/Analytics.astro';
 import config from 'virtual:theme/config';
 import { hexToHsl } from '../utils.js';
+import { t } from '../i18n/index.js';
 import '@windcoder/astro-theme-orchid/styles/global.css';
 
 interface Props {
@@ -20,7 +21,7 @@ const { h, s, l } = hexToHsl(config.accentColor);
 ---
 
 <!doctype html>
-<html lang={config.lang} style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%`}>
+<html lang={config.lang} style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%`} data-accent-h={h}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -35,8 +36,10 @@ const { h, s, l } = hexToHsl(config.accentColor);
       (function(){var m=localStorage.getItem('qy-mode');if(m==='dark'||(!m&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
     </script>
   </head>
+  <!-- 客户端动态文案载体（i18n，M3b-b5）：app.ts 读取，VT swap 后随新 body 重建 -->
+  <script type="application/json" id="qy-ui-labels" set:html={JSON.stringify({ lightbox: t('lightbox'), close: t('close'), prevImage: t('prevImage'), nextImage: t('nextImage'), copy: t('copy'), copied: t('copied') })} />
   <body data-page={page}>
-    <a class="skip-link" href="#main">跳到主要内容</a>
+    <a class="skip-link" href="#main">{t('skipToContent')}</a>
     <Header />
     <main id="main" class="site-main">
       <div class="shell">
@@ -46,7 +49,7 @@ const { h, s, l } = hexToHsl(config.accentColor);
     <Footer />
     <!-- 站点统计（P1-16）：ID 全空零输出，挂 body 尾与 orchid-blog 口径一致 -->
     <Analytics />
-    <button class="back-top" id="backTop" type="button" aria-label="回到顶部" hidden>
+    <button class="back-top" id="backTop" type="button" aria-label={t('backToTop')} hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
     </button>
     <!-- 全局交互（VT 兼容：document 级委托 + astro:page-load 重初始化） -->

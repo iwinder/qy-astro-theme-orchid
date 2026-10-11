@@ -6,6 +6,7 @@ import Pagination from 'virtual:theme/components/Pagination.astro';
 import Sidebar from 'virtual:theme/components/Sidebar.astro';
 import config from 'virtual:theme/config';
 import { getSortedPosts } from '../../utils.js';
+import { t } from '../../i18n/index.js';
 import { hydratePosts } from '../_hydrate.js';
 
 export async function getStaticPaths() {
@@ -23,7 +24,7 @@ const { page, total, posts } = Astro.props;
 const pagePosts = await hydratePosts(posts.slice((page - 1) * config.postList.pageSize, page * config.postList.pageSize));
 ---
 
-<BaseLayout title={`第 ${page} 页`} page="home">
+<BaseLayout title={t('pageN', { n: page })} page="home">
   {
     config.hero.quote && (
       <section class="hero reveal">
@@ -34,7 +35,7 @@ const pagePosts = await hydratePosts(posts.slice((page - 1) * config.postList.pa
   }
   <div class="home-layout">
     <div class="post-list">
-      <h2 class="section-title reveal">近期文章</h2>
+      <h2 class="section-title reveal">{t('recentPosts')}</h2>
       {pagePosts.map((post) => <PostCard post={post} />)}
       <Pagination page={page} total={total} basePath="/" />
     </div>

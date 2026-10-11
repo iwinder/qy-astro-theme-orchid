@@ -3,6 +3,7 @@ import { getEntry, render } from 'astro:content';
 import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
 import Comment from 'virtual:theme/components/Comment.astro';
 import config from 'virtual:theme/config';
+import { t } from '../i18n/index.js';
 
 // 正文来自站点 spec 集合（src/content/spec/guestbook.md）
 const entry = await getEntry('spec', 'guestbook').catch(() => null);
@@ -10,10 +11,10 @@ const { Content } = entry ? await render(entry) : { Content: null };
 const commentOn = config.comment.enabled && config.comment.provider !== 'none';
 ---
 
-<BaseLayout title="留言板" page="guestbook">
+<BaseLayout title={t('guestbook')} page="guestbook">
   <header class="archive-head reveal">
-    <h1 class="page-title">留言板</h1>
-    <p class="page-sub">欢迎留下你的足迹</p>
+    <h1 class="page-title">{t('guestbook')}</h1>
+    <p class="page-sub">{t('guestbookSub')}</p>
   </header>
 
   {
@@ -29,7 +30,7 @@ const commentOn = config.comment.enabled && config.comment.provider !== 'none';
       <Comment path="/guestbook" />
     ) : (
       <div class="card page-card comment-placeholder reveal">
-        <p>评论区即将开放，敬请期待。</p>
+        <p>{t('commentComingSoon')}</p>
       </div>
     )
   }

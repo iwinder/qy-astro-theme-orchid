@@ -1,9 +1,9 @@
 /* 清言集 · Theme Orchid — 全局交互脚本
    移植自 design/prototype/app.js（冻结），改造为 View Transitions 兼容版：
    - document/window 级一次性委托监听（VT 换页不失联）
-   - astro:page-load 时重初始化页面级状态（nav active / reveal / TOC spy / 灯箱 DOM）
-   - astro:after-swap 时重应用暗色 class（VT swap 会替换 <html> 属性）
-   跳过原型中的 palette 调色与搜索浮层（M3b 启用） */
+   - astro:page-load 时重初始化页面级状态（nav active / reveal / TOC spy / 灯箱 DOM / 调色面板）
+   - astro:after-swap 时重应用暗色 class 与持久化 hue（VT swap 会替换 <html> 属性）
+   搜索浮层延后至 M3b-b6 启用 */
 
 'use strict';
 
@@ -25,6 +25,107 @@ function applyPreferredDark() {
 }
 applyPreferredDark();
 doc.addEventListener('astro:after-swap', applyPreferredDark);
+
+/* ---------- 客户端动态文案（构建期经 BaseLayout #qy-ui-labels 注入，读一次缓存） ---------- */
+const UI_FALLBACK: Record<string, string> = {
+  lightbox: '图片查看',
+  close: '关闭',
+  prevImage: '上一张',
+  nextImage: '下一张',
+  copy: '复制',
+  copied: '已复制',
+};
+let uiLabels: Record<string, string> | null = null;
+function ui(key: string): string {
+  if (!uiLabels) {
+    try {
+      const el = doc.getElementById('qy-ui-labels');
+      uiLabels = el ? (JSON.parse(el.textContent || '{}') as Record<string, string>) : {};
+    } catch {
+      uiLabels = {};
+    }
+  }
+  return uiLabels[key] || UI_FALLBACK[key] || key;
+}
+
+/* ---------- hue 调色面板（运行时覆写 --accent-h，s/l 保持配置值） ---------- */
+const HUE_KEY = 'qy-hue';
+
+/* 构建期 hue（BaseLayout 由 accentColor 计算并写入 data-accent-h） */
+function buildHue(): number {
+  const v = parseFloat(root.dataset.accentH || '');
+  return Number.isFinite(v) ? v : 0;
+}
+
+/* 当前生效 hue：运行时覆写优先，否则构建期值 */
+function currentHue(): number {
+  const cur = parseFloat(root.style.getPropertyValue('--accent-h'));
+  return Number.isFinite(cur) ? cur : buildHue();
+}
+
+function persistHue(h: number | null) {
+  try {
+    if (h === null) localStorage.removeItem(HUE_KEY);
+    else localStorage.setItem(HUE_KEY, String(h));
+  } catch {
+    /* ignore */
+  }
+}
+
+function savedHue(): number | null {
+  try {
+    const v = parseFloat(localStorage.getItem(HUE_KEY) || '');
+    if (Number.isFinite(v)) return ((v % 360) + 360) % 360;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+/* VT swap 替换 <html> style 属性后，重应用持久化 hue（与 applyPreferredDark 并列） */
+function applySavedHue() {
+  const h = savedHue();
+  if (h !== null) root.style.setProperty('--accent-h', String(h));
+}
+applySavedHue();
+doc.addEventListener('astro:after-swap', applySavedHue);
+
+/* 同步面板 UI：滑杆 / 徽章 / swatch 激活态（差值 <1° 判定，含 0/360 环绕） */
+function syncPaletteUI(h: number) {
+  const pop = doc.getElementById('palettePop');
+  if (!pop) return;
+  const rounded = Math.round(((h % 360) + 360) % 360) % 360;
+  const slider = doc.getElementById('hueSlider') as HTMLInputElement | null;
+  if (slider) slider.value = String(rounded);
+  const badge = doc.getElementById('hueBadge');
+  if (badge) badge.textContent = String(rounded);
+  pop.querySelectorAll<HTMLElement>('.swatch').forEach((sw) => {
+    const dh = Math.abs(parseFloat(sw.dataset.hue || '0') - rounded);
+    sw.classList.toggle('is-active', dh < 1 || dh > 359);
+  });
+}
+
+function applyHue(h: number) {
+  const v = Math.round(((h % 360) + 360) % 360);
+  root.style.setProperty('--accent-h', String(v));
+  syncPaletteUI(v);
+  persistHue(v);
+}
+
+function closePalette() {
+  const pop = doc.getElementById('palettePop');
+  const toggle = doc.getElementById('paletteToggle');
+  if (pop) pop.hidden = true;
+  if (toggle) toggle.setAttribute('aria-expanded', 'false');
+}
+
+/* 每次导航后同步面板状态并复位收起（面板 DOM 会随 swap 重建） */
+function initPalette() {
+  const pop = doc.getElementById('palettePop');
+  if (!pop) return;
+  closePalette();
+  syncPaletteUI(currentHue());
+}
 
 /* ---------- 通用灯箱（QyLightbox，DOM 动态创建，VT 换页后惰性重建） ---------- */
 interface LbItem {
@@ -56,17 +157,17 @@ function ensureLightbox(): HTMLElement | null {
   el.className = 'lightbox';
   el.setAttribute('role', 'dialog');
   el.setAttribute('aria-modal', 'true');
-  el.setAttribute('aria-label', '图片查看');
+  el.setAttribute('aria-label', ui('lightbox'));
   el.innerHTML =
     '<span class="lb-counter"></span>' +
-    '<button class="lb-btn lb-close" type="button" aria-label="关闭">' +
+    '<button class="lb-btn lb-close" type="button" aria-label="' + ui('close') + '">' +
     LB_SVGS.close +
     '</button>' +
-    '<button class="lb-btn lb-prev" type="button" aria-label="上一张">' +
+    '<button class="lb-btn lb-prev" type="button" aria-label="' + ui('prevImage') + '">' +
     LB_SVGS.prev +
     '</button>' +
     '<img class="lb-img" alt=""/>' +
-    '<button class="lb-btn lb-next" type="button" aria-label="下一张">' +
+    '<button class="lb-btn lb-next" type="button" aria-label="' + ui('nextImage') + '">' +
     LB_SVGS.next +
     '</button>' +
     '<div class="lb-cap"></div>';
@@ -197,10 +298,10 @@ function handleCopy(btn: Element) {
   if (!code) return;
   const text = (code as HTMLElement).innerText;
   const done = () => {
-    btn.textContent = '已复制';
+    btn.textContent = ui('copied');
     btn.classList.add('copied');
     setTimeout(() => {
-      btn.textContent = '复制';
+      btn.textContent = ui('copy');
       btn.classList.remove('copied');
     }, 1200);
   };
@@ -228,6 +329,39 @@ function handleCopy(btn: Element) {
 doc.addEventListener('click', (e) => {
   const target = e.target as Element;
   if (!target || typeof target.closest !== 'function') return;
+
+  /* 点击调色面板外部时先收起（不拦截后续点击行为） */
+  if (!target.closest('.palette-wrap')) {
+    const pop = doc.getElementById('palettePop');
+    if (pop && !pop.hidden) closePalette();
+  }
+
+  /* 调色面板开关 */
+  const paletteToggle = target.closest('#paletteToggle');
+  if (paletteToggle) {
+    const pop = doc.getElementById('palettePop');
+    if (pop) {
+      pop.hidden = !pop.hidden;
+      paletteToggle.setAttribute('aria-expanded', pop.hidden ? 'false' : 'true');
+    }
+    return;
+  }
+
+  /* 预设色板 */
+  const swatch = target.closest<HTMLElement>('.palette-pop .swatch');
+  if (swatch) {
+    const h = parseFloat(swatch.dataset.hue || '');
+    if (Number.isFinite(h)) applyHue(h);
+    return;
+  }
+
+  /* hue 重置：移除运行时覆写，回落到构建期 accentColor */
+  if (target.closest('#hueReset')) {
+    root.style.removeProperty('--accent-h');
+    persistHue(null);
+    syncPaletteUI(buildHue());
+    return;
+  }
 
   /* 模式切换 */
   if (target.closest('#modeToggle')) {
@@ -300,6 +434,15 @@ doc.addEventListener('click', (e) => {
   }
 });
 
+/* hue 滑杆（input 委托，VT 安全） */
+doc.addEventListener('input', (e) => {
+  const el = e.target as Element | null;
+  if (el && el.id === 'hueSlider') {
+    const h = parseFloat((el as HTMLInputElement).value);
+    if (Number.isFinite(h)) applyHue(h);
+  }
+});
+
 doc.addEventListener('keydown', (e) => {
   if (!lb || !lb.classList.contains('open')) return;
   if (e.key === 'Escape') closeLb();
@@ -315,6 +458,7 @@ function initPage() {
   initReveal();
   initTocSpy();
   updateBackTop();
+  initPalette();
 }
 initPage();
 doc.addEventListener('astro:page-load', initPage);

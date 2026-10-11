@@ -2,6 +2,7 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
 import { collectCategories, formatDate, getSortedPosts } from '../../utils.js';
+import { t } from '../../i18n/index.js';
 
 // 先排序再聚合，保证每个分类内文章按新→旧排列
 export async function getStaticPaths() {
@@ -16,10 +17,10 @@ export async function getStaticPaths() {
 const { category, posts } = Astro.props;
 ---
 
-<BaseLayout title={`分类：${category}`} page="categories">
+<BaseLayout title={t('categoryTitle', { category })} page="categories">
   <header class="archive-head reveal">
     <h1 class="page-title">{category}</h1>
-    <p class="page-sub">共 {posts.length} 篇文章</p>
+    <p class="page-sub">{t('totalPosts', { n: posts.length })}</p>
   </header>
   <div class="tag-list">
     {

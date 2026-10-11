@@ -1,4 +1,6 @@
 ---
+import { t } from '../i18n/index.js';
+
 interface Props {
   /** 当前页（从 1 开始） */
   page: number;
@@ -13,24 +15,24 @@ const hrefFor = (p: number) =>
   p === 1 ? basePath : `${basePath.replace(/\/$/, '')}/page/${p}/`;
 ---
 
-<nav class="pagination reveal" aria-label="分页">
+<nav class="pagination reveal" aria-label={t('pagination')}>
   {
     page > 1 ? (
       <a class="page-item" href={hrefFor(page - 1)}>
-        上一页
+        {t('prevPage')}
       </a>
     ) : (
-      <span class="page-item disabled">上一页</span>
+      <span class="page-item disabled">{t('prevPage')}</span>
     )
   }
-  <span>第 {page} / {total} 页</span>
+  <span>{t('pageOf', { current: page, total })}</span>
   {
     page < total ? (
       <a class="page-item" href={hrefFor(page + 1)}>
-        下一页
+        {t('nextPage')}
       </a>
     ) : (
-      <span class="page-item disabled">下一页</span>
+      <span class="page-item disabled">{t('nextPage')}</span>
     )
   }
 </nav>

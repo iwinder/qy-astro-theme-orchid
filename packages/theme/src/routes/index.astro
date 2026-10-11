@@ -6,6 +6,7 @@ import Pagination from 'virtual:theme/components/Pagination.astro';
 import Sidebar from 'virtual:theme/components/Sidebar.astro';
 import config from 'virtual:theme/config';
 import { getSortedPosts } from '../utils.js';
+import { t } from '../i18n/index.js';
 import { hydratePosts } from './_hydrate.js';
 
 // 首页 = 分页第 1 页。置顶文章作为 featured 卡固定在列表最前（不重复进入分页列表）。
@@ -33,12 +34,12 @@ const [featuredPosts, pagePosts] = await Promise.all([
   <div class="home-layout">
     <div class="post-list">
       {featuredPosts.map((post) => <PostCard post={post} featured />)}
-      <h2 class="section-title reveal">近期文章</h2>
+      <h2 class="section-title reveal">{t('recentPosts')}</h2>
       {
         pagePosts.length > 0 ? (
           pagePosts.map((post) => <PostCard post={post} />)
         ) : (
-          <p class="empty-note card">还没有文章，去 content/posts 里写一篇吧。</p>
+          <p class="empty-note card">{t('emptyPosts')}</p>
         )
       }
       <Pagination page={1} total={total} basePath="/" />

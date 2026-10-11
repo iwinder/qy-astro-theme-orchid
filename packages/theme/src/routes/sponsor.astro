@@ -1,6 +1,7 @@
 ---
 import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
 import config from 'virtual:theme/config';
+import { t } from '../i18n/index.js';
 
 const cfg = config.sponsor;
 const methods = cfg.methods.filter((m) => m.enabled);
@@ -32,14 +33,14 @@ const sponsors = cfg.sponsors;
             </div>
             {m.description && <p class="sm-desc">{m.description}</p>}
             {m.image ? (
-              <img class="sponsor-qr" src={m.image} alt={`${m.name} 收款码`} loading="lazy" />
+              <img class="sponsor-qr" src={m.image} alt={t('qrAlt', { name: m.name })} loading="lazy" />
             ) : m.link ? (
               <a class="btn sm-link" href={m.link} target="_blank" rel="noopener">
-                前往打赏
+                {t('goSponsor')}
               </a>
             ) : (
               <div class="sponsor-qr sponsor-qr-empty" aria-hidden="true">
-                收款码占位
+                {t('qrPlaceholder')}
               </div>
             )}
           </div>
@@ -52,7 +53,7 @@ const sponsors = cfg.sponsors;
     cfg.showSponsorsList && (
       <section class="card page-card reveal">
         <h3 class="sponsor-list-title">
-          打赏名单
+          {t('sponsorList')}
           {sponsors.length > 0 && <span class="sl-count">{sponsors.length}</span>}
         </h3>
         {sponsors.length > 0 ? (
@@ -75,7 +76,7 @@ const sponsors = cfg.sponsors;
             ))}
           </div>
         ) : (
-          <p class="tag-empty">还没有打赏，快来做第一个吧</p>
+          <p class="tag-empty">{t('noSponsors')}</p>
         )}
       </section>
     )

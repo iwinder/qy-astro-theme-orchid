@@ -1,5 +1,6 @@
 ---
 import config from 'virtual:theme/config';
+import { t } from '../i18n/index.js';
 
 interface Props {
   /** 文章级覆盖；空则跟随全站配置 */
@@ -16,8 +17,8 @@ const url = licenseUrl ?? config.license.url;
 {
   enabled && (
     <div class="license">
-      本文采用 <a href={url} target="_blank" rel="noopener">{name}</a>{' '}
-      许可，转载请注明出处与作者。
+      {t('licensePrefix')} <a href={url} target="_blank" rel="noopener">{name}</a>{' '}
+      {t('licenseSuffix')}
     </div>
   )
 }

@@ -2,6 +2,7 @@
 import { getEntry, render } from 'astro:content';
 import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
 import config from 'virtual:theme/config';
+import { t } from '../i18n/index.js';
 
 // 数据源 = themeConfig.friends.list（决策 8：与侧栏友链 widget 同源）
 const friends = config.friends.list
@@ -38,7 +39,7 @@ const apply = config.friends.apply;
           <a class="friend-card card" href={f.site} target="_blank" rel="noopener">
             <div class="friend-avatar">
               {f.image ? (
-                <img src={f.image} alt={`${f.title} 的头像`} loading="lazy" />
+                <img src={f.image} alt={t('avatarAlt', { name: f.title })} loading="lazy" />
               ) : (
                 <span class="avatar-fallback">{f.title.slice(0, 1)}</span>
               )}
@@ -48,8 +49,8 @@ const apply = config.friends.apply;
               {f.desc && <div class="friend-desc">{f.desc}</div>}
               {f.tags.length > 0 && (
                 <div class="friend-tags">
-                  {f.tags.map((t) => (
-                    <span class="chip">{t}</span>
+                  {f.tags.map((ft) => (
+                    <span class="chip">{ft}</span>
                   ))}
                 </div>
               )}
@@ -58,7 +59,7 @@ const apply = config.friends.apply;
         ))}
       </div>
     ) : (
-      <p class="tag-empty reveal">还没有友链</p>
+      <p class="tag-empty reveal">{t('noFriends')}</p>
     )
   }
 
@@ -71,7 +72,7 @@ const apply = config.friends.apply;
         </div>
         {apply.link && (
           <a class="btn" href={apply.link}>
-            {apply.label || '申请友链'}
+            {apply.label || t('applyFriend')}
           </a>
         )}
       </section>

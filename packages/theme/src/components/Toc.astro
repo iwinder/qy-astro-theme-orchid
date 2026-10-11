@@ -1,4 +1,6 @@
 ---
+import { t } from '../i18n/index.js';
+
 export interface TocHeading {
   depth: number;
   slug: string;
@@ -15,8 +17,8 @@ const items = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 
 {
   items.length > 0 && (
-    <aside class="toc" aria-label="目录">
-      <div class="toc-title">目 录</div>
+    <aside class="toc" aria-label={t('toc')}>
+      <div class="toc-title">{t('tocTitle')}</div>
       {items.map((h) => (
         <a href={`#${h.slug}`}>{h.text}</a>
       ))}

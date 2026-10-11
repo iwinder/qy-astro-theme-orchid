@@ -22,6 +22,16 @@ export const themeConfigSchema = z.object({
     .default('#4a9d8f'),
   /** 站点语言（<html lang>） */
   lang: z.string().default('zh-CN'),
+  /**
+   * hue 调色面板（M3b-b5）：导航栏调色按钮 + 预设色板 + hue 滑杆。
+   * 运行时覆写 --accent-h（s/l 保持配置值），持久化 localStorage('qy-hue')。
+   * 色板预设为代码级常量，不进 schema。
+   */
+  huePanel: z
+    .object({
+      enabled: z.boolean().default(true),
+    })
+    .default({ enabled: true }),
   /** 首页 hero 区（quote 留空则整个 hero 不渲染） */
   hero: z
     .object({

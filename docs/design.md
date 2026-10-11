@@ -235,6 +235,31 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - **dev 实测**（重启前清 `site/.astro/`）：干净启动零 ERROR；features-demo 文章 article 71052 bytes、katex 85、katex-display 4、mhchem `mord` 153、mermaid-container 3（svg 9）、plantuml-container 2（img 带 data-light-src/-dark-src）、`a[data-encoded-email]` 1、panzoom + plantuml 切换脚本注入 ✓；文章页头渲染 "3 字 / 约 1 分钟"（reading-time 生效）；hello-world 正常
 - **排查过程存档**：初版接线把已调用 transformer（`remarkMermaid()` 等 6 处）push 进插件数组 → 全站 md 渲染崩溃；dev 日志无堆栈，用独立探针（绕开 Astro dev，Node `--experimental-strip-types` + module resolve hook 重映射 `.js→.ts`）拿完整堆栈，二分 + `unified@11.0.5` freeze 源码（`attacher.call(self, ...options)`）定位根因，修正后三层验证全绿
 
+**M3b-b5 实现记录**（✅ 2026-10-11）：
+
+| 功能 | 实现 |
+|---|---|
+| i18n 框架（P2） | **构建期 only**（无客户端语言切换）：`i18n/zh-CN.ts` 为键源（`UiKey = keyof typeof zhCN`，75 键）；`en.ts` 用 `Record<UiKey, string>` 强制完整覆盖；`i18n/resolve.ts` 纯函数解析（packs 注册 en/en-us/en-gb，语言归一化小写 + `_`→`-`，主语言段回退，缺译回退中文键源）；`i18n/index.ts` 薄壳 `t(key, vars?)`（读 `virtual:theme/config.lang`，`{name}` 占位符 replaceAll） |
+| i18n 架构红线 | **astro.config 静态 import 链上的 node 侧模块不能 import `virtual:theme/config`**——virtual 模块由 integration 在 astro:config:setup 注入，config 文件加载期（module-runner fetchModule）尚未注册，顶层 import 直接报 `Cannot find module`。路由/组件（vite 运行期）走 `i18n/index.js`；rehype 等 node 侧插件走 `resolveLabel(lang, key)` 显式传 `config.lang`（b5 实测踩坑，dev 起不来） |
+| hue 调色面板（P2） | 构建期 `hexToHsl(accentColor)` 在 BaseLayout html style 注入 `--accent-h/s/l` + `data-accent-h`；运行时仅覆写 `--accent-h`（`root.style.setProperty`，s/l 恒为配置值）；`huePanel.enabled`（schema，默认开）；10 档预设色板（代码级常量 `[0,30,60,100,140,170,210,250,290,330]`）+ 0–360 滑杆 + 重置；持久化 `localStorage('qy-hue')` |
+| hue VT 兼容 | `applySavedHue()` 挂 `astro:after-swap`（swap 替换 html style 属性后重应用）；面板 DOM 随 swap 重建回服务端态 → `initPalette()` 在 `astro:page-load` 收起面板并同步滑杆/徽章/swatch is-active（差值 `<1° || >359` 判定，含 0/360 环绕）；外点收起检查放 click 委托**开头**（在 modeToggle/navToggle 等分支 return 前生效，且不拦截后续行为） |
+| i18n 路由转换 | 11 个路由（archive/tags/categories/posts/[...slug]/404/about/friends/guestbook/sponsor 等）+ 8 组件 + BaseLayout 全部 `t()` 化；客户端动态文案经 BaseLayout head `<script type="application/json" id="qy-ui-labels">` 载体（lightbox/close/prevImage/nextImage/copy/copied 六键），app.ts 顶层惰性读取缓存 + `UI_FALLBACK` 中文兜底 |
+| 代码块复制 i18n 收口 | `rehypeCodeBlock` 加 `{ uiLang }` 参数（index.ts 传 `config.lang` 元组），复制按钮初始文案 `resolveLabel(uiLang,'copy')` 跟随站点语言；**math 块（language-math）不生成复制按钮**（rehype-katex 会整体替换 pre 内容，无可复制代码，修复 b4 遗留无效按钮） |
+
+**M3b-b5 偏差清单**：
+
+| 偏差 | 原因 | 主题实现 |
+|---|---|---|
+| astro check 未跑 | TRAE 沙箱拦截 `pnpm add -D @astrojs/check typescript`（禁写 pnpm store bin 目录），不为可选校验打断沙箱规则 | 以 dev 全页渲染 + 浏览器交互验证替代（覆盖全部改动面）；类型风险低（t() 键由 UiKey 类型约束） |
+| friends.astro 局部改名 `t → ft` | `f.tags.map((t) => …)` 参数名与 i18n `t()` 撞名（shadow） | map 参数改名 `(ft)` |
+| 色板预设不进 schema | orchid-blog 为 Svelte 运行时组件，配置面广 | 预设与面板 DOM 固化为代码常量，仅保留 `huePanel.enabled` 开关（简约原则） |
+
+**M3b-b5 验证记录**（2026-10-11）：
+
+- **dev 渲染**（重启前清 `site/.astro/`，零 ERROR）：首页/归档/标签页均含 `data-accent-h`、`#qy-ui-labels`、`paletteToggle/palettePop/hueSlider/hueBadge/hueReset` 与 10 个 swatch；ui-labels JSON 六键中文齐全；归档副标题「共 61 篇文章 · 2026 – 2013」（跨年区间格式）；文章页 meta「2026-10-10 发布 / 133 字 / 约 1 分钟 / 置顶」；关于/友链/留言板/打赏页标题 `· 清言集`；标签详情「标签：影视」；各路由 200、404 页返回 404
+- **浏览器交互**（TRAE browseruse 实测）：toggle 开/收 + aria-expanded 同步；点 swatch 250 → inline `--accent-h=250` + 滑杆/徽章/is-active 同步 + `--accent` 计算值变 `hsl(250 36% 45%)`；刷新后 inline 250 覆盖服务端 170（localStorage 持久化 + applySavedHue 生效）；**VT 客户端换页**（点归档链接）after-swap 后 hue 保持 250；重置 → `removeProperty` 回落 `hsl(170 36% 45%)` + UI 同步 + 持久化清除（刷新仍 170）；外点收起（含点击深浅模式按钮场景）；滑杆 input 委托（合成事件 → applyHue 全链路）；复制按钮「复制 → 已复制」1200ms 还原
+- **修复回归**：math 块不再带 copy-btn；代码块 copy-btn 初始「复制」→「已复制」链路正常；首页/归档/文章页 i18n 渲染回归通过；浏览器 localStorage 已重置回默认色
+
 ### 4.3 P2 —— 拆分处理（2026-10-11 已确认：保留 5 项、暂时舍弃 4 项）
 
 原建议整体舍弃，经确认拆分如下。
@@ -282,7 +307,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | ✅ 完成 |
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3/b4 ✅ 2026-10-11，批次划分见 §4.2） |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3/b4/b5 ✅ 2026-10-11，批次划分见 §4.2） |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
 
 ## 6. 决策记录（2026-10-11 确认）

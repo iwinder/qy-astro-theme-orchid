@@ -4,7 +4,10 @@
  * 挂载顺序（index.ts）：externalLinks → callouts → figure → firstImage → anchor → codeBlock
  * 注意：Astro 的 shiki 高亮在用户 rehype 插件之后运行，因此 codeBlock 只负责
  * 包装 <pre> 外层结构（.code-block/.code-head），pre 内容仍由 shiki 填充。
+ * remark-math 的块级公式也会产出 <pre><code class="language-math">（后续由
+ * rehype-katex 整体替换为 katex 渲染产物），此时不生成复制按钮（无可复制代码）。
  */
+import { resolveLabel } from '../i18n/resolve.js';
 
 type Transformer = (tree: any, file: any) => void;
 
@@ -213,7 +216,8 @@ export function rehypeAnchor(): Transformer {
  * pre 本体不动（shiki 在其后运行并填充高亮 HTML）。
  * 两阶段执行：先收集所有 pre，再替换，避免包装后的 div 被重复访问。
  */
-export function rehypeCodeBlock(): Transformer {
+export function rehypeCodeBlock(opts?: { uiLang?: string }): Transformer {
+  const uiLang = opts?.uiLang || 'zh-CN';
   return (tree) => {
     const targets: Array<{ pre: any; parent: any; index: number }> = [];
     visit(tree, (node, parent) => {
@@ -226,7 +230,7 @@ export function rehypeCodeBlock(): Transformer {
       const cls = Array.isArray(code?.properties?.className) ? code.properties.className : [];
       const langMatch = cls.find((c: string) => String(c).startsWith('language-'));
       const lang = langMatch ? String(langMatch).slice('language-'.length) : 'code';
-      const head = {
+      const head: any = {
         type: 'element',
         tagName: 'div',
         properties: { className: ['code-head'] },
@@ -237,14 +241,17 @@ export function rehypeCodeBlock(): Transformer {
             properties: { className: ['lang'] },
             children: [{ type: 'text', value: lang }],
           },
-          {
-            type: 'element',
-            tagName: 'button',
-            properties: { className: ['copy-btn'], type: 'button' },
-            children: [{ type: 'text', value: '复制' }],
-          },
         ],
       };
+      /* math 块将由 rehype-katex 整体替换，无可复制代码，不生成复制按钮 */
+      if (lang !== 'math') {
+        head.children.push({
+          type: 'element',
+          tagName: 'button',
+          properties: { className: ['copy-btn'], type: 'button' },
+          children: [{ type: 'text', value: resolveLabel(uiLang, 'copy') }],
+        });
+      }
       const wrapper = {
         type: 'element',
         tagName: 'div',

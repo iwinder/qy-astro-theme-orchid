@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
 import { formatDate, type PostLike } from '../utils.js';
 import { hydratePosts } from './_hydrate.js';
+import { t } from '../i18n/index.js';
 
 // 归档 = 纯时间线（忽略置顶，按发布时间倒序），按年分组展示
 const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
@@ -17,20 +18,20 @@ for (const post of posts) {
   else groups.set(year, [post]);
 }
 const years = [...groups.keys()];
-const yearLabel = years.length <= 1 ? `${years[0] ?? ''} 年` : `${Math.max(...years)} – ${Math.min(...years)}`;
+const yearLabel = years.length <= 1 ? t('yearUnit', { n: years[0] ?? '' }) : `${Math.max(...years)} – ${Math.min(...years)}`;
 ---
 
-<BaseLayout title="归档" page="archive">
+<BaseLayout title={t('archive')} page="archive">
   <header class="archive-head reveal">
-    <h1 class="page-title">归档</h1>
-    <p class="page-sub">共 {posts.length} 篇文章 · {yearLabel}</p>
+    <h1 class="page-title">{t('archive')}</h1>
+    <p class="page-sub">{t('totalPosts', { n: posts.length })} · {yearLabel}</p>
   </header>
   {
     years.map((year) => (
       <div class="timeline reveal">
         <div class="archive-year">
           <span class="y">{year}</span>
-          <span class="c">{groups.get(year)!.length} 篇</span>
+          <span class="c">{t('postsInYear', { n: groups.get(year)!.length })}</span>
         </div>
         <div class="timeline-items">
           {groups.get(year)!.map((post) => (
@@ -41,7 +42,7 @@ const yearLabel = years.length <= 1 ? `${years[0] ?? ''} 年` : `${Math.max(...y
                 <span class="t-meta">
                   {post.data.category ?? ''}
                   {post.data.category && post.data.words ? ' · ' : ''}
-                  {post.data.words ? `${post.data.words} 字` : ''}
+                  {post.data.words ? t('wordsCount', { n: post.data.words }) : ''}
                 </span>
               </a>
             </div>

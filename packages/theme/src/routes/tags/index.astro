@@ -2,16 +2,17 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
 import { collectTags, getSortedPosts } from '../../utils.js';
+import { t } from '../../i18n/index.js';
 
 // 标签云：标签内文章数 > 1 用大字号（tag-s3），否则小字号（tag-s1）
 const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
 const tags = [...collectTags(getSortedPosts(all)).entries()];
 ---
 
-<BaseLayout title="标签" page="tags">
+<BaseLayout title={t('tags')} page="tags">
   <header class="archive-head reveal">
-    <h1 class="page-title">标签</h1>
-    <p class="page-sub">共 {tags.length} 个标签</p>
+    <h1 class="page-title">{t('tags')}</h1>
+    <p class="page-sub">{t('totalTags', { n: tags.length })}</p>
   </header>
   <div class="tag-cloud card reveal">
     {

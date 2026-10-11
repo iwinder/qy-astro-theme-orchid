@@ -1,6 +1,7 @@
 ---
 import config from 'virtual:theme/config';
 import { formatDate, type PostLike } from '../utils.js';
+import { t } from '../i18n/index.js';
 
 interface Props {
   post: PostLike;
@@ -31,7 +32,7 @@ const excerpt = d.excerpt || d.description;
   {
     cover && (
       <a class="post-cover" href={href} aria-label={d.title}>
-        {featured && d.pinned && <span class="pin-badge">置顶</span>}
+        {featured && d.pinned && <span class="pin-badge">{t('pinned')}</span>}
         <img src={cover} alt={d.title} loading="lazy" />
       </a>
     )
@@ -42,8 +43,8 @@ const excerpt = d.excerpt || d.description;
     <div class="post-meta">
       <span>{formatDate(d.published)}</span>
       {d.category && <span class="dot">{d.category}</span>}
-      {d.words ? <span class="dot">{d.words} 字</span> : null}
-      {d.minutes ? <span class="dot">约 {d.minutes} 分钟</span> : null}
+      {d.words ? <span class="dot">{t('wordsCount', { n: d.words })}</span> : null}
+      {d.minutes ? <span class="dot">{t('minutesCount', { n: d.minutes })}</span> : null}
     </div>
     {
       d.tags.length > 0 && (
