@@ -1,0 +1,8 @@
+# Pagefind 配置（M3b-b6）：构建期 `pagefind --site dist` 读取
+# 公式/katex 渲染产物不进索引；搜索浮层自身与通用排除标记不索引
+exclude_selectors:
+  - "span.katex"
+  - "span.katex-display"
+  - "[data-pagefind-ignore]"
+  - ".search-pop"
+  - "#searchPop"

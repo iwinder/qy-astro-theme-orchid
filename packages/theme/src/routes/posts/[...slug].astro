@@ -44,7 +44,7 @@ const jsonLd = {
 <BaseLayout title={d.title} description={d.description} page="post">
   <header class="post-header reveal">
     {d.category && <a class="chip" href={`/categories/${encodeURIComponent(d.category)}/`}>{d.category}</a>}
-    <h1 class="post-title-lg">{d.title}</h1>
+    <h1 class="post-title-lg" data-pagefind-body data-pagefind-weight="10" data-pagefind-meta="title">{d.title}</h1>
     <div class="post-meta">
       <span>{t('publishedOn', { date: formatDate(d.published) })}</span>
       {d.updated && <span class="dot">{t('updatedOn', { date: formatDate(d.updated) })}</span>}
@@ -61,7 +61,8 @@ const jsonLd = {
     )
   }
   <div class="post-layout">
-    <article class="prose reveal">
+    {/* data-pagefind-body（M3b-b6）：限定 Pagefind 只索引标题与正文（h1 在 article 外，双 body 标记） */}
+    <article class="prose reveal" data-pagefind-body>
       <Content />
     </article>
     {config.toc.enabled && <Toc headings={headings} />}

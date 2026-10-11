@@ -5,12 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && pagefind --site dist",
     "preview": "astro preview",
     "sync": "astro sync"
   },
   "dependencies": {
     "@windcoder/astro-theme-orchid": "workspace:*",
     "astro": "^7.0.7"
+  },
+  "devDependencies": {
+    "pagefind": "^1.5.2"
   }
 }

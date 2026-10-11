@@ -260,6 +260,33 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - **浏览器交互**（TRAE browseruse 实测）：toggle 开/收 + aria-expanded 同步；点 swatch 250 → inline `--accent-h=250` + 滑杆/徽章/is-active 同步 + `--accent` 计算值变 `hsl(250 36% 45%)`；刷新后 inline 250 覆盖服务端 170（localStorage 持久化 + applySavedHue 生效）；**VT 客户端换页**（点归档链接）after-swap 后 hue 保持 250；重置 → `removeProperty` 回落 `hsl(170 36% 45%)` + UI 同步 + 持久化清除（刷新仍 170）；外点收起（含点击深浅模式按钮场景）；滑杆 input 委托（合成事件 → applyHue 全链路）；复制按钮「复制 → 已复制」1200ms 还原
 - **修复回归**：math 块不再带 copy-btn；代码块 copy-btn 初始「复制」→「已复制」链路正常；首页/归档/文章页 i18n 渲染回归通过；浏览器 localStorage 已重置回默认色
 
+**M3b-b6 实现记录**（✅ 2026-10-11，搜索 P1-2）：
+
+| 功能 | 实现 |
+|---|---|
+| 搜索 UI | Header `search-wrap` 单图标按钮 + 浮层（与调色面板同设计语言，桌面/移动统一，不做 orchid 的桌面内联输入双方案）；浮层 = `search-bar`（图标 + 无边框 input）+ `search-results`（max-height 56vh 滚动）；无独立搜索页故无「查看更多」，取前 8 条 |
+| 搜索逻辑（app.ts） | 模块级 `pagefind` 三态缓存（undefined=未加载 / null=不可用 / 实例，VT 换页不重复加载）；`loadPagefind()` 先 `fetch('/pagefind/pagefind.js', { method:'HEAD' })` 探测再动态 `import`（**变量形式 + @vite-ignore**——字面量在 vite 8 仍被 import-analysis 静态解析导致 dev 崩，orchid 原版同为变量形式）；`runSearch()` 300ms 防抖 + `searchSeq` 递增序号双重丢弃过期响应；结果 `slice(0,8).map(r=>r.data())` 渲染 title（`meta.title` 兜底 url）+ excerpt（pagefind 受限 `<mark>` 片段，非用户输入，innerHTML 安全） |
+| 交互接线 | click 委托：`.search-wrap` 外点收起（检查在 handler 开头，palette 同款）；`#searchToggle` 开关 + aria-expanded + 打开即 focus；`.search-item` 点击收起后放行默认导航（VT 接管）；input 委托 `#searchInput` → runSearch；keydown Escape 关浮层（优先于灯箱分支） |
+| 索引标记 | 文章页 h1 `data-pagefind-body data-pagefind-weight="10" data-pagefind-meta="title"` + `article.prose` `data-pagefind-body`（h1 在 article 外，双 body 标记；pagefind 语义：出现 body 后只索引含 body 的元素 → 评论/TOC/文章导航天然排除）；`rehypeCodeBlock` 的 `.code-head` 加 `data-pagefind-ignore`（语言标签/复制按钮文本不进索引）；邮箱防爬仅改属性值（编码在 data-encoded-email，不污染文本索引），与 orchid 原版一致不排除 |
+| 构建接线 | `site/package.json`：`build = astro build && pagefind --site dist`，devDependencies `pagefind ^1.5.2`；`site/pagefind.yml`：exclude `span.katex` / `span.katex-display` / `[data-pagefind-ignore]` / `.search-pop` / `#searchPop`（浮层自身文本不进索引） |
+| i18n | 新增 5 键（search/searchLoading/searchNoResults/searchUnavailable/searchTypeSomething，zh-CN 键源 + en 全量）；placeholder 服务端渲染，其余经 `#qy-ui-labels` 载体（6→10 键）+ UI_FALLBACK 兜底；dev 无索引时提示「搜索索引需构建后可用」 |
+
+**M3b-b6 偏差清单**：
+
+| 偏差 | 原因 | 状态 |
+|---|---|---|
+| pagefind 包未实际安装 | `pnpm add` 写 store（/Volumes/zhitai/Work/repositories/pnpm/bin/_tmp_*）被沙箱拦（EXDEV + restricted） | package.json 已手动写入 devDependency；**用户需手动执行 `cd site && pnpm add -D pagefind` 后方可 build/preview 真实索引 e2e**；运行时代码已接好线（HEAD 探测 → 动态 import → options → search） |
+| rehype.ts 改动未能在 dev 热验证 | config reload 触发 vite deps re-optimize → unlink `site/node_modules/.vite` 缓存被沙箱拦 → "Continuing with previous valid configuration"（旧插件继续运行） | 静态审查确认（properties 加一个 boolean attr，模式与 b4 已验证管线一致）；build 验证随上一条偏差一并补做 |
+
+**M3b-b6 验证记录**（2026-10-11，dev + TRAE browseruse 实测）：
+
+- 搜索按钮渲染于 header-actions 首位（aria-label「搜索」，collapsed）；点击开浮层：aria-expanded=true、浮层显示、input 自动聚焦、placeholder「搜索」
+- 输入关键词 → 300ms 防抖 → HEAD 404 → 结果区显示降级提示「搜索索引需构建后可用」✓
+- Esc 关闭（浮层隐藏 + aria-expanded=false，且优先于灯箱分支不冲突）；外点收起（点击 banner 空白）→ 浮层隐藏 + input/results 清空 ✓
+- VT 客户端换页（首页 → features-demo 文章页）后：按钮存在、开关/Esc 正常（委托监听不失联）
+- 文章页 h1 带 data-pagefind-body/weight=10/meta=title、article.prose 带 data-pagefind-body ✓（模板改动 HMR 生效）
+- 修复回归：app.ts 动态 import 字面量 → 变量形式（dev 启动不再报 import-analysis 错误，页面 200）
+
 ### 4.3 P2 —— 拆分处理（2026-10-11 已确认：保留 5 项、暂时舍弃 4 项）
 
 原建议整体舍弃，经确认拆分如下。
@@ -307,7 +334,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | ✅ 完成 |
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3/b4/b5 ✅ 2026-10-11，批次划分见 §4.2） |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3/b4/b5/b6 ✅ 2026-10-11，批次划分见 §4.2） |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
 
 ## 6. 决策记录（2026-10-11 确认）

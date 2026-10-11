@@ -3,7 +3,7 @@
    - document/window 级一次性委托监听（VT 换页不失联）
    - astro:page-load 时重初始化页面级状态（nav active / reveal / TOC spy / 灯箱 DOM / 调色面板）
    - astro:after-swap 时重应用暗色 class 与持久化 hue（VT swap 会替换 <html> 属性）
-   搜索浮层延后至 M3b-b6 启用 */
+   - 搜索浮层（M3b-b6）：Pagefind 构建期索引，运行时惰性加载 */
 
 'use strict';
 
@@ -325,15 +325,154 @@ function handleCopy(btn: Element) {
   }
 }
 
+/* ---------- 搜索浮层（M3b-b6）：Pagefind 构建期索引，运行时惰性加载 ---------- */
+type PagefindResultData = {
+  url: string;
+  excerpt: string;
+  meta?: { title?: string };
+};
+type Pagefind = {
+  search: (
+    q: string
+  ) => Promise<{ results: Array<{ data: () => Promise<PagefindResultData> }> }>;
+  options?: (o: Record<string, unknown>) => Promise<void>;
+};
+
+/* undefined=未加载 null=不可用（dev 无索引/加载失败）；模块级缓存，VT 换页不重复加载 */
+let pagefind: Pagefind | null | undefined;
+let searchSeq = 0;
+
+async function loadPagefind(): Promise<Pagefind | null> {
+  if (pagefind !== undefined) return pagefind;
+  try {
+    const src = '/pagefind/pagefind.js';
+    const res = await fetch(src, { method: 'HEAD' });
+    if (!res.ok) throw new Error('no index');
+    // 变量形式 + @vite-ignore：构建产物不存在时（dev/无索引）不做静态解析，运行时才加载
+    const pf = (await import(/* @vite-ignore */ src)) as unknown as Pagefind;
+    if (pf.options) await pf.options({ excerptLength: 20 });
+    pagefind = pf;
+  } catch {
+    pagefind = null;
+  }
+  return pagefind;
+}
+
+function setSearchHint(text: string) {
+  const box = doc.getElementById('searchResults');
+  if (!box) return;
+  box.replaceChildren();
+  const p = doc.createElement('div');
+  p.className = 'search-hint';
+  p.textContent = text;
+  box.appendChild(p);
+  box.hidden = false;
+}
+
+function renderSearchResults(items: PagefindResultData[]) {
+  const box = doc.getElementById('searchResults');
+  if (!box) return;
+  box.replaceChildren();
+  for (const item of items) {
+    const a = doc.createElement('a');
+    a.className = 'search-item';
+    a.href = item.url;
+    const title = doc.createElement('div');
+    title.className = 'search-item-title';
+    title.textContent = item.meta?.title || item.url;
+    const excerpt = doc.createElement('div');
+    excerpt.className = 'search-item-excerpt';
+    /* pagefind 产出的受限高亮片段（<mark>/<strong>），非用户输入 */
+    excerpt.innerHTML = item.excerpt;
+    a.append(title, excerpt);
+    box.appendChild(a);
+  }
+  box.hidden = false;
+}
+
+function closeSearch() {
+  const pop = doc.getElementById('searchPop');
+  if (pop && !pop.hidden) {
+    pop.hidden = true;
+    doc
+      .getElementById('searchToggle')
+      ?.setAttribute('aria-expanded', 'false');
+  }
+  const input = doc.getElementById('searchInput') as HTMLInputElement | null;
+  if (input) input.value = '';
+  const box = doc.getElementById('searchResults');
+  if (box) {
+    box.hidden = true;
+    box.replaceChildren();
+  }
+}
+
+/* 输入 → 300ms 防抖查询；searchSeq 丢弃过期响应 */
+function runSearch(keyword: string) {
+  const seq = ++searchSeq;
+  const box = doc.getElementById('searchResults');
+  if (!box) return;
+  if (!keyword) {
+    box.hidden = true;
+    box.replaceChildren();
+    return;
+  }
+  setSearchHint(ui('searchLoading'));
+  window.setTimeout(async () => {
+    if (seq !== searchSeq) return;
+    const pf = await loadPagefind();
+    if (seq !== searchSeq) return;
+    if (!pf) {
+      setSearchHint(ui('searchUnavailable'));
+      return;
+    }
+    try {
+      const res = await pf.search(keyword);
+      const items = await Promise.all(
+        res.results.slice(0, 8).map((r) => r.data())
+      );
+      if (seq !== searchSeq) return;
+      if (items.length) renderSearchResults(items);
+      else setSearchHint(ui('searchNoResults'));
+    } catch {
+      if (seq === searchSeq) setSearchHint(ui('searchNoResults'));
+    }
+  }, 300);
+}
+
 /* ---------- document 级委托（一次性，VT 换页不失联） ---------- */
 doc.addEventListener('click', (e) => {
   const target = e.target as Element;
   if (!target || typeof target.closest !== 'function') return;
 
-  /* 点击调色面板外部时先收起（不拦截后续点击行为） */
+  /* 点击调色面板/搜索浮层外部时先收起（不拦截后续点击行为） */
   if (!target.closest('.palette-wrap')) {
     const pop = doc.getElementById('palettePop');
     if (pop && !pop.hidden) closePalette();
+  }
+  if (!target.closest('.search-wrap')) {
+    const pop = doc.getElementById('searchPop');
+    if (pop && !pop.hidden) closeSearch();
+  }
+
+  /* 搜索浮层开关 */
+  if (target.closest('#searchToggle')) {
+    const pop = doc.getElementById('searchPop');
+    if (pop) {
+      pop.hidden = !pop.hidden;
+      doc
+        .getElementById('searchToggle')
+        ?.setAttribute('aria-expanded', pop.hidden ? 'false' : 'true');
+      if (!pop.hidden) {
+        (doc.getElementById('searchInput') as HTMLInputElement | null)?.focus();
+      }
+    }
+    return;
+  }
+
+  /* 搜索结果点击：收起浮层后放行默认导航（VT 接管换页） */
+  if (target.closest('.search-item')) {
+    closeSearch();
   }
 
   /* 调色面板开关 */
@@ -434,16 +573,27 @@ doc.addEventListener('click', (e) => {
   }
 });
 
-/* hue 滑杆（input 委托，VT 安全） */
+/* input 委托（VT 安全）：hue 滑杆 + 搜索输入 */
 doc.addEventListener('input', (e) => {
   const el = e.target as Element | null;
   if (el && el.id === 'hueSlider') {
     const h = parseFloat((el as HTMLInputElement).value);
     if (Number.isFinite(h)) applyHue(h);
   }
+  if (el && el.id === 'searchInput') {
+    runSearch((el as HTMLInputElement).value.trim());
+  }
 });
 
 doc.addEventListener('keydown', (e) => {
+  /* 搜索浮层：Esc 关闭 */
+  if (e.key === 'Escape') {
+    const pop = doc.getElementById('searchPop');
+    if (pop && !pop.hidden) {
+      closeSearch();
+      return;
+    }
+  }
   if (!lb || !lb.classList.contains('open')) return;
   if (e.key === 'Escape') closeLb();
   else if (e.key === 'ArrowLeft') lbShow(lbIdx - 1);

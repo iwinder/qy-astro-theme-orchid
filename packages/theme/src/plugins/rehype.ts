@@ -233,7 +233,8 @@ export function rehypeCodeBlock(opts?: { uiLang?: string }): Transformer {
       const head: any = {
         type: 'element',
         tagName: 'div',
-        properties: { className: ['code-head'] },
+        // data-pagefind-ignore（M3b-b6）：语言标签/复制按钮文本不进搜索索引
+        properties: { className: ['code-head'], 'data-pagefind-ignore': true },
         children: [
           {
             type: 'element',

@@ -78,6 +78,12 @@ const zhCN = {
   qrPlaceholder: '收款码占位',
   sponsorList: '打赏名单',
   noSponsors: '还没有打赏，快来做第一个吧',
+  /* 搜索（M3b-b6）：search 用于 placeholder（服务端渲染），其余经 #qy-ui-labels 带入客户端 */
+  search: '搜索',
+  searchLoading: '搜索中…',
+  searchNoResults: '没有找到相关结果',
+  searchUnavailable: '搜索索引需构建后可用',
+  searchTypeSomething: '输入关键词开始搜索',
   /* 客户端动态文案（构建期经 BaseLayout 的 #qy-ui-labels JSON 载体带入） */
   lightbox: '图片查看',
   close: '关闭',
