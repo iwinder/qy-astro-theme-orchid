@@ -1,52 +1,57 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { getCollection, render } from "astro:content";
 // KaTeX 样式：文章页独占加载（构建期渲染无客户端 JS，仅此一份 CSS）
-import 'katex/dist/katex.min.css';
-import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
-import Toc from 'virtual:theme/components/Toc.astro';
-import License from 'virtual:theme/components/License.astro';
-import PostNav from 'virtual:theme/components/PostNav.astro';
-import RecommendedPost from 'virtual:theme/components/RecommendedPost.astro';
-import Comment from 'virtual:theme/components/Comment.astro';
-import EncryptedContent from 'virtual:theme/components/EncryptedContent.astro';
-import config from 'virtual:theme/config';
-import { formatDate, getSortedPosts } from '../../utils.js';
-import { getRelatedPosts } from '../../utils/related.js';
-import { getLqipStyle } from '../../utils/lqip.js';
-import { t } from '../../i18n/index.js';
+import "katex/dist/katex.min.css";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import Comment from "virtual:theme/components/Comment.astro";
+import EncryptedContent from "virtual:theme/components/EncryptedContent.astro";
+import License from "virtual:theme/components/License.astro";
+import PostNav from "virtual:theme/components/PostNav.astro";
+import RecommendedPost from "virtual:theme/components/RecommendedPost.astro";
+import Toc from "virtual:theme/components/Toc.astro";
+import config from "virtual:theme/config";
+import { t } from "../../i18n/index.js";
+import { getLqipStyle } from "../../utils/lqip.js";
+import { getRelatedPosts } from "../../utils/related.js";
+import { formatDate, getSortedPosts } from "../../utils.js";
 
 export async function getStaticPaths() {
-  const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
-  const sorted = getSortedPosts(all);
-  // sorted 内 idx+1 为更早一篇（prev），idx-1 为更新一篇（next）
-  return sorted.map((post, idx) => ({
-    params: { slug: post.id },
-    props: {
-      post,
-      prev: sorted[idx + 1] ?? null,
-      next: sorted[idx - 1] ?? null,
-      related: getRelatedPosts(sorted, post, config.relatedPosts.count),
-    },
-  }));
+	const all = await getCollection("posts", ({ data }) =>
+		import.meta.env.PROD ? !data.draft : true,
+	);
+	const sorted = getSortedPosts(all);
+	// sorted 内 idx+1 为更早一篇（prev），idx-1 为更新一篇（next）
+	return sorted.map((post, idx) => ({
+		params: { slug: post.id },
+		props: {
+			post,
+			prev: sorted[idx + 1] ?? null,
+			next: sorted[idx - 1] ?? null,
+			related: getRelatedPosts(sorted, post, config.relatedPosts.count),
+		},
+	}));
 }
 
 const { post, prev, next, related } = Astro.props;
 const d = post.data;
 const { Content, headings, remarkPluginFrontmatter } = await render(post);
-const { words, minutes } = remarkPluginFrontmatter as { words?: number; minutes?: number };
+const { words, minutes } = remarkPluginFrontmatter as {
+	words?: number;
+	minutes?: number;
+};
 
 const url = new URL(`/posts/${post.id}/`, Astro.site);
 const jsonLd = {
-  '@context': 'https://schema.org',
-  '@type': 'BlogPosting',
-  headline: d.title,
-  description: d.description,
-  datePublished: d.published.toISOString(),
-  dateModified: (d.updated ?? d.published).toISOString(),
-  wordCount: words,
-  keywords: d.tags.join(', '),
-  author: { '@type': 'Person', name: d.author || config.author },
-  mainEntityOfPage: url.href,
+	"@context": "https://schema.org",
+	"@type": "BlogPosting",
+	headline: d.title,
+	description: d.description,
+	datePublished: d.published.toISOString(),
+	dateModified: (d.updated ?? d.published).toISOString(),
+	wordCount: words,
+	keywords: d.tags.join(", "),
+	author: { "@type": "Person", name: d.author || config.author },
+	mainEntityOfPage: url.href,
 };
 ---
 

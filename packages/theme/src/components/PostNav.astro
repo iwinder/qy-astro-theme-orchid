@@ -1,10 +1,10 @@
 ---
-import type { PostLike } from '../utils.js';
-import { t } from '../i18n/index.js';
+import { t } from "../i18n/index.js";
+import type { PostLike } from "../utils.js";
 
 interface Props {
-  prev?: PostLike;
-  next?: PostLike;
+	prev?: PostLike;
+	next?: PostLike;
 }
 
 const { prev, next } = Astro.props;

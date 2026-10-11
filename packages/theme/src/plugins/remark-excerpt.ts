@@ -6,9 +6,9 @@
  */
 export function remarkExcerpt() {
 	return (tree: any, { data }: any) => {
-		let excerpt = '';
+		let excerpt = "";
 		for (const node of tree.children || []) {
-			if (node.type !== 'paragraph') continue;
+			if (node.type !== "paragraph") continue;
 			excerpt = mdastToString(node).trim();
 			break;
 		}
@@ -18,10 +18,12 @@ export function remarkExcerpt() {
 
 /** 近似 mdast-util-to-string：递归取 text / inlineCode 的 value，忽略 html 与 image */
 function mdastToString(node: any): string {
-	if (!node) return '';
-	if (node.type === 'text' || node.type === 'inlineCode') return node.value || '';
-	if (node.type === 'html' || node.type === 'image' || node.type === 'code') return '';
-	let out = '';
+	if (!node) return "";
+	if (node.type === "text" || node.type === "inlineCode")
+		return node.value || "";
+	if (node.type === "html" || node.type === "image" || node.type === "code")
+		return "";
+	let out = "";
 	for (const child of node.children || []) out += mdastToString(child);
 	return out;
 }

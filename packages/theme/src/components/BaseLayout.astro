@@ -1,20 +1,20 @@
 ---
-import { ClientRouter } from 'astro:transitions';
-import Header from 'virtual:theme/components/Header.astro';
-import Footer from 'virtual:theme/components/Footer.astro';
-import Analytics from 'virtual:theme/components/Analytics.astro';
-import config from 'virtual:theme/config';
-import { hexToHsl } from '../utils.js';
-import { t } from '../i18n/index.js';
-import '@windcoder/astro-theme-orchid/styles/global.css';
+import { ClientRouter } from "astro:transitions";
+import Analytics from "virtual:theme/components/Analytics.astro";
+import Footer from "virtual:theme/components/Footer.astro";
+import Header from "virtual:theme/components/Header.astro";
+import config from "virtual:theme/config";
+import { t } from "../i18n/index.js";
+import { hexToHsl } from "../utils.js";
+import "@windcoder/astro-theme-orchid/styles/global.css";
 
 interface Props {
-  title?: string;
-  description?: string;
-  /** body[data-page]，驱动导航高亮（home/archive/tags/post...） */
-  page?: string;
-  /** OG 分享图路径（b9.4，文章页传 /og/<slug>.png）；绝对链接依赖站点 site 配置 */
-  ogImage?: string;
+	title?: string;
+	description?: string;
+	/** body[data-page]，驱动导航高亮（home/archive/tags/post...） */
+	page?: string;
+	/** OG 分享图路径（b9.4，文章页传 /og/<slug>.png）；绝对链接依赖站点 site 配置 */
+	ogImage?: string;
 }
 
 const { title, description = config.description, page, ogImage } = Astro.props;

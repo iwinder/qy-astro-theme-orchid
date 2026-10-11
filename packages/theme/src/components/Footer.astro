@@ -1,11 +1,13 @@
 ---
-import config from 'virtual:theme/config';
+import config from "virtual:theme/config";
 
 const { title, author, footerText, since } = config;
 const now = new Date().getFullYear();
 const startYear = since ? parseInt(since.slice(0, 4), 10) : NaN;
 const yearLabel =
-  !Number.isNaN(startYear) && startYear < now ? `${startYear}-${now}` : String(now);
+	!Number.isNaN(startYear) && startYear < now
+		? `${startYear}-${now}`
+		: String(now);
 ---
 
 <footer class="site-footer">

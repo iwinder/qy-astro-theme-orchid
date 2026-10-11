@@ -3,21 +3,21 @@
  * 51.la 统计（js-sdk-pro）。orchid-blog analytics/La51Analytics.astro 移植（去 swup 标记）。
  */
 interface Props {
-  analyticsId: string;
-  sdkUrl?: string;
-  ck?: string;
-  autoTrack?: boolean;
-  hashMode?: boolean;
-  screenRecord?: boolean;
+	analyticsId: string;
+	sdkUrl?: string;
+	ck?: string;
+	autoTrack?: boolean;
+	hashMode?: boolean;
+	screenRecord?: boolean;
 }
 
 const {
-  analyticsId,
-  sdkUrl,
-  ck,
-  autoTrack = true,
-  hashMode = false,
-  screenRecord = true,
+	analyticsId,
+	sdkUrl,
+	ck,
+	autoTrack = true,
+	hashMode = false,
+	screenRecord = true,
 } = Astro.props;
 ---
 

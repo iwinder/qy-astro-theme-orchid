@@ -4,19 +4,19 @@
  * M3b-b2 先实现 Artalk；Twikoo/Waline/Giscus/Disqus 后续在分发区各加一个分支即可。
  * 站点可经 override 覆盖本组件整体替换评论区外观。
  */
-import config from 'virtual:theme/config';
-import Artalk from './comments/Artalk.astro';
+import config from "virtual:theme/config";
+import Artalk from "./comments/Artalk.astro";
 
 interface Props {
-  /** Artalk pageKey（与 orchid-blog 口径一致：/posts/<id>、/guestbook，均无尾斜杠） */
-  path: string;
-  /** 页面级开关（文章传 frontmatter comment；缺省 true） */
-  enabled?: boolean;
+	/** Artalk pageKey（与 orchid-blog 口径一致：/posts/<id>、/guestbook，均无尾斜杠） */
+	path: string;
+	/** 页面级开关（文章传 frontmatter comment；缺省 true） */
+	enabled?: boolean;
 }
 
 const { path, enabled = true } = Astro.props;
 const c = config.comment;
-const active = enabled && c.enabled && c.provider !== 'none';
+const active = enabled && c.enabled && c.provider !== "none";
 ---
 
 {

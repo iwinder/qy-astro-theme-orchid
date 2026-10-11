@@ -1,11 +1,13 @@
 ---
-import { getCollection } from 'astro:content';
-import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
-import { collectCategories, getSortedPosts } from '../../utils.js';
-import { t } from '../../i18n/index.js';
+import { getCollection } from "astro:content";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import { t } from "../../i18n/index.js";
+import { collectCategories, getSortedPosts } from "../../utils.js";
 
 // 分类云：复用 tag-cloud 样式，分类内文章数 > 1 用大字号
-const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
+const all = await getCollection("posts", ({ data }) =>
+	import.meta.env.PROD ? !data.draft : true,
+);
 const cats = [...collectCategories(getSortedPosts(all)).entries()];
 ---
 

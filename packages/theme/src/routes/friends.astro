@@ -1,18 +1,20 @@
 ---
-import { getEntry, render } from 'astro:content';
-import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
-import config from 'virtual:theme/config';
-import { t } from '../i18n/index.js';
+import { getEntry, render } from "astro:content";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import config from "virtual:theme/config";
+import { t } from "../i18n/index.js";
 
 // 数据源 = themeConfig.friends.list（决策 8：与侧栏友链 widget 同源）
 const friends = config.friends.list
-  .filter((f) => f.enabled)
-  .sort((a, b) =>
-    config.friends.sort === 'random' ? Math.random() - 0.5 : b.weight - a.weight,
-  );
+	.filter((f) => f.enabled)
+	.sort((a, b) =>
+		config.friends.sort === "random"
+			? Math.random() - 0.5
+			: b.weight - a.weight,
+	);
 
 // 可选 spec 正文（src/content/spec/friends.md），渲染在卡片列表上方
-const entry = await getEntry('spec', 'friends').catch(() => null);
+const entry = await getEntry("spec", "friends").catch(() => null);
 const { Content } = entry ? await render(entry) : { Content: null };
 
 const apply = config.friends.apply;

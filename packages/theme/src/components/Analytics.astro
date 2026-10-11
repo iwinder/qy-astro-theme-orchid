@@ -3,17 +3,17 @@
  * 站点统计聚合挂载点（P1-16）：BaseLayout body 尾部统一挂载。
  * 各统计 ID 留空即完全不注入对应脚本；全部留空本组件零输出。
  */
-import config from 'virtual:theme/config';
-import GoogleAnalytics from './analytics/GoogleAnalytics.astro';
-import MicrosoftClarity from './analytics/MicrosoftClarity.astro';
-import UmamiAnalytics from './analytics/UmamiAnalytics.astro';
-import La51Analytics from './analytics/La51Analytics.astro';
+import config from "virtual:theme/config";
+import GoogleAnalytics from "./analytics/GoogleAnalytics.astro";
+import La51Analytics from "./analytics/La51Analytics.astro";
+import MicrosoftClarity from "./analytics/MicrosoftClarity.astro";
+import UmamiAnalytics from "./analytics/UmamiAnalytics.astro";
 
 const a = config.analytics;
-const showGA = a.googleAnalyticsId.trim() !== '';
-const showClarity = a.microsoftClarityId.trim() !== '';
-const showUmami = a.umami.websiteId.trim() !== '';
-const show51la = a.la51.id.trim() !== '';
+const showGA = a.googleAnalyticsId.trim() !== "";
+const showClarity = a.microsoftClarityId.trim() !== "";
+const showUmami = a.umami.websiteId.trim() !== "";
+const show51la = a.la51.id.trim() !== "";
 ---
 
 {showGA && <GoogleAnalytics analyticsId={a.googleAnalyticsId} />}

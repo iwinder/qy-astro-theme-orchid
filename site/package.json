@@ -1,20 +1,20 @@
 {
-  "name": "site",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "astro dev",
-    "build": "astro build && pagefind --site dist",
-    "preview": "astro preview",
-    "sync": "astro sync",
-    "lqip": "node ../packages/theme/scripts/generate-lqips.mjs"
-  },
-  "dependencies": {
-    "@windcoder/astro-theme-orchid": "workspace:*",
-    "astro": "^7.0.7"
-  },
-  "devDependencies": {
-    "pagefind": "^1.5.2"
-  }
+	"name": "site",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "astro dev",
+		"build": "astro build && pagefind --site dist",
+		"preview": "astro preview",
+		"sync": "astro sync",
+		"lqip": "node ../packages/theme/scripts/generate-lqips.mjs"
+	},
+	"dependencies": {
+		"@windcoder/astro-theme-orchid": "workspace:*",
+		"astro": "^7.0.7"
+	},
+	"devDependencies": {
+		"pagefind": "^1.5.2"
+	}
 }

@@ -4,19 +4,19 @@
  * 加密相册复用 b7 EncryptedContent（slug = album.id），解密注入后
  * 灯箱组委托（app.ts doc 级）依然生效。
  */
-import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
-import PhotoCard from 'virtual:theme/components/PhotoCard.astro';
-import EncryptedContent from 'virtual:theme/components/EncryptedContent.astro';
-import config from 'virtual:theme/config';
-import { getAlbumCover, scanAlbumPhotos } from '../../utils/gallery.js';
-import { getLqipStyle } from '../../utils/lqip.js';
-import { t } from '../../i18n/index.js';
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import EncryptedContent from "virtual:theme/components/EncryptedContent.astro";
+import PhotoCard from "virtual:theme/components/PhotoCard.astro";
+import config from "virtual:theme/config";
+import { t } from "../../i18n/index.js";
+import { getAlbumCover, scanAlbumPhotos } from "../../utils/gallery.js";
+import { getLqipStyle } from "../../utils/lqip.js";
 
 export function getStaticPaths() {
-  return config.gallery.albums.map((album) => ({
-    params: { album: album.id },
-    props: { album },
-  }));
+	return config.gallery.albums.map((album) => ({
+		params: { album: album.id },
+		props: { album },
+	}));
 }
 
 const { album } = Astro.props;

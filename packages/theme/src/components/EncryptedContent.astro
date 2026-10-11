@@ -1,21 +1,21 @@
 ---
+import { t } from "../i18n/index.js";
 /**
  * 加密内容容器（M3b-b7）：构建期把 slot 渲染为 HTML 后整体加密，
  * 页面只输出密文（data-encrypted 属性）+ 锁 UI；解锁逻辑在 app.ts
  * （Web Crypto 解密 → innerHTML 注入 → sessionStorage 缓存密码）。
  * i18n 全部构建期渲染，无运行时动态文案需求。
  */
-import { encryptContent } from '../utils/crypto.js';
-import { t } from '../i18n/index.js';
+import { encryptContent } from "../utils/crypto.js";
 
 interface Props {
-  password: string;
-  slug: string;
-  hint?: string;
+	password: string;
+	slug: string;
+	hint?: string;
 }
 
-const { password, slug, hint = '' } = Astro.props;
-const rawHtml = await Astro.slots.render('default');
+const { password, slug, hint = "" } = Astro.props;
+const rawHtml = await Astro.slots.render("default");
 const encryptedData = encryptContent(rawHtml, password, slug);
 ---
 

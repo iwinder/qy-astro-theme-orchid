@@ -7,32 +7,32 @@
  * 外链追踪用 document 级 astro:page-load 监听，VT 换页后自动重扫新 DOM 外链。
  */
 interface Props {
-  websiteId: string;
-  scriptUrl?: string;
-  replaysScriptUrl?: string;
-  trackOutboundLinks?: boolean;
-  collectWebVitals?: boolean;
-  replays?: {
-    enabled?: boolean;
-    sampleRate?: number;
-    maskLevel?: 'moderate' | 'strict';
-    maxDuration?: number;
-    blockSelector?: string;
-  };
+	websiteId: string;
+	scriptUrl?: string;
+	replaysScriptUrl?: string;
+	trackOutboundLinks?: boolean;
+	collectWebVitals?: boolean;
+	replays?: {
+		enabled?: boolean;
+		sampleRate?: number;
+		maskLevel?: "moderate" | "strict";
+		maxDuration?: number;
+		blockSelector?: string;
+	};
 }
 
 const {
-  websiteId,
-  scriptUrl,
-  replaysScriptUrl,
-  trackOutboundLinks = true,
-  collectWebVitals = false,
-  replays,
+	websiteId,
+	scriptUrl,
+	replaysScriptUrl,
+	trackOutboundLinks = true,
+	collectWebVitals = false,
+	replays,
 } = Astro.props;
 
 const replaysEnabled = replays?.enabled ?? false;
 const replaysSampleRate = replays?.sampleRate ?? 0.15;
-const replaysMaskLevel = replays?.maskLevel ?? 'moderate';
+const replaysMaskLevel = replays?.maskLevel ?? "moderate";
 const replaysMaxDuration = replays?.maxDuration ?? 300000;
 const replaysBlockSelector = replays?.blockSelector?.trim();
 ---

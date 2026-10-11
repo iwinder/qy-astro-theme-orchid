@@ -1,11 +1,11 @@
 ---
-import config from 'virtual:theme/config';
-import { t } from '../i18n/index.js';
+import config from "virtual:theme/config";
+import { t } from "../i18n/index.js";
 
 interface Props {
-  /** 文章级覆盖；空则跟随全站配置 */
-  licenseName?: string;
-  licenseUrl?: string;
+	/** 文章级覆盖；空则跟随全站配置 */
+	licenseName?: string;
+	licenseUrl?: string;
 }
 
 const { licenseName, licenseUrl } = Astro.props;

@@ -1,4 +1,5 @@
 ---
+import { t } from "../i18n/index.js";
 /**
  * 相关/随机文章推荐（P1-12，移植自 orchid-blog RecommendedPost）。
  * 左栏：构建期静态渲染的相关文章（getRelatedPosts 评分）；
@@ -6,13 +7,12 @@
  *       加密文章已在 json 侧排除；<random-posts> 为 VT 安全 custom element
  *       （is:inline + customElements.get 防重复 define，VT 换页自动 re-connect）。
  */
-import type { PostLike } from '../utils.js';
-import { t } from '../i18n/index.js';
+import type { PostLike } from "../utils.js";
 
 interface Props {
-  related: PostLike[];
-  currentId: string;
-  randomCount?: number;
+	related: PostLike[];
+	currentId: string;
+	randomCount?: number;
 }
 
 const { related, currentId, randomCount = 5 } = Astro.props;

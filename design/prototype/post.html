@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>山色入城：一次江南的慢行 · 清言集</title>
 <script>
-(function(){var m=localStorage.getItem('qy-mode');if(m==='dark'||(!m&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
+(()=> {var m=localStorage.getItem('qy-mode');if(m==='dark'||(!m&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
 </script>
 <link rel="stylesheet" href="styles.css"/>
 </head>
@@ -241,43 +241,43 @@ export default defineConfig({
 <script src="app.js"></script>
 <script>
 /* post 页专属：TOC scrollspy / 代码复制 / 评论表单 mock */
-(function () {
+(() => {
   'use strict';
 
   /* TOC scrollspy */
   var tocLinks = document.querySelectorAll('.toc a[href^="#sec-"]');
   var map = {};
-  tocLinks.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+  tocLinks.forEach((a) => { map[a.getAttribute('href').slice(1)] = a; });
   if ('IntersectionObserver' in window && tocLinks.length) {
-    var spy = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) {
+    var spy = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
         if (en.isIntersecting) {
-          tocLinks.forEach(function (a) { a.classList.remove('is-active'); });
+          tocLinks.forEach((a) => { a.classList.remove('is-active'); });
           var link = map[en.target.id];
           if (link) link.classList.add('is-active');
         }
       });
     }, { rootMargin: '-30% 0px -60% 0px' });
-    document.querySelectorAll('.prose h2[id^="sec-"]').forEach(function (h) { spy.observe(h); });
+    document.querySelectorAll('.prose h2[id^="sec-"]').forEach((h) => { spy.observe(h); });
   }
 
   /* 代码块复制 */
-  document.querySelectorAll('.copy-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
+  document.querySelectorAll('.copy-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
       var block = btn.closest('.code-block');
       var code = block ? block.querySelector('pre code') : null;
       if (!code) return;
       var text = code.innerText;
-      var done = function () {
+      var done = () => {
         btn.textContent = '已复制';
         btn.classList.add('copied');
-        setTimeout(function () {
+        setTimeout(() => {
           btn.textContent = '复制';
           btn.classList.remove('copied');
         }, 1200);
       };
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, function () { fallback(); });
+        navigator.clipboard.writeText(text).then(done, () => { fallback(); });
       } else { fallback(); }
       function fallback() {
         var ta = document.createElement('textarea');
@@ -309,10 +309,10 @@ export default defineConfig({
     input.classList.remove('input-error');
     errEl.textContent = '';
   }
-  nameInput.addEventListener('input', function () { clearError(nameInput); okEl.hidden = true; });
-  contentInput.addEventListener('input', function () { clearError(contentInput); okEl.hidden = true; });
+  nameInput.addEventListener('input', () => { clearError(nameInput); okEl.hidden = true; });
+  contentInput.addEventListener('input', () => { clearError(contentInput); okEl.hidden = true; });
 
-  form.addEventListener('submit', function (e) {
+  form.addEventListener('submit', (e) => {
     e.preventDefault();
     errEl.textContent = '';
     var bad = false;
@@ -321,7 +321,7 @@ export default defineConfig({
     if (bad) return;
     submitBtn.disabled = true;
     submitBtn.textContent = '提交中…';
-    setTimeout(function () {
+    setTimeout(() => {
       var art = document.createElement('article');
       art.className = 'comment card';
       art.innerHTML =

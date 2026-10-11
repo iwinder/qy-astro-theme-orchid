@@ -7,7 +7,7 @@
  * 密文经 data-* 属性输出，文本内容不含明文；注：这是「防君子」级保护，
  * 密钥材料来自用户输入，安全性依赖密码强度。
  */
-import { createCipheriv, createHmac, pbkdf2Sync } from 'node:crypto';
+import { createCipheriv, createHmac, pbkdf2Sync } from "node:crypto";
 
 const PBKDF2_ITERATIONS = 100_000;
 const SALT_LENGTH = 16;
@@ -16,18 +16,31 @@ const KEY_LENGTH = 32;
 
 /** 由 key + 上下文字符串确定性派生 length 字节（HMAC-SHA256 截断） */
 function deriveBytes(key: string, context: string, length: number): Buffer {
-  return createHmac('sha256', key).update(context).digest().subarray(0, length);
+	return createHmac("sha256", key).update(context).digest().subarray(0, length);
 }
 
 /** 加密 HTML 字符串，输出 base64(salt + iv + authTag + ciphertext) */
-export function encryptContent(html: string, password: string, slug: string): string {
-  const salt = deriveBytes(password, `salt:${slug}`, SALT_LENGTH);
-  const iv = deriveBytes(password, `iv:${slug}`, IV_LENGTH);
-  const key = pbkdf2Sync(password, salt, PBKDF2_ITERATIONS, KEY_LENGTH, 'sha256');
+export function encryptContent(
+	html: string,
+	password: string,
+	slug: string,
+): string {
+	const salt = deriveBytes(password, `salt:${slug}`, SALT_LENGTH);
+	const iv = deriveBytes(password, `iv:${slug}`, IV_LENGTH);
+	const key = pbkdf2Sync(
+		password,
+		salt,
+		PBKDF2_ITERATIONS,
+		KEY_LENGTH,
+		"sha256",
+	);
 
-  const cipher = createCipheriv('aes-256-gcm', key, iv);
-  const encrypted = Buffer.concat([cipher.update(html, 'utf8'), cipher.final()]);
-  const authTag = cipher.getAuthTag();
+	const cipher = createCipheriv("aes-256-gcm", key, iv);
+	const encrypted = Buffer.concat([
+		cipher.update(html, "utf8"),
+		cipher.final(),
+	]);
+	const authTag = cipher.getAuthTag();
 
-  return Buffer.concat([salt, iv, authTag, encrypted]).toString('base64');
+	return Buffer.concat([salt, iv, authTag, encrypted]).toString("base64");
 }

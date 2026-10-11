@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>标签 · 清言集</title>
 <script>
-(function(){var m=localStorage.getItem('qy-mode');if(m==='dark'||(!m&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
+(()=> {var m=localStorage.getItem('qy-mode');if(m==='dark'||(!m&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
 </script>
 <link rel="stylesheet" href="styles.css"/>
 </head>
@@ -130,7 +130,7 @@
 <script src="app.js"></script>
 <script>
 /* tags 页专属：标签云筛选 */
-(function () {
+(() => {
   'use strict';
   var cloudLinks = document.querySelectorAll('.tag-cloud a[data-tag]');
   var allBtn = document.getElementById('tagAll');
@@ -140,7 +140,7 @@
 
   function apply(tag) {
     var shown = 0;
-    items.forEach(function (it) {
+    items.forEach((it) => {
       var tags = (it.getAttribute('data-tags') || '').split(',');
       var hit = !tag || tags.indexOf(tag) !== -1;
       it.style.display = hit ? '' : 'none';
@@ -150,16 +150,16 @@
     empty.hidden = shown > 0;
   }
   function setActive(el) {
-    cloudLinks.forEach(function (a) { a.classList.toggle('is-on', a === el); });
+    cloudLinks.forEach((a) => { a.classList.toggle('is-on', a === el); });
     allBtn.classList.toggle('is-on', !el);
   }
-  cloudLinks.forEach(function (a) {
-    a.addEventListener('click', function () {
+  cloudLinks.forEach((a) => {
+    a.addEventListener('click', () => {
       apply(a.getAttribute('data-tag'));
       setActive(a);
     });
   });
-  allBtn.addEventListener('click', function () {
+  allBtn.addEventListener('click', () => {
     apply(null);
     setActive(null);
   });

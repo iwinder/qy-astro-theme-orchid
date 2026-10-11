@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>画廊 · 清言集</title>
 <script>
-(function(){var m=localStorage.getItem('qy-mode');if(m==='dark'||(!m&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
+(()=> {var m=localStorage.getItem('qy-mode');if(m==='dark'||(!m&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
 </script>
 <link rel="stylesheet" href="styles.css"/>
 </head>
@@ -149,10 +149,10 @@
 <script src="app.js"></script>
 <script>
 /* gallery 页专属：chips 筛选 / 灯箱 / 加密相册弹窗 */
-(function () {
+(() => {
   'use strict';
   var IMG = 'https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=';
-  var P = function (q, size) { return IMG + q + '&image_size=' + (size || 'square'); };
+  var P = (q, size) => IMG + q + '&image_size=' + (size || 'square');
   var ALBUMS = [
     [
       { src: P('jiangnan%20water%20town%20canal%2C%20white%20walls%20and%20dark%20tile%20roofs%2C%20stone%20bridge%2C%20soft%20spring%20light%2C%20chinese%20aesthetic%20photography'), cap: '清晨的水巷' },
@@ -174,11 +174,11 @@
   /* chips 筛选 */
   var chips = document.querySelectorAll('.chips .chip');
   var cards = document.querySelectorAll('.album-card');
-  chips.forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      chips.forEach(function (c) { c.classList.toggle('is-on', c === chip); });
+  chips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      chips.forEach((c) => { c.classList.toggle('is-on', c === chip); });
       var f = chip.getAttribute('data-filter');
-      cards.forEach(function (card) {
+      cards.forEach((card) => {
         card.classList.toggle('hidden', !!f && card.getAttribute('data-cat') !== f);
       });
     });
@@ -195,7 +195,7 @@
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
     errEl.textContent = '';
-    setTimeout(function () { input.focus(); }, 60);
+    setTimeout(() => { input.focus(); }, 60);
   }
   function closeModal() {
     modal.classList.remove('open');
@@ -225,9 +225,9 @@
 
   document.getElementById('lockOk').addEventListener('click', tryUnlock);
   document.getElementById('lockCancel').addEventListener('click', closeModal);
-  modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
-  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') tryUnlock(); });
-  input.addEventListener('input', function () { errEl.textContent = ''; });
+  modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryUnlock(); });
+  input.addEventListener('input', () => { errEl.textContent = ''; });
 
   /* toast */
   var toast = document.getElementById('unlockToast');
@@ -236,7 +236,7 @@
     toast.textContent = msg;
     toast.style.opacity = '1';
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toast.style.opacity = '0'; }, 2000);
+    toastTimer = setTimeout(() => { toast.style.opacity = '0'; }, 2000);
   }
 
   /* 相册卡点击 */
@@ -245,9 +245,9 @@
     if (card.classList.contains('locked')) { openModal(); return; }
     if (window.QyLightbox) window.QyLightbox.open(ALBUMS[idx] || [], 0);
   }
-  cards.forEach(function (card) {
-    card.addEventListener('click', function () { activate(card); });
-    card.addEventListener('keydown', function (e) {
+  cards.forEach((card) => {
+    card.addEventListener('click', () => { activate(card); });
+    card.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(card); }
     });
   });

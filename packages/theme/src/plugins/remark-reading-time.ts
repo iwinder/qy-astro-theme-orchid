@@ -18,10 +18,12 @@ export function remarkReadingTime() {
 
 /** 近似 mdast-util-to-string：递归取 text / inlineCode 的 value，忽略 html 与 image */
 function mdastToString(node: any): string {
-	if (!node) return '';
-	if (node.type === 'text' || node.type === 'inlineCode') return node.value || '';
-	if (node.type === 'html' || node.type === 'image' || node.type === 'code') return '';
-	let out = '';
+	if (!node) return "";
+	if (node.type === "text" || node.type === "inlineCode")
+		return node.value || "";
+	if (node.type === "html" || node.type === "image" || node.type === "code")
+		return "";
+	let out = "";
 	for (const child of node.children || []) out += mdastToString(child);
 	return out;
 }
@@ -30,7 +32,7 @@ const CJK = /[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]/g;
 
 function countWords(text: string): number {
 	const cjk = (text.match(CJK) || []).length;
-	const rest = text.replace(CJK, ' ');
+	const rest = text.replace(CJK, " ");
 	const latin = rest.split(/\s+/).filter(Boolean).length;
 	return cjk + latin;
 }

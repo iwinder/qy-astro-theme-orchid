@@ -1,17 +1,19 @@
 ---
-import { getCollection } from 'astro:content';
-import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
-import { collectTags, formatDate, getSortedPosts } from '../../utils.js';
-import { t } from '../../i18n/index.js';
+import { getCollection } from "astro:content";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import { t } from "../../i18n/index.js";
+import { collectTags, formatDate, getSortedPosts } from "../../utils.js";
 
 // 先排序再聚合，保证每个标签内文章按新→旧排列
 export async function getStaticPaths() {
-  const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
-  const sorted = getSortedPosts(all);
-  return [...collectTags(sorted).entries()].map(([tag, posts]) => ({
-    params: { tag },
-    props: { tag, posts },
-  }));
+	const all = await getCollection("posts", ({ data }) =>
+		import.meta.env.PROD ? !data.draft : true,
+	);
+	const sorted = getSortedPosts(all);
+	return [...collectTags(sorted).entries()].map(([tag, posts]) => ({
+		params: { tag },
+		props: { tag, posts },
+	}));
 }
 
 const { tag, posts } = Astro.props;

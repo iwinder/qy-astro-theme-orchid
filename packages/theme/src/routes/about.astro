@@ -1,11 +1,11 @@
 ---
-import { getEntry, render } from 'astro:content';
-import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
-import { t } from '../i18n/index.js';
+import { getEntry, render } from "astro:content";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import { t } from "../i18n/index.js";
 
 // 正文来自站点 spec 集合（src/content/spec/about.md）；
 // 集合或条目缺失时降级为提示文案，不使整页 500
-const entry = await getEntry('spec', 'about').catch(() => null);
+const entry = await getEntry("spec", "about").catch(() => null);
 const { Content } = entry ? await render(entry) : { Content: null };
 ---
 

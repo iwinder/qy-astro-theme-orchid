@@ -4,14 +4,14 @@
  * data-lightbox-item + 外层 data-lightbox-group 容器（路由页提供）
  * 供 QyLightbox 点击组浏览（app.ts 委托，加密解密注入后同样生效）。
  */
-import { getLqipStyle } from '../utils/lqip.js';
+import { getLqipStyle } from "../utils/lqip.js";
 
 interface Props {
-  src: string;
-  alt?: string;
+	src: string;
+	alt?: string;
 }
 
-const { src, alt = '' } = Astro.props;
+const { src, alt = "" } = Astro.props;
 ---
 
 <figure class="gallery-photo" data-lightbox-item>

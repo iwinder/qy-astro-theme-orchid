@@ -1,24 +1,26 @@
 ---
-import { getCollection } from 'astro:content';
-import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
-import PostCard from 'virtual:theme/components/PostCard.astro';
-import Pagination from 'virtual:theme/components/Pagination.astro';
-import Sidebar from 'virtual:theme/components/Sidebar.astro';
-import config from 'virtual:theme/config';
-import { getSortedPosts } from '../utils.js';
-import { t } from '../i18n/index.js';
-import { hydratePosts } from './_hydrate.js';
+import { getCollection } from "astro:content";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import Pagination from "virtual:theme/components/Pagination.astro";
+import PostCard from "virtual:theme/components/PostCard.astro";
+import Sidebar from "virtual:theme/components/Sidebar.astro";
+import config from "virtual:theme/config";
+import { t } from "../i18n/index.js";
+import { getSortedPosts } from "../utils.js";
+import { hydratePosts } from "./_hydrate.js";
 
 // 首页 = 分页第 1 页。置顶文章作为 featured 卡固定在列表最前（不重复进入分页列表）。
-const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
+const all = await getCollection("posts", ({ data }) =>
+	import.meta.env.PROD ? !data.draft : true,
+);
 const sorted = getSortedPosts(all);
 const featured = sorted.filter((p) => p.data.pinned);
 const rest = sorted.filter((p) => !p.data.pinned);
 const total = Math.max(1, Math.ceil(rest.length / config.postList.pageSize));
 
 const [featuredPosts, pagePosts] = await Promise.all([
-  hydratePosts(featured),
-  hydratePosts(rest.slice(0, config.postList.pageSize)),
+	hydratePosts(featured),
+	hydratePosts(rest.slice(0, config.postList.pageSize)),
 ]);
 ---
 

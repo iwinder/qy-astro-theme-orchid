@@ -1,11 +1,13 @@
 ---
-import { getCollection } from 'astro:content';
-import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
-import { collectTags, getSortedPosts } from '../../utils.js';
-import { t } from '../../i18n/index.js';
+import { getCollection } from "astro:content";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import { t } from "../../i18n/index.js";
+import { collectTags, getSortedPosts } from "../../utils.js";
 
 // 标签云：标签内文章数 > 1 用大字号（tag-s3），否则小字号（tag-s1）
-const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
+const all = await getCollection("posts", ({ data }) =>
+	import.meta.env.PROD ? !data.draft : true,
+);
 const tags = [...collectTags(getSortedPosts(all)).entries()];
 ---
 

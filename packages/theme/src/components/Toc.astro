@@ -1,14 +1,14 @@
 ---
-import { t } from '../i18n/index.js';
+import { t } from "../i18n/index.js";
 
 export interface TocHeading {
-  depth: number;
-  slug: string;
-  text: string;
+	depth: number;
+	slug: string;
+	text: string;
 }
 
 interface Props {
-  headings: TocHeading[];
+	headings: TocHeading[];
 }
 
 const { headings } = Astro.props;

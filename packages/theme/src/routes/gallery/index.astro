@@ -1,14 +1,14 @@
 ---
+import AlbumCard from "virtual:theme/components/AlbumCard.astro";
 /**
  * 画廊列表页（M3b-b8）：相册网格 + 标签 chips 筛选 + 关键词搜索。
  * 筛选用 <gallery-filter> custom element（is:inline + 防重复 define），
  * VT 换页后新 DOM 自动 re-connect，与原版验证过的模式一致。
  */
-import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
-import AlbumCard from 'virtual:theme/components/AlbumCard.astro';
-import config from 'virtual:theme/config';
-import { buildAlbumIndex } from '../../utils/gallery.js';
-import { t } from '../../i18n/index.js';
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import config from "virtual:theme/config";
+import { t } from "../../i18n/index.js";
+import { buildAlbumIndex } from "../../utils/gallery.js";
 
 const albums = buildAlbumIndex(config.gallery.albums);
 const allTags = [...new Set(albums.flatMap((a) => a.tags || []))].sort();

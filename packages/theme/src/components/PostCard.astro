@@ -1,13 +1,13 @@
 ---
-import config from 'virtual:theme/config';
-import { formatDate, type PostLike } from '../utils.js';
-import { getLqipStyle } from '../utils/lqip.js';
-import { t } from '../i18n/index.js';
+import config from "virtual:theme/config";
+import { t } from "../i18n/index.js";
+import { getLqipStyle } from "../utils/lqip.js";
+import { formatDate, type PostLike } from "../utils.js";
 
 interface Props {
-  post: PostLike;
-  /** 置顶/特写形态（大图卡 + 置顶徽标） */
-  featured?: boolean;
+	post: PostLike;
+	/** 置顶/特写形态（大图卡 + 置顶徽标） */
+	featured?: boolean;
 }
 
 const { post, featured = false } = Astro.props;
@@ -17,13 +17,13 @@ const d = post.data;
 const style = d.cardStyle ?? config.postList.style;
 const cover = d.image || d.firstImage || config.postList.fallbackCover;
 const classes = [
-  'post-card',
-  featured ? 'featured' : '',
-  style === 'cover' ? '' : 'compact',
-  style !== 'cover' && !cover ? 'text-only' : '',
+	"post-card",
+	featured ? "featured" : "",
+	style === "cover" ? "" : "compact",
+	style !== "cover" && !cover ? "text-only" : "",
 ]
-  .filter(Boolean)
-  .join(' ');
+	.filter(Boolean)
+	.join(" ");
 
 const href = `/posts/${post.id}/`;
 const excerpt = d.excerpt || d.description;

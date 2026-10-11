@@ -1,16 +1,16 @@
 ---
-import config from 'virtual:theme/config';
+import config from "virtual:theme/config";
+import { t } from "../i18n/index.js";
 import {
-  collectCategories,
-  collectTags,
-  daysSince,
-  type PostLike,
-} from '../utils.js';
-import { t } from '../i18n/index.js';
+	collectCategories,
+	collectTags,
+	daysSince,
+	type PostLike,
+} from "../utils.js";
 
 interface Props {
-  /** 全站已发布文章（用于聚合分类/标签/统计） */
-  posts: PostLike[];
+	/** 全站已发布文章（用于聚合分类/标签/统计） */
+	posts: PostLike[];
 }
 
 const { posts } = Astro.props;
@@ -20,23 +20,24 @@ const runDays = config.since ? daysSince(config.since) : null;
 
 // 公告 widget（P1-17）：content 留空整卡不渲染
 const ann = config.announcement;
-const showAnnouncement = ann.content.trim() !== '';
+const showAnnouncement = ann.content.trim() !== "";
 const annLink = Boolean(ann.link.text && ann.link.url);
 
 // 广告 widget（P2 保留项，默认关）：enabled + 至少一项内容 + 未过期才渲染
 const ad = config.advertisement;
 const adExpired = ad.expireDate ? new Date() > new Date(ad.expireDate) : false;
-const showAd = ad.enabled && Boolean(ad.image || ad.content || ad.link.text) && !adExpired;
+const showAd =
+	ad.enabled && Boolean(ad.image || ad.content || ad.link.text) && !adExpired;
 
 // 友链 widget（决策 8）：与友链页同源 themeConfig.friends.list
 const fw = config.sidebar.friends;
 let sideFriends: typeof config.friends.list = [];
 if (fw.enabled) {
-  const enabled = config.friends.list.filter((f) => f.enabled);
-  const pool = fw.random
-    ? [...enabled].sort(() => Math.random() - 0.5)
-    : [...enabled].sort((a, b) => b.weight - a.weight);
-  sideFriends = pool.slice(0, fw.count);
+	const enabled = config.friends.list.filter((f) => f.enabled);
+	const pool = fw.random
+		? [...enabled].sort(() => Math.random() - 0.5)
+		: [...enabled].sort((a, b) => b.weight - a.weight);
+	sideFriends = pool.slice(0, fw.count);
 }
 ---
 

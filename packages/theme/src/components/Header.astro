@@ -1,19 +1,20 @@
 ---
-import config from 'virtual:theme/config';
-import { t } from '../i18n/index.js';
+import config from "virtual:theme/config";
+import { t } from "../i18n/index.js";
 
 const { title, nav } = config;
 
 /** 内置页导航高亮 key（body[data-page] ↔ .nav-link[data-nav]） */
 function navKey(href: string): string | null {
-  if (href === '/') return 'home';
-  if (href === '/archive' || href.startsWith('/archive/')) return 'archive';
-  if (href === '/tags' || href.startsWith('/tags/')) return 'tags';
-  if (href === '/about' || href.startsWith('/about/')) return 'about';
-  if (href === '/friends' || href.startsWith('/friends/')) return 'friends';
-  if (href === '/guestbook' || href.startsWith('/guestbook/')) return 'guestbook';
-  if (href === '/sponsor' || href.startsWith('/sponsor/')) return 'sponsor';
-  return null;
+	if (href === "/") return "home";
+	if (href === "/archive" || href.startsWith("/archive/")) return "archive";
+	if (href === "/tags" || href.startsWith("/tags/")) return "tags";
+	if (href === "/about" || href.startsWith("/about/")) return "about";
+	if (href === "/friends" || href.startsWith("/friends/")) return "friends";
+	if (href === "/guestbook" || href.startsWith("/guestbook/"))
+		return "guestbook";
+	if (href === "/sponsor" || href.startsWith("/sponsor/")) return "sponsor";
+	return null;
 }
 
 /* hue 调色面板（M3b-b5）：预设色板为代码级常量；运行时覆写 --accent-h，s/l 保持配置值 */

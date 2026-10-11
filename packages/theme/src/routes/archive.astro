@@ -1,24 +1,31 @@
 ---
-import { getCollection } from 'astro:content';
-import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
-import { formatDate, type PostLike } from '../utils.js';
-import { hydratePosts } from './_hydrate.js';
-import { t } from '../i18n/index.js';
+import { getCollection } from "astro:content";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import { t } from "../i18n/index.js";
+import { formatDate, type PostLike } from "../utils.js";
+import { hydratePosts } from "./_hydrate.js";
 
 // 归档 = 纯时间线（忽略置顶，按发布时间倒序），按年分组展示
-const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
-const sorted = all.sort((a, b) => b.data.published.getTime() - a.data.published.getTime());
+const all = await getCollection("posts", ({ data }) =>
+	import.meta.env.PROD ? !data.draft : true,
+);
+const sorted = all.sort(
+	(a, b) => b.data.published.getTime() - a.data.published.getTime(),
+);
 const posts = await hydratePosts(sorted);
 
 const groups = new Map<number, PostLike[]>();
 for (const post of posts) {
-  const year = post.data.published.getFullYear();
-  const list = groups.get(year);
-  if (list) list.push(post);
-  else groups.set(year, [post]);
+	const year = post.data.published.getFullYear();
+	const list = groups.get(year);
+	if (list) list.push(post);
+	else groups.set(year, [post]);
 }
 const years = [...groups.keys()];
-const yearLabel = years.length <= 1 ? t('yearUnit', { n: years[0] ?? '' }) : `${Math.max(...years)} – ${Math.min(...years)}`;
+const yearLabel =
+	years.length <= 1
+		? t("yearUnit", { n: years[0] ?? "" })
+		: `${Math.max(...years)} – ${Math.min(...years)}`;
 ---
 
 <BaseLayout title={t('archive')} page="archive">

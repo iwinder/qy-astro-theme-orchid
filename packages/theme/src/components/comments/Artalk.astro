@@ -6,23 +6,23 @@
  * data-astro-rerun——否则 guestbook → 其他页 → guestbook（pageKey 相同、脚本内容相同）
  * 二次进入时脚本不重执行，评论区空白。旧 MutationObserver 经 window 句柄清理。
  */
-import config from 'virtual:theme/config';
+import config from "virtual:theme/config";
 
 interface Props {
-  path: string;
+	path: string;
 }
 
 const { path } = Astro.props;
 
 const artalkConfig = {
-  el: '#artalk',
-  server: config.comment.artalk.server,
-  site: config.title,
-  pageKey: path,
-  pageTitle: '',
-  locale: config.comment.artalk.locale,
-  dark: 'html.dark',
-  ...(config.comment.artalk.visitorCount ? { pageview: true } : {}),
+	el: "#artalk",
+	server: config.comment.artalk.server,
+	site: config.title,
+	pageKey: path,
+	pageTitle: "",
+	locale: config.comment.artalk.locale,
+	dark: "html.dark",
+	...(config.comment.artalk.visitorCount ? { pageview: true } : {}),
 };
 ---
 

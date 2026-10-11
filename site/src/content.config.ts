@@ -1,21 +1,21 @@
-import { defineCollection } from 'astro:content';
-import { glob } from 'astro/loaders';
-import { z } from 'astro/zod';
-import { definePostSchema } from '@windcoder/astro-theme-orchid/schema';
+import { defineCollection } from "astro:content";
+import { definePostSchema } from "@windcoder/astro-theme-orchid/schema";
+import { glob } from "astro/loaders";
+import { z } from "astro/zod";
 
 // 文章集合 schema 由主题提供（definePostSchema 工厂），
 // 站点可在 extend 中追加自己的 frontmatter 字段，主题升级不会丢站点字段。
 const posts = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/posts' }),
-  schema: definePostSchema(),
+	loader: glob({ pattern: "**/*.md", base: "./src/content/posts" }),
+	schema: definePostSchema(),
 });
 
 // spec 集合：独立页正文（about / friends / guestbook）。
 // schema 留空（与 orchid-blog 对齐），主题路由经 getEntry('spec', ...) 消费；
 // 缺少某个条目时对应页面降级为占位提示，不会构建失败。
 const spec = defineCollection({
-  loader: glob({ pattern: '**/*.md', base: './src/content/spec' }),
-  schema: z.object({}),
+	loader: glob({ pattern: "**/*.md", base: "./src/content/spec" }),
+	schema: z.object({}),
 });
 
 export const collections = { posts, spec };

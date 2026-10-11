@@ -7,12 +7,12 @@
  * vite 管线模块（.astro 路由/组件）引用；astro.config 静态 import 链上的
  * node 侧代码（rehype 插件等）请改用 ./resolve.js 的 resolveLabel(lang, key)。
  */
-import config from 'virtual:theme/config';
-import { resolveLabel, type UiKey } from './resolve.js';
+import config from "virtual:theme/config";
+import { resolveLabel, type UiKey } from "./resolve.js";
 
 /** 取 UI 文案；vars 替换 {name} 占位符；缺译回退中文 */
 export function t(key: UiKey, vars?: Record<string, string | number>): string {
-  return resolveLabel(config.lang, key, vars);
+	return resolveLabel(config.lang, key, vars);
 }
 
 export type { UiKey };
