@@ -205,3 +205,6 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 }
 
 export default defineTheme;
+
+// 供站点侧配置文件做类型标注与检查（含 provider 等字面量联合）
+export type { ThemeConfig } from "./schema";

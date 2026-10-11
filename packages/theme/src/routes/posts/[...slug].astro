@@ -65,6 +65,10 @@ const jsonLd = {
 ---
 
 <BaseLayout title={d.title} description={d.description} page="post" ogImage={config.og.enabled ? `/og/${post.id}.png` : undefined}>
+  {/* 左右两栏布局（对齐参考模板）：标题/封面/正文/许可/上下篇/支持卡/推荐/评论全部收进正文列，
+      侧栏（或 TOC）独占右列；≤767px 退化为单列堆叠 */}
+  <div class="post-layout">
+    <div class="post-main">
   <header class="post-header reveal">
     {d.category && <a class="chip" href={`/categories/${encodeURIComponent(d.category)}/`}>{d.category}</a>}
     <h1 class="post-title-lg" data-pagefind-body data-pagefind-weight="10" data-pagefind-meta="title">{d.title}</h1>
@@ -85,7 +89,6 @@ const jsonLd = {
       </figure>
     )
   }
-  <div class="post-layout">
     {/* data-pagefind-body（M3b-b6）：限定 Pagefind 只索引标题与正文（h1 在 article 外，双 body 标记） */}
     <article class="prose reveal" data-pagefind-body>
       {d.password ? (
@@ -98,16 +101,8 @@ const jsonLd = {
         <Content />
       )}
     </article>
-    {/* 侧栏开关（P2）：onPost 时侧栏进第二列，TOC 由侧栏 toc widget 承担；
-        关闭侧栏时 TOC 保持正文右侧原位 */}
-    {postSidebar ? (
-      <Sidebar posts={posts} variant="post" headings={headings} currentId={post.id} />
-    ) : (
-      config.toc.enabled && !d.password && <Toc headings={headings} />
-    )}
-  </div>
-  <License licenseName={d.licenseName} licenseUrl={d.licenseUrl} enabled={d.license} />
-  <PostNav prev={prev ?? undefined} next={next ?? undefined} />
+    <License licenseName={d.licenseName} licenseUrl={d.licenseUrl} enabled={d.license} />
+    <PostNav prev={prev ?? undefined} next={next ?? undefined} />
   {/* 支持卡（P2）：打赏入口 + 分享海报（share-poster.ts 仍按 #qy-share-btn 与 data-* 绑定） */}
   {
     (showSponsorBtn || showShareBtn) && (
@@ -152,5 +147,14 @@ const jsonLd = {
   }
   {/* 加密文章不渲染评论（评论内容依赖正文上下文，明文评论区会破坏加密语义） */}
   <Comment path={`/posts/${post.id}`} enabled={d.comment && !d.password} />
+    </div>
+    {/* 侧栏开关（P2）：onPost 时侧栏进右列，TOC 由侧栏 toc widget 承担；
+        关闭侧栏时 TOC 保持正文右侧原位 */}
+    {postSidebar ? (
+      <Sidebar posts={posts} variant="post" headings={headings} currentId={post.id} />
+    ) : (
+      config.toc.enabled && !d.password && <Toc headings={headings} />
+    )}
+  </div>
   <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>

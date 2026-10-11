@@ -451,6 +451,24 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 验证记录：dev 全页渲染（首页 widgets 顺序/日历月视图+热力图 12×4/今日标记/翻月边界；文章页侧栏 7 widget + 支持卡双按钮 + 许可行；frontmatter `license: false` 隐藏、`licenseName: "禁止转载"` 覆盖生效后还原）；`pnpm --filter site build` 62 页无回归；控制台仅 Artalk 占位服务器预期报错。i18n 新增键（calendarTitle/activityTitle/dayPostsCount/supportTitle/supportDesc/sponsorMe）zh-CN 与 en 已同步。
 
+### 4.7 文章页左右布局 + 站点配置拆分（✅ 2026-10-11 完成）
+
+源自用户 2 条体验反馈；build 62 页 + dev 渲染 + 多视口探针验证通过。
+
+**1）文章页侧栏左右布局修复**（原症状：侧栏被单独堆在内容下方，无左右分栏）
+
+- 根因：`.post-layout` 断点 1025px 过高——用户视口 ≤1024px（IDE 内置预览等窄窗口）时退化为单列，aside 全宽横在正文下方
+- 修复：正文列收拢 `.post-main`（仿参考模板 staticBarClass）——post-header/封面/prose/License/PostNav/支持卡/相关文章/评论全部移入左列，Sidebar/Toc 独占右列；断点 1025→768px（对齐参考模板 md）；`.post-main { min-width: 0 }` 防 nowrap 撑破轨道
+- 清理宽度体系割裂：post-header/article-cover/comments 的 max-width（760/900px）与独立居中移除，统一随网格列宽；删除响应式段冗余的 `.post-layout` 覆盖
+- 探针实测（iframe 法，iframe 宽度决定内部媒体查询）：1440px → `grid-template-columns: 816px 220px`，license/postNav/comments 与正文列 x/w 完全对齐；900px（原堆叠区间）→ 581px+220px 右列；603px（<768）→ 单列堆叠符合预期；首页 `.home-layout` 无回归
+
+**2）站点配置拆分为多文件**（对齐参考模板 orchid-blog `src/config/` 模式）
+
+- site 侧新增 `site/config/`：siteConfig（siteUrl+元信息+pages 独立页开关）/ navBarConfig / sidebarConfig / friendsConfig / galleryConfig / sponsorConfig / commentConfig / announcementConfig / advertisementConfig / analyticsConfig / licenseConfig / contentConfig（postList/toc/latex/diagram/emailProtection）共 12 个模块文件 + index.ts（组装 `themeConfig` satisfies ThemeConfig + 再导出各模块）
+- `packages/theme` index.ts 补命名导出 `export type { ThemeConfig } from "./schema"`（z.input 入参类型）：各拆分文件用 `ThemeConfig["nav"]` 等索引类型标注，解决纯对象字面量宽类型推断问题（如 `provider: "artalk"` 会被推断为 string 而非字面量联合）并获得 IDE 补全
+- astro.config.ts 258 行 → 15 行：仅 `site: siteConfig.siteUrl` + `orchidTheme(themeConfig)`；`site` 是 Astro 全局键不属主题入参，故 siteUrl 放在 siteConfig 内
+- 验证：7 个独立页（归档/标签/画廊/关于/友链/留言板/打赏）+ 首页 + 文章页全部正常渲染，配置数据完整进入主题；`pnpm build` 62 页 exit 0；控制台仅 Artalk 占位服务器预期报错
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
