@@ -16,6 +16,7 @@
     "./schema": "./src/schema.ts",
     "./routes/*": "./src/routes/*",
     "./components/*": "./src/components/*",
+    "./plugins/*": "./src/plugins/*",
     "./styles/*": "./src/styles/*"
   },
   "files": [

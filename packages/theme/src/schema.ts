@@ -33,6 +33,8 @@ export type ResolvedThemeConfig = z.output<typeof themeConfigSchema>;
  *   schema: definePostSchema({ ...自定义字段 })
  * 在兼容主题字段的基础上扩展自己的 frontmatter。
  * password/passwordHint 为 orchid-blog 加密文章兼容字段（功能在后续里程碑实现）。
+ * lang/author/sourceLink/licenseName/licenseUrl/comment 为 orchid-blog frontmatter 全量对齐
+ * （旧文章实际使用为 0，预留以保证迁移与未来写作无损）。
  */
 export function definePostSchema(extensions: z.ZodRawShape = {}) {
   return z
@@ -48,6 +50,17 @@ export function definePostSchema(extensions: z.ZodRawShape = {}) {
       category: z.string().optional(),
       password: z.string().optional(),
       passwordHint: z.string().optional(),
+      /** 语言（BCP-47，如 zh-CN；空 = 跟随站点） */
+      lang: z.string().optional(),
+      /** 作者名（空 = 跟随站点配置） */
+      author: z.string().optional(),
+      /** 原文链接（转载文章） */
+      sourceLink: z.string().optional(),
+      /** 文章级许可证（空 = 跟随站点全局配置） */
+      licenseName: z.string().optional(),
+      licenseUrl: z.string().optional(),
+      /** 本篇是否展示评论（默认开） */
+      comment: z.boolean().default(true),
     })
     .extend(extensions);
 }

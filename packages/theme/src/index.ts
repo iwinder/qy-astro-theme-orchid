@@ -2,6 +2,8 @@ import type { AstroIntegration } from 'astro';
 import tailwindcss from '@tailwindcss/vite';
 import { themeConfigSchema, type ThemeConfig } from './schema.js';
 import { overridesPlugin, themeConfigPlugin } from './vite.js';
+import { remarkExcerpt } from './plugins/remark-excerpt.js';
+import { remarkReadingTime } from './plugins/remark-reading-time.js';
 
 export const PKG_NAME = '@windcoder/astro-theme-orchid';
 
@@ -26,6 +28,10 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
         updateConfig({
           vite: {
             plugins: [tailwindcss()],
+          },
+          // 阅读时长/字数 + 自动摘要：渲染期写入 remarkPluginFrontmatter
+          markdown: {
+            remarkPlugins: [remarkReadingTime, remarkExcerpt],
           },
         });
 
