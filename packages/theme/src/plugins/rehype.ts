@@ -4,9 +4,8 @@
  * 挂载顺序（index.ts）：externalLinks → callouts → figure → firstImage → anchor → codeBlock
  * 注意：Astro 的 shiki 高亮在用户 rehype 插件之后运行，因此 codeBlock 只负责
  * 包装 <pre> 外层结构（.code-block/.code-head），pre 内容仍由 shiki 填充。
- * remark-math 的块级公式也产出 <pre><code class="language-math">——codeBlock
- * 必须跳过它：该 pre 随后被 rehype-katex 整体替换为 .katex-display，若包上
- * 深色 .code-block 外壳，替换后外壳残留会导致公式块带代码块底色。
+ * remark-math 的块级公式也会产出 <pre><code class="language-math">（后续由
+ * rehype-katex 整体替换为 katex 渲染产物），此时不生成复制按钮（无可复制代码）。
  */
 import { resolveLabel } from "../i18n/resolve.js";
 
@@ -242,14 +241,6 @@ export function rehypeCodeBlock(opts?: { uiLang?: string }): Transformer {
 		visit(tree, (node, parent) => {
 			if (node.type !== "element" || node.tagName !== "pre") return;
 			if (!parent) return;
-			/* 跳过 math 块：rehype-katex 将整体替换 pre，包装壳会残留深色背景 */
-			const code = (node.children ?? []).find(
-				(c: any) => c.type === "element" && c.tagName === "code",
-			);
-			const cls = Array.isArray(code?.properties?.className)
-				? code.properties.className
-				: [];
-			if (cls.some((c: string) => String(c) === "language-math")) return;
 			targets.push({ pre: node, parent, index: parent.children.indexOf(node) });
 		});
 		for (const { pre, parent, index } of targets) {
@@ -277,14 +268,17 @@ export function rehypeCodeBlock(opts?: { uiLang?: string }): Transformer {
 						properties: { className: ["lang"] },
 						children: [{ type: "text", value: lang }],
 					},
-					{
-						type: "element",
-						tagName: "button",
-						properties: { className: ["copy-btn"], type: "button" },
-						children: [{ type: "text", value: resolveLabel(uiLang, "copy") }],
-					},
 				],
 			};
+			/* math 块将由 rehype-katex 整体替换，无可复制代码，不生成复制按钮 */
+			if (lang !== "math") {
+				head.children.push({
+					type: "element",
+					tagName: "button",
+					properties: { className: ["copy-btn"], type: "button" },
+					children: [{ type: "text", value: resolveLabel(uiLang, "copy") }],
+				});
+			}
 			const wrapper = {
 				type: "element",
 				tagName: "div",

@@ -2784,6 +2784,11 @@ html.dark .diagram-fs-controls {
 	overflow-y: hidden;
 	padding: 4px 0;
 }
+/* math 块保留代码块深底（rehypeCodeBlock 包装 language-math），KaTeX 取
+   currentColor——不提亮会是正文深色字压深底，公式看不清 */
+.prose .code-block .katex-display {
+	color: #d6dbdf;
+}
 
 /* 邮箱防爬：href 已置 '#'，保持可点击的视觉暗示 */
 a[data-encoded-email] {

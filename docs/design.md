@@ -489,13 +489,14 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 验证记录：`postOnly`（toc）——首页 6 卡（公告/分类/标签/友链/日历/站点信息）无目录，文章页 7 卡含「目录」✓；`showOnPost: false`（临时挂 announcement 实测）——文章页公告消失、首页保留，验证后还原 ✓；`pnpm build` exit 0（115 html / Pagefind 62 页索引）无回归。
 
-### 4.9 公式块深色背景修复（✅ 2026-10-12 完成）
+### 4.9 公式块可读性修复（✅ 2026-10-12 完成，同日按用户决策改方案）
 
 源自用户反馈：文章页块级公式背景为黑色、公式看不清。
 
-- 根因：remark-math 将 `$$…$$` 序列化为 `<pre><code class="language-math">`；rehype 顺序中 rehypeCodeBlock 在 rehype-katex **之前**运行，把 math pre 包进深色 `div.code-block`；katex 随后替换内层 pre 为 `.katex-display`，但深色包装壳残留（实测壳背景 rgb(29,33,36)）。参考模板无 code-block 包装器故无此问题——属主题包自加功能的移植 bug
-- 修复：rehypeCodeBlock 收集包装目标时跳过 `language-math` 的 pre（原「math 不生成复制按钮」特判随之成为死代码，一并删除；math pre 永不进入包装流程）
-- 验证：features-demo 4 个块级公式背景透明、无 .code-block 祖先、文字色继承正文 ✓；theme-override 普通代码块回归——code-head（语言标签+复制按钮）与深色背景完好 ✓；`pnpm build` 115 页无回归
+- 根因：remark-math 将 `$$…$$` 序列化为 `<pre><code class="language-math">`；rehype 顺序中 rehypeCodeBlock 在 rehype-katex **之前**运行，math pre 被包进深色 `div.code-block`（bg #1d2124）；katex 替换内层 pre 后，KaTeX 文字取 `currentColor` 继承正文深色 rgb(47,45,42)——深字压深底不可读
+- 首版方案（跳过 math 包装）当日被用户否决：**用户要求保留公式块的代码块深底外观**，仅修文字可读性
+- **最终方案**：rehypeCodeBlock 维持原状（math 块照常包装、code-head 标 `math`、无复制按钮）；global.css 新增一条规则 `.prose .code-block .katex-display { color: #d6dbdf }`（与代码正文同色系），亮/暗模式均深底浅字可读
+- 验证：features-demo 结构恢复 `code-block → code-head(math) → katex-display`，提亮规则注入页面 ✓；theme-override 普通代码块不受影响（未触碰）✓；`pnpm build` 115 页无回归
 - 踩坑记录：改 rehype 插件后仅重启 dev server **不够**——Astro content store（`site/.astro/`）缓存旧渲染产物，须先删 `.astro/` 再重启（§7 已有备忘，本次实测再次命中）
 
 ## 5. 里程碑路线
