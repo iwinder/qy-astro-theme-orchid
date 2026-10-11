@@ -54,10 +54,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Test（node:test 内置运行器，字体子集化脚本）
+        run: pnpm test
+
       - name: Generate LQIP data
         run: pnpm --filter site lqip
 
-      - name: Build site（astro build + pagefind 索引）
+      - name: Build site（astro build + 字体子集化 + pagefind 索引）
         run: pnpm --filter site build
 
       - name: Verify pagefind index

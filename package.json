@@ -11,7 +11,8 @@
 		"preview": "pnpm --filter site preview",
 		"sync": "pnpm --filter site sync",
 		"lint": "biome check .",
-		"format": "biome check --write ."
+		"format": "biome check --write .",
+		"test": "node --test packages/theme/scripts/subset-fonts.test.mjs"
 	},
 	"engines": {
 		"node": ">=20"
