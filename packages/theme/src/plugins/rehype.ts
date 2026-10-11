@@ -89,8 +89,10 @@ export function rehypeCallouts(): Transformer {
   return (tree) => {
     visit(tree, (node) => {
       if (node.type !== 'element' || node.tagName !== 'blockquote') return;
-      const first = node.children?.[0];
-      if (!first || first.type !== 'element' || first.tagName !== 'p') return;
+      // 注意：Astro 7 的 mdast→hast 转换会给 blockquote 塞入首尾 "\n" 空白文本节点，
+      // 不能假设 children[0] 就是 <p>，须按类型查找首个元素子节点
+      const first = (node.children ?? []).find((c: any) => c.type === 'element');
+      if (!first || first.tagName !== 'p') return;
       const firstText = first.children?.find((c: any) => c.type === 'text');
       if (!firstText) return;
       const m = String(firstText.value).match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|DANGER)\][ \t]*\n?/i);
@@ -98,7 +100,9 @@ export function rehypeCallouts(): Transformer {
       const meta = CALLOUT_META[m[1].toUpperCase()];
       // 移除标记文本
       firstText.value = String(firstText.value).slice(m[0].length);
-      if (!firstText.value && first.children.length === 1) node.children.shift();
+      if (!firstText.value && first.children.length === 1) {
+        node.children = node.children.filter((c: any) => c !== first);
+      }
       const body = {
         type: 'element',
         tagName: 'div',

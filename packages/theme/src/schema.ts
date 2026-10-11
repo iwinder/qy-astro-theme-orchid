@@ -322,6 +322,57 @@ export const themeConfigSchema = z.object({
       },
       la51: { id: '', sdkUrl: '', ck: '', autoTrack: true, hashMode: false, screenRecord: true },
     }),
+    /* ---------- LaTeX 数学公式（M3b-b4） ---------- */
+    latex: z
+      .object({
+        /** 总开关：false 时 $...$ / $$...$$ 按普通文本渲染，不注入 katex 资源 */
+        enabled: z.boolean().default(false),
+      })
+      .default({ enabled: false }),
+    /* ---------- 图表（M3b-b4）：Mermaid 构建期双主题静态渲染 + PlantUML 外部服务 ---------- */
+    diagram: z
+      .object({
+        mermaid: z
+          .object({
+            enabled: z.boolean().default(false),
+            /** beautiful-mermaid 主题名（THEMES 键），浅/深各渲染一份，暗色模式切换显隐 */
+            lightTheme: z.string().default('github-light'),
+            darkTheme: z.string().default('github-dark'),
+          })
+          .default({ enabled: false, lightTheme: 'github-light', darkTheme: 'github-dark' }),
+        plantuml: z
+          .object({
+            enabled: z.boolean().default(false),
+            /** PlantUML 渲染服务地址（图片由浏览器访问该服务加载，自建/内网在此替换） */
+            server: z.string().default('https://www.plantuml.com/plantuml'),
+            /** 浅/深主题名（空 = 尊重图内 !theme 指令；深色留空复用浅色 URL） */
+            lightTheme: z.string().default(''),
+            darkTheme: z.string().default(''),
+          })
+          .default({
+            enabled: false,
+            server: 'https://www.plantuml.com/plantuml',
+            lightTheme: '',
+            darkTheme: '',
+          }),
+      })
+      .default({
+        mermaid: { enabled: false, lightTheme: 'github-light', darkTheme: 'github-dark' },
+        plantuml: {
+          enabled: false,
+          server: 'https://www.plantuml.com/plantuml',
+          lightTheme: '',
+          darkTheme: '',
+        },
+      }),
+    /* ---------- 邮箱防爬（M3b-b4）：mailto 构建期编码，点击时内联脚本还原 ---------- */
+    emailProtection: z
+      .object({
+        enabled: z.boolean().default(false),
+        /** base64：抗爬性更好；rot13：零 atob 依赖 */
+        method: z.enum(['base64', 'rot13']).default('base64'),
+      })
+      .default({ enabled: false, method: 'base64' }),
 });
 
 export type ThemeConfig = z.input<typeof themeConfigSchema>;

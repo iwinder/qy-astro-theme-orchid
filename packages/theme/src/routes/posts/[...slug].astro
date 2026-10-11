@@ -1,5 +1,7 @@
 ---
 import { getCollection, render } from 'astro:content';
+// KaTeX 样式：文章页独占加载（构建期渲染无客户端 JS，仅此一份 CSS）
+import 'katex/dist/katex.min.css';
 import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
 import Toc from 'virtual:theme/components/Toc.astro';
 import License from 'virtual:theme/components/License.astro';

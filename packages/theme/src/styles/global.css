@@ -714,3 +714,94 @@ html.dark .friend-card:hover .friend-name { color: var(--accent); }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* ---------- 16. 图表与公式 / 邮箱防爬（M3b-b4） ---------- */
+.diagram-container {
+  position: relative;
+  margin: 24px 0;
+  padding: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  /* 触摸设备：垂直滚动留给页面，捏合交给全屏层 */
+  touch-action: pan-y;
+}
+.diagram-wrapper { text-align: center; }
+.mermaid-svg-light svg, .mermaid-svg-dark svg, .plantuml-image {
+  max-width: 100%; height: auto; margin: 0 auto;
+}
+/* Mermaid 构建期双主题：同一份图渲染两份 SVG，按暗色模式显隐 */
+.mermaid-svg-dark { display: none; }
+html.dark .mermaid-svg-light { display: none; }
+html.dark .mermaid-svg-dark { display: block; }
+
+/* Mermaid 渲染失败降级：提示 + 源码 */
+.mermaid-error { padding: 14px 16px; text-align: left; }
+.mermaid-error p, .plantuml-error p { font-size: .9em; color: var(--muted); }
+.mermaid-error .mermaid-fallback-code {
+  margin: 10px 0 0; padding: 14px;
+  font-family: var(--font-mono); font-size: .85em; line-height: 1.6;
+  overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+  background: var(--bg-soft); border-radius: var(--radius-sm);
+}
+
+/* PlantUML 加载失败：提示 + 重试 */
+.plantuml-error { padding: 2px 0 10px; text-align: center; }
+.plantuml-error button {
+  margin-top: 8px; padding: 4px 14px;
+  border: 1px solid var(--border-2); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--ink-2); font-size: .85em; cursor: pointer;
+}
+.plantuml-error button:hover { color: var(--ink); border-color: var(--muted); }
+
+/* pan-zoom 控制栏：悬停浮出，触屏常显 */
+.diagram-controls {
+  position: absolute; top: 8px; right: 8px; z-index: 2;
+  display: flex; gap: 2px; padding: 3px;
+  background: hsl(0 0% 100% / .85); backdrop-filter: blur(4px);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  opacity: 0; transition: opacity .18s ease;
+}
+html.dark .diagram-controls { background: hsl(0 0% 8% / .85); }
+.diagram-container:hover .diagram-controls,
+.diagram-container:focus-within .diagram-controls { opacity: 1; }
+.diagram-ctrl-btn {
+  width: 26px; height: 26px; display: inline-flex; align-items: center; justify-content: center;
+  border: none; border-radius: 6px; background: transparent;
+  color: var(--ink-2); font-size: 14px; line-height: 1; cursor: pointer;
+}
+.diagram-ctrl-btn:hover { background: var(--bg-soft); color: var(--ink); }
+
+/* 全屏查看层 */
+.diagram-fullscreen-overlay {
+  position: fixed; inset: 0; z-index: 999;
+  display: flex; align-items: center; justify-content: center;
+  background: hsl(0 0% 0% / .8); backdrop-filter: blur(3px);
+}
+.diagram-fs-content {
+  width: 94vw; height: 86vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden; cursor: grab;
+}
+.diagram-fs-content svg, .diagram-fs-content img { max-width: 100%; max-height: 100%; }
+.diagram-fs-controls {
+  position: absolute; top: 18px; right: 18px;
+  display: flex; gap: 4px; padding: 4px;
+  background: hsl(0 0% 100% / .92); border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+}
+html.dark .diagram-fs-controls { background: hsl(0 0% 12% / .92); }
+.diagram-fs-controls .diagram-ctrl-btn { width: 30px; height: 30px; font-size: 16px; }
+
+/* KaTeX：宽公式横向滚动而非撑破版心 */
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+
+/* 邮箱防爬：href 已置 '#'，保持可点击的视觉暗示 */
+a[data-encoded-email] { cursor: pointer; }
+
+@media (max-width: 640px) {
+  /* 触屏无 hover：图表控制栏常显 */
+  .diagram-controls { opacity: 1; }
+}

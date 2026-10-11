@@ -1,10 +1,28 @@
-import { unified } from '@astrojs/markdown-remark';
 import type { AstroIntegration } from 'astro';
 import tailwindcss from '@tailwindcss/vite';
+// unified 处理器：Astro 7 默认 Sätteri 原生管线不执行 JS remark/rehype 插件，
+// 必须显式切回 unified 处理器，插件数组直接传入 unified({...})。
+// 铁律：数组元素一律是 attacher（插件工厂函数本身），带参数的用 [plugin, options]
+// 元组；绝不能 push 已调用的 transformer（如 remarkMermaid()），否则 unified freeze
+// 时会把它当 attacher 二次调用（tree=undefined）导致渲染崩溃，详见下方装配区注释
+import { unified } from '@astrojs/markdown-remark';
+// mhchem 化学宏：import 时刻把 \ce{...} 等宏注册进 katex 实例。
+// pnpm-workspace.yaml overrides 已把 rehype-katex 等统一到同一 katex 版本，
+// 共享单实例，故 mhchem 宏对 rehype-katex 的渲染直接生效
+import 'katex/dist/contrib/mhchem.mjs';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
 import { themeConfigSchema, type ThemeConfig } from './schema.js';
 import { overridesPlugin, themeConfigPlugin } from './vite.js';
 import { remarkExcerpt } from './plugins/remark-excerpt.js';
 import { remarkReadingTime } from './plugins/remark-reading-time.js';
+import { remarkMermaid, remarkPlantuml } from './plugins/remark-diagram.js';
+import {
+  rehypeDiagramPanZoom,
+  rehypeMermaid,
+  rehypePlantuml,
+} from './plugins/rehype-diagram.js';
+import { rehypeEmailProtection } from './plugins/rehype-email.js';
 import {
   rehypeAnchor,
   rehypeCallouts,
@@ -33,27 +51,71 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
     name: PKG_NAME,
     hooks: {
       'astro:config:setup': ({ injectRoute, updateConfig }) => {
-        // Tailwind v4 由主题注入，站点无需关心样式引擎
+        // remark：阅读时长/字数 + 自动摘要（渲染期写入 remarkPluginFrontmatter）
+        // LaTeX（b4）：remark-math 识别公式 → rehype-katex 构建期渲染（无客户端运行时）
+        // Mermaid/PlantUML（b4）：remark 标记代码块 → rehype 构建期产出（静态 SVG / 外链 img）
+        // 邮箱防爬（b4）：mailto 构建期编码 + 点击时内联解码
+        // rehype 顺序：内容变换在前 → katex → 图表 → pan-zoom 兜底 → 邮箱防爬最后
+        // Astro 7 接线方式：
+        //   - 默认 Sätteri 处理器不执行 JS 插件，须显式 processor: unified({...})
+        //     （integration 更新 processor 后 content store 不自动清除，
+        //      重启 dev 前删 site/.astro/ 可排除陈旧缓存干扰）
+        //   - unified 的铁律：插件数组里的元素一律是 attacher（插件工厂函数本身），
+        //     带参数的用 [plugin, options] 元组（loadPlugins 展开 → parser.use(plugin, opts)）。
+        //     千万不能 push remarkMermaid() 这种"已调用的 transformer"——unified freeze 时
+        //     会把数组元素当 attacher 再调用一次（第一参数 tree=undefined），
+        //     报 "Cannot read properties of undefined (reading 'children')"，且与文档内容无关
+        // shiki：代码高亮（github-dark），替代 Expressive Code（零新依赖）
+        // 顶层 shikiConfig 由 Astro 传入 createRenderer(shikiConfig)，与 unified 处理器兼容
+        const remarkPlugins: any[] = [remarkReadingTime, remarkExcerpt];
+        const rehypePlugins: any[] = [
+          rehypeExternalLinks,
+          rehypeCallouts,
+          rehypeFigure,
+          rehypeFirstImage,
+          rehypeAnchor,
+          rehypeCodeBlock,
+        ];
+        if (config.latex.enabled) {
+          remarkPlugins.push(remarkMath);
+          // 不传 { katex } 选项：rehype-katex 7.x 不支持实例覆盖（模块级 import），
+          // settings 会原样展开进 renderToString，传了也是无效选项
+          rehypePlugins.push(rehypeKatex);
+        }
+        if (config.diagram.mermaid.enabled) {
+          remarkPlugins.push(remarkMermaid);
+          rehypePlugins.push([
+            rehypeMermaid,
+            {
+              lightTheme: config.diagram.mermaid.lightTheme,
+              darkTheme: config.diagram.mermaid.darkTheme,
+            },
+          ]);
+        }
+        if (config.diagram.plantuml.enabled) {
+          remarkPlugins.push([
+            remarkPlantuml,
+            {
+              server: config.diagram.plantuml.server,
+              lightTheme: config.diagram.plantuml.lightTheme,
+              darkTheme: config.diagram.plantuml.darkTheme,
+            },
+          ]);
+          rehypePlugins.push(rehypePlantuml);
+        }
+        if (config.diagram.mermaid.enabled || config.diagram.plantuml.enabled) {
+          // 兜底：任一图表形态存在时确保 pan-zoom 脚本注入（每 tree 一次）
+          rehypePlugins.push(rehypeDiagramPanZoom);
+        }
+        if (config.emailProtection.enabled) {
+          rehypePlugins.push([rehypeEmailProtection, { method: config.emailProtection.method }]);
+        }
         updateConfig({
           vite: {
             plugins: [tailwindcss()],
           },
-          // remark：阅读时长/字数 + 自动摘要（渲染期写入 remarkPluginFrontmatter）
-          // rehype：外链新窗/提示块/图片 figure 化+灯箱/首图提取/标题锚点/代码块包装（顺序敏感）
-          // Astro 7 默认 Sätteri 处理器不执行 JS 插件，须显式 unified() 处理器承载
-          // shiki：代码高亮（github-dark），替代 Expressive Code（零新依赖）
           markdown: {
-            processor: unified({
-              remarkPlugins: [remarkReadingTime, remarkExcerpt],
-              rehypePlugins: [
-                rehypeExternalLinks,
-                rehypeCallouts,
-                rehypeFigure,
-                rehypeFirstImage,
-                rehypeAnchor,
-                rehypeCodeBlock,
-              ],
-            }),
+            processor: unified({ remarkPlugins, rehypePlugins }),
             shikiConfig: { theme: 'github-dark' },
           },
         });

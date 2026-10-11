@@ -162,6 +162,16 @@ export default defineConfig({
         umami: { websiteId: '' },
         la51: { id: '' },
       },
+      // LaTeX 数学公式（M3b-b4）：remark-math + rehype-katex 构建期渲染，无客户端运行时
+      latex: { enabled: true },
+      // 图表（M3b-b4）：Mermaid 构建期双主题静态 SVG；PlantUML 依赖外部渲染服务
+      // （默认官方服务，自建/内网部署时替换 server 地址）
+      diagram: {
+        mermaid: { enabled: true, lightTheme: 'github-light', darkTheme: 'github-dark' },
+        plantuml: { enabled: true, server: 'https://www.plantuml.com/plantuml' },
+      },
+      // 邮箱防爬（M3b-b4）：mailto 链接构建期编码，点击时内联脚本还原
+      emailProtection: { enabled: true, method: 'base64' },
     }),
   ],
 });

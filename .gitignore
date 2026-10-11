@@ -7,8 +7,11 @@ dist/
 .env.*
 .idea/
 
-# pnpm store 探测残留的硬链接探针
+# pnpm store 探测残留的硬链接探针；pnpm 数据（store/cache）一律经环境变量
+# 指向 /Volumes/zhitai/Work/repositories/pnpm，禁止项目内 store/.npmrc 入库
 _tmp_*
+.pnpm-store/
+.npmrc
 
 # 本地开发用真实文章（来自 orchid-blog 的私人内容，永不入库、不进历史）
 site/src/content/posts/*

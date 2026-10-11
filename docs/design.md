@@ -206,6 +206,35 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **M3b-b3 验证记录**（dev 实测，2026-10-11）：8 条路由全 200；首页公告卡渲染（`id="announcement"` + 演示文案 + 关闭钮）；广告默认关 → `id="advertisement"` 零渲染但 init 脚本在场（`__orchidCloseAd` + `data-astro-rerun`）；临时开启广告 → 卡片/内容/关闭钮/`ad-display-advertisement` 计数键全部在场，验证后还原默认关闭；统计 ID 全空 → 全页无 googletagmanager/clarity.ms/umami/51.la 任何脚本痕迹；文章页与 guestbook 的 Artalk 脚本均带 `data-astro-rerun`；dev 日志无 ERROR。
 
+**M3b-b4 实现记录**（✅ 2026-10-11）：
+
+| 功能 | 实现 |
+|---|---|
+| Astro 7 markdown 接线（b4 核心） | Astro 7 默认 Sätteri 原生处理器**不执行 JS remark/rehype 插件**（仅警告）→ integration `updateConfig({ markdown: { processor: unified({ remarkPlugins, rehypePlugins }), shikiConfig: { theme: 'github-dark' } } })` 切回 unified 处理器；顶层 `shikiConfig` 由 content-layer 传入 `createRenderer(shikiConfig)`，与 unified 处理器兼容 |
+| unified 插件装配（⚠️ 铁律） | 插件数组元素**一律是 attacher（插件工厂本体）**；带参用 `[plugin, options]` 元组（loadPlugins 展开 → `parser.use(plugin, opts)`）。绝不能 push 已调用的 transformer（如 `remarkMermaid()`）——unified freeze 时会把它当 attacher **二次调用（首参 tree=undefined）**，报 `Cannot read properties of undefined (reading 'children')`，且插件根本不注册、与文档内容无关（无图表的文档同样崩，因为 freeze 统一执行） |
+| LaTeX（P1-9） | `latex.enabled`（默认 false）→ remark-math + rehype-katex；mhchem 化学宏以 `import 'katex/dist/contrib/mhchem.mjs'` 副作用注册进 katex 单实例（pnpm-workspace.yaml `overrides` 把 rehype-katex 等统一到同一 katex 版本，共享单例后宏对 rehype-katex 直接生效）；**不传 `{ katex }` 选项**（rehype-katex 7.x 模块级 import 不支持实例覆盖，settings 会原样展开进 `renderToString` 成无效选项） |
+| Mermaid（P1-10） | `remarkMermaid`：```mermaid 代码块 → `div.mermaid-container[data-mermaid-code]`；`rehypeMermaid`：构建期 beautiful-mermaid 渲染 light/dark **双静态 SVG**（`.mermaid-svg-light/-dark` 包裹、CSS 按主题显隐，零客户端运行时）；渲染失败降级 `.mermaid-error` + `pre.mermaid-fallback-code` 源码展示 + stderr 日志 |
+| PlantUML（P2） | `remarkPlantuml`：```plantuml 代码块 → 自实现零依赖 URL 编码 → `div.plantuml-wrapper[data-light-src/-dark-src]`（服务器渲染模式，外部 plantuml 服务出图）；`rehypePlantuml` → `img.plantuml-image` + 客户端 plantuml-theme-switch.js 主题切换/加载失败重试 |
+| 邮箱防爬（P2） | `rehypeEmailProtection`：mailto 链接 → base64 编码 `a[data-encoded-email]`，客户端解码还原（`emailProtection.method` 配置） |
+| pan-zoom | `rehypeDiagramPanZoom`：diagram-panzoom.js（拖拽平移/缩放控制栏/双击/全屏/VT 换页兼容），**仅对实际含 `.diagram-container` 的 tree 注入一次** |
+
+**M3b-b4 偏差清单**：
+
+| 偏差 | 原因 | 主题实现 |
+|---|---|---|
+| 客户端脚本 readFileSync 替代 `?raw` | orchid 经 Vite `?raw` 引入脚本 | 模块顶层 `readFileSync(new URL('./scripts/…js', import.meta.url))` 读入，主题源码与 Vite 特性解耦 |
+| panzoom 条件注入 | orchid 无条件对每篇文档注入脚本 | 仅对含图表的文章注入（WeakSet 每 tree 防重） |
+| plantuml wrapper 去随机 id | orchid 随机 id → 静态构建产物不可复现 | 固定结构，产物可复现 |
+| 代码高亮 shiki 替代 Expressive Code | 主题不引 EC（零新依赖原则） | Astro 内置 shiki（github-dark）；`rehypeCodeBlock` 仍负责 `.code-block/.code-head/.copy-btn` 包装，pre 内容由 shiki 填充 |
+| callout 首子节点查找方式（b4 补充验证发现的 M3a 潜在缺陷修复） | Astro 7 的 mdast→hast 转换给 blockquote 塞入首尾 `"\n"` 空白文本节点，原 `children[0]` 拿到文本节点导致 callout 静默不转换 | 改按类型查找首个元素子节点；全库 grep 确认仅此一处同类假设 |
+
+**M3b-b4 验证记录**（2026-10-11）：
+
+- **独立探针**（`/tmp/b4-probe`：`createMarkdownProcessor` 按 G0 base → G1 +math/katex → G2 +mermaid → G3 +plantuml/panzoom → G4 +email 分组渲染）：5 组全 OK；G4 demo 产物 katex 85 / katex-display 4 / mermaid-container 3 / plantuml-container 2 / data-light-src 3 / data-encoded-email 3
+- **补充探针**：坏 mermaid（无效 header，beautiful-mermaid 抛 `Invalid mermaid header`）→ `.mermaid-error` + `pre.mermaid-fallback-code` 降级 + stderr 日志 ✓；普通 ts 代码块 → `pre.astro-code` + `.code-block` 包装 ✓；`> [!NOTE]` callout → `div.callout.info` ✓（修复后）
+- **dev 实测**（重启前清 `site/.astro/`）：干净启动零 ERROR；features-demo 文章 article 71052 bytes、katex 85、katex-display 4、mhchem `mord` 153、mermaid-container 3（svg 9）、plantuml-container 2（img 带 data-light-src/-dark-src）、`a[data-encoded-email]` 1、panzoom + plantuml 切换脚本注入 ✓；文章页头渲染 "3 字 / 约 1 分钟"（reading-time 生效）；hello-world 正常
+- **排查过程存档**：初版接线把已调用 transformer（`remarkMermaid()` 等 6 处）push 进插件数组 → 全站 md 渲染崩溃；dev 日志无堆栈，用独立探针（绕开 Astro dev，Node `--experimental-strip-types` + module resolve hook 重映射 `.js→.ts`）拿完整堆栈，二分 + `unified@11.0.5` freeze 源码（`attacher.call(self, ...options)`）定位根因，修正后三层验证全绿
+
 ### 4.3 P2 —— 拆分处理（2026-10-11 已确认：保留 5 项、暂时舍弃 4 项）
 
 原建议整体舍弃，经确认拆分如下。
@@ -253,7 +282,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | ✅ 完成 |
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3 ✅ 2026-10-11，批次划分见 §4.2） |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3/b4 ✅ 2026-10-11，批次划分见 §4.2） |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
 
 ## 6. 决策记录（2026-10-11 确认）
@@ -273,7 +302,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 ## 7. 工程备忘
 
 - 开发：仓库根 `pnpm --filter site dev`；构建：`pnpm --filter site build`
-- 依赖安装（TRAE 沙箱环境，实测有效版；**pnpm 数据只允许落在 `/Volumes/zhitai/Work/repositories/pnpm`，禁止在项目内建 store/cache**）：
+- 依赖安装（TRAE 沙箱环境，实测有效版；**pnpm 数据只允许落在 `/Volumes/zhitai/Work/repositories/pnpm`，禁止在项目内建 store/cache**；曾用的项目内 `.npmrc` TMPDIR store 重定向与 `.pnpm-store/` 残留已于 b4 清除，`.npmrc`/`.pnpm-store/` 已入 .gitignore，装包只走下面 env 方式）：
   ```bash
   pnpm_config_store_dir=/Volumes/zhitai/Work/repositories/pnpm/bin/store pnpm_config_cache_dir=/Volumes/zhitai/Work/repositories/pnpm/cache pnpm install --no-frozen-lockfile
   ```
@@ -281,6 +310,8 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - ⚠️ TRAE 沙箱拦截 unlink/rmdir（EXDEV）：`astro build` 的正常清理、astro dev 的 `.astro/dev.json` 锁清理、pnpm store WAL 清理均会失败——锁文件被拦时用 IDE 删除工具清掉再重启；**build 请在本机终端跑**；删除文件/目录一律走 IDE 删除工具
 - override 新增/移动文件后需重启 dev server（Vite 虚拟模块 resolveId 缓存）；**修改主题包内 integration/index.ts 后也需重启**（Vite 不监听 workspace 包内文件）
 - Astro 7 markdown：JS 插件必须走 `markdown.processor: unified({...})`（`@astrojs/markdown-remark`），legacy `remarkPlugins/rehypePlugins` 字段只触发警告不生效
+- ⚠️ **unified 插件数组铁律**：元素一律是 attacher（插件工厂本体），带参用 `[plugin, options]` 元组；**绝不能 push 已调用的 transformer**（如 `remarkMermaid()`）——freeze 时会被当 attacher 二次调用（首参 tree=undefined）报 `Cannot read properties of undefined (reading 'children')`，插件静默失效且与文档内容无关（详见 §4.2 b4 记录）
+- integration 更新 markdown processor 后 content store 不自动清除——重启 dev 前删 `site/.astro/` 可排除陈旧缓存干扰
 - Astro 组件 frontmatter（`---` 区）**不能包含 JSX**（返回 JSX 的箭头函数会在 vite import analysis 报 invalid JS syntax），JSX 片段只能写在模板区
 - ⚠️ **Astro 7.3.8 捆绑 Zod v4：`.default({})` 不解析内层默认值**（`.default({})` 命中即短路返回 `{}` 原值，内层字段的 default 全部丢失，实测 `z.object({a: z.boolean().default(true), b: z.object({c: z.number().default(3)}).default({})}).parse({})` → `{a: true, b: {}}`）。schema.ts 惯用法：**object section 的 default 必须写显式完整默认值字面量**（如 `.default({ enabled: true, name: '...' })`），嵌套层同理；新增配置 section 时一并遵守，否则该 section 缺省配置时站点运行期 `undefined` 500
 - 主题包版本升级策略：功能进 `minor`、修复进 `patch`、破坏性配置变更进 `major` 并保留 default 回退

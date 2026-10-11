@@ -1,3 +1,7 @@
 packages:
   - packages/*
   - site
+# 统一 katex 版本：主题包 / rehype-katex 等必须共享同一实例，
+# mhchem 宏（import 'katex/contrib/mhchem'）才能对 rehype-katex 生效
+overrides:
+  katex: ^0.19.0
