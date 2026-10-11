@@ -1,0 +1,172 @@
+---
+/**
+ * 侧栏日历 + 活跃度热力图（P2 侧栏改造）。
+ * 月视图（周一起始，当月有文章日高亮）+ 近 12 个月热力图（每月 4 段，透明度 5 档），
+ * 数据复用 /api/allPostMeta.json（加密文章已在端点侧排除）。
+ * <qy-calendar> 为 VT 安全 custom element：is:inline + customElements.get 防重复 define，
+ * 元数据缓存在 window.__qyAllPostMetaCache（与 random-posts 共用）。
+ */
+import { t } from "../i18n/index.js";
+
+interface Props {
+	/** 站点语言（决定月份/星期文案的 locale） */
+	lang?: string;
+}
+
+const { lang = "zh-CN" } = Astro.props;
+---
+
+<section class="side-card card reveal calendar-widget">
+  <h3>{t('calendarTitle')}</h3>
+  <qy-calendar
+    data-lang={lang}
+    data-api-url="/api/allPostMeta.json"
+    data-label-posts={t('dayPostsCount')}
+    data-label-activity={t('activityTitle')}
+  ></qy-calendar>
+</section>
+
+<script is:inline>
+  if (!customElements.get('qy-calendar')) {
+    customElements.define(
+      'qy-calendar',
+      class extends HTMLElement {
+        connectedCallback() {
+          // 每次 connected 重建月视图：VT 往返后回到当月是期望行为
+          this.render();
+        }
+        getMeta() {
+          if (window.__qyAllPostMetaCache) {
+            return Promise.resolve(window.__qyAllPostMetaCache);
+          }
+          return fetch(this.dataset.apiUrl)
+            .then((r) => r.json())
+            .then((data) => {
+              window.__qyAllPostMetaCache = data;
+              return data;
+            })
+            .catch(() => null);
+        }
+        render() {
+          var self = this;
+          this.getMeta().then(function (meta) {
+            if (!meta) return;
+            // key: YYYY-MM-DD（本地时区） → 当日文章数
+            var byDay = {};
+            meta.forEach(function (p) {
+              var d = new Date(p.published);
+              var key =
+                d.getFullYear() +
+                '-' +
+                String(d.getMonth() + 1).padStart(2, '0') +
+                '-' +
+                String(d.getDate()).padStart(2, '0');
+              byDay[key] = (byDay[key] || 0) + 1;
+            });
+            var locale = self.dataset.lang || 'zh-CN';
+            var postsLabel = self.dataset.labelPosts || '{n}';
+            var activityLabel = self.dataset.labelActivity || '';
+            var today = new Date();
+            var thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            var cur = new Date(thisMonth);
+            var fmtMonth = new Intl.DateTimeFormat(locale, {
+              year: 'numeric',
+              month: 'long',
+            });
+            var fmtWeek = new Intl.DateTimeFormat(locale, { weekday: 'narrow' });
+            // 周一起始的星期表头（2024-01-01 恰好是周一）
+            var weekHeads = [];
+            for (var i = 0; i < 7; i++) {
+              weekHeads.push(fmtWeek.format(new Date(2024, 0, 1 + i)));
+            }
+            var tooltip = function (key, n) {
+              return key + ' · ' + postsLabel.replace('{n}', n);
+            };
+
+            var monthHtml = function () {
+              var y = cur.getFullYear();
+              var m = cur.getMonth();
+              var lead = (new Date(y, m, 1).getDay() + 6) % 7;
+              var days = new Date(y, m + 1, 0).getDate();
+              var html =
+                '<div class="cal-head">' +
+                '<button type="button" class="cal-nav" data-dir="-1" aria-label="prev">&#8249;</button>' +
+                '<span class="cal-month">' + fmtMonth.format(cur) + '</span>' +
+                '<button type="button" class="cal-nav" data-dir="1" aria-label="next">&#8250;</button>' +
+                '</div>' +
+                '<div class="cal-grid">';
+              for (var i = 0; i < 7; i++) {
+                html += '<span class="cal-week">' + weekHeads[i] + '</span>';
+              }
+              for (var i = 0; i < lead; i++) {
+                html += '<span class="cal-day dim"></span>';
+              }
+              for (var day = 1; day <= days; day++) {
+                var key =
+                  y + '-' + String(m + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                var n = byDay[key] || 0;
+                var cls = 'cal-day';
+                if (n > 0) cls += ' has-post';
+                if (y === today.getFullYear() && m === today.getMonth() && day === today.getDate()) {
+                  cls += ' today';
+                }
+                html +=
+                  '<span class="' + cls + '"' +
+                  (n > 0 ? ' title="' + tooltip(key, n) + '"' : '') +
+                  '>' + day + '</span>';
+              }
+              return html + '</div>';
+            };
+
+            // 近 12 个月热力图：每月 4 段（周段），透明度 5 档 0 / .45 / .65 / .85 / 1
+            var heatHtml = function () {
+              var html = '';
+              for (var i = 11; i >= 0; i--) {
+                var d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                var y = d.getFullYear();
+                var m = d.getMonth();
+                var days = new Date(y, m + 1, 0).getDate();
+                var buckets = [0, 0, 0, 0];
+                for (var day = 1; day <= days; day++) {
+                  var w = Math.min(Math.floor((day - 1) / 7), 3);
+                  var key =
+                    y + '-' + String(m + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
+                  buckets[w] += byDay[key] || 0;
+                }
+                var mk = y + '-' + String(m + 1).padStart(2, '0');
+                var total = buckets[0] + buckets[1] + buckets[2] + buckets[3];
+                html +=
+                  '<div class="cal-heat-month" title="' + mk + ' · ' + postsLabel.replace('{n}', total) + '">';
+                for (var b = 0; b < 4; b++) {
+                  var n = buckets[b];
+                  var o = n === 0 ? 0 : n < 3 ? 0.45 : n < 6 ? 0.65 : n < 10 ? 0.85 : 1;
+                  html += '<i class="cal-heat-cell" style="--o:' + o + '"></i>';
+                }
+                html += '</div>';
+              }
+              return html;
+            };
+
+            var build = function () {
+              self.innerHTML =
+                monthHtml() +
+                '<div class="cal-heat-title">' + activityLabel + '</div>' +
+                '<div class="cal-heat">' + heatHtml() + '</div>';
+              self.querySelectorAll('.cal-nav').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                  var dir = parseInt(btn.dataset.dir, 10);
+                  var next = new Date(cur.getFullYear(), cur.getMonth() + dir, 1);
+                  // 不允许翻到未来月份
+                  if (next > thisMonth) return;
+                  cur = next;
+                  build();
+                });
+              });
+            };
+            build();
+          });
+        }
+      },
+    );
+  }
+</script>

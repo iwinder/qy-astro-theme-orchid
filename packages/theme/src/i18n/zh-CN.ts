@@ -53,6 +53,9 @@ const zhCN = {
 	posts: "文章",
 	running: "已运行",
 	daysCount: "{n} 天",
+	calendarTitle: "日历",
+	activityTitle: "活跃度",
+	dayPostsCount: "{n} 篇",
 	/* 列表 / 聚合页 */
 	recentPosts: "近期文章",
 	emptyPosts: "还没有文章，去 content/posts 里写一篇吧。",
@@ -122,6 +125,10 @@ const zhCN = {
 	savePoster: "保存海报",
 	scanToRead: "扫码阅读全文",
 	author: "作者",
+	/* 文章页支持卡（打赏入口 + 分享海报） */
+	supportTitle: "支持一下",
+	supportDesc: "如果这篇文章对你有帮助，欢迎打赏或分享。",
+	sponsorMe: "打赏支持",
 } as const;
 
 export type UiKey = keyof typeof zhCN;

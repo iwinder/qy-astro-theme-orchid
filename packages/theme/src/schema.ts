@@ -90,7 +90,11 @@ export const themeConfigSchema = z.object({
 			enabled: z.boolean().default(true),
 		})
 		.default({ enabled: true }),
-	/** 版权声明（文章级 licenseName/licenseUrl 可覆盖；enabled=false 全站关闭） */
+	/**
+	 * 版权声明（文章级 licenseName/licenseUrl 覆盖名称与链接、license: false 按篇关闭；
+	 * enabled=false 全站关闭）。prefix/suffix 自定义声明文案，留空用语言包默认
+	 * （「本文采用 … 许可，转载请注明出处与作者。」）。
+	 */
 	license: z
 		.object({
 			enabled: z.boolean().default(true),
@@ -98,11 +102,17 @@ export const themeConfigSchema = z.object({
 			url: z
 				.string()
 				.default("https://creativecommons.org/licenses/by-nc-sa/4.0/"),
+			/** 声明前缀文案（许可链接之前），留空用语言包默认 */
+			prefix: z.string().default(""),
+			/** 声明后缀文案（许可链接之后），留空用语言包默认 */
+			suffix: z.string().default(""),
 		})
 		.default({
 			enabled: true,
 			name: "CC BY-NC-SA 4.0",
 			url: "https://creativecommons.org/licenses/by-nc-sa/4.0/",
+			prefix: "",
+			suffix: "",
 		}),
 	/** 建站日期（YYYY-MM-DD，站点信息卡「已运行」；不配置则不显示该行） */
 	since: z.string().optional(),
@@ -202,6 +212,8 @@ export const themeConfigSchema = z.object({
 						/** 权重，越大越靠前（sort=weight 时生效） */
 						weight: z.number().default(0),
 						enabled: z.boolean().default(true),
+						/** 首页/列表页侧栏友链 widget 优先展示（其余按 weight 补足） */
+						featured: z.boolean().default(false),
 					}),
 				)
 				.default([]),
@@ -213,19 +225,69 @@ export const themeConfigSchema = z.object({
 			apply: { title: "", description: "", link: "", label: "申请友链" },
 			list: [],
 		}),
-	/** 侧栏 widget（决策 8：友链 widget 默认开、显示 3 条） */
+	/**
+	 * 侧栏 widget 体系（P2 侧栏改造）：
+	 * - widgets 数组即渲染顺序，可自由增删/排序/开关；类型：
+	 *   announcement / categories / tags / friends / calendar / toc / siteInfo / advertisement
+	 * - enabled=false 跳过该 widget；showOnPost=false 的 widget 不进文章页侧栏
+	 * - onPost=false 时文章详情页不渲染侧栏（TOC 保持正文右侧原位）
+	 */
 	sidebar: z
 		.object({
+			/** 文章详情页是否启用侧栏 */
+			onPost: z.boolean().default(false),
+			/** widget 渲染顺序 = 数组顺序 */
+			widgets: z
+				.array(
+					z.object({
+						type: z.enum([
+							"announcement",
+							"categories",
+							"tags",
+							"friends",
+							"calendar",
+							"toc",
+							"siteInfo",
+							"advertisement",
+						]),
+						enabled: z.boolean().default(true),
+						/** 文章页侧栏是否保留该 widget */
+						showOnPost: z.boolean().default(true),
+					}),
+				)
+				.default([
+					{ type: "announcement" },
+					{ type: "categories" },
+					{ type: "tags" },
+					{ type: "friends" },
+					{ type: "calendar" },
+					{ type: "toc" },
+					{ type: "siteInfo" },
+					{ type: "advertisement" },
+				]),
+			/** 友链 widget 参数 */
 			friends: z
 				.object({
-					enabled: z.boolean().default(true),
 					count: z.number().int().min(1).default(3),
-					/** 构建期随机取样；false 则按 weight 降序取前 count 个 */
+					/** 构建期随机取样；false 则 featured 优先、其余按 weight 降序取前 count 个 */
 					random: z.boolean().default(false),
 				})
-				.default({ enabled: true, count: 3, random: false }),
+				.default({ count: 3, random: false }),
 		})
-		.default({ friends: { enabled: true, count: 3, random: false } }),
+		.default({
+			onPost: false,
+			widgets: [
+				{ type: "announcement" },
+				{ type: "categories" },
+				{ type: "tags" },
+				{ type: "friends" },
+				{ type: "calendar" },
+				{ type: "toc" },
+				{ type: "siteInfo" },
+				{ type: "advertisement" },
+			],
+			friends: { count: 3, random: false },
+		}),
 	/** 打赏页（收款码 image 与跳转 link 至少配一个；均为空渲染占位框） */
 	sponsor: z
 		.object({
@@ -234,6 +296,8 @@ export const themeConfigSchema = z.object({
 			/** 打赏用途说明（留空不渲染） */
 			usage: z.string().default(""),
 			showSponsorsList: z.boolean().default(true),
+			/** 文章详情页是否渲染「打赏支持」入口（还需 pages.sponsor 开启） */
+			showButtonInPost: z.boolean().default(true),
 			methods: z
 				.array(
 					z.object({
@@ -266,6 +330,7 @@ export const themeConfigSchema = z.object({
 			description: "",
 			usage: "",
 			showSponsorsList: true,
+			showButtonInPost: true,
 			methods: [],
 			sponsors: [],
 		}),
@@ -556,6 +621,8 @@ export function definePostSchema(extensions: z.ZodRawShape = {}) {
 			/** 文章级许可证（空 = 跟随站点全局配置） */
 			licenseName: z.string().optional(),
 			licenseUrl: z.string().optional(),
+			/** 本篇是否展示版权声明（默认开；全站另受 license.enabled 控制） */
+			license: z.boolean().default(true),
 			/** 本篇是否展示评论（默认开） */
 			comment: z.boolean().default(true),
 			/** 列表卡片形态按篇覆盖：cover 图卡 / compact 紧凑行 / text 纯文字 */

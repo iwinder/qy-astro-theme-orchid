@@ -6,19 +6,24 @@ interface Props {
 	/** 文章级覆盖；空则跟随全站配置 */
 	licenseName?: string;
 	licenseUrl?: string;
+	/** 文章级开关（frontmatter license）；false 强制隐藏 */
+	enabled?: boolean;
 }
 
-const { licenseName, licenseUrl } = Astro.props;
-const enabled = config.license.enabled;
+const { licenseName, licenseUrl, enabled } = Astro.props;
+const enabledFinal = config.license.enabled && (enabled ?? true);
 const name = licenseName ?? config.license.name;
 const url = licenseUrl ?? config.license.url;
+// prefix/suffix 留空时回退语言包默认文案
+const prefix = config.license.prefix || t('licensePrefix');
+const suffix = config.license.suffix || t('licenseSuffix');
 ---
 
 {
-  enabled && (
+  enabledFinal && (
     <div class="license">
-      {t('licensePrefix')} <a href={url} target="_blank" rel="noopener">{name}</a>{' '}
-      {t('licenseSuffix')}
+      {prefix} <a href={url} target="_blank" rel="noopener">{name}</a>{' '}
+      {suffix}
     </div>
   )
 }

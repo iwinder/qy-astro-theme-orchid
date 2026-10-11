@@ -8,6 +8,7 @@ import EncryptedContent from "virtual:theme/components/EncryptedContent.astro";
 import License from "virtual:theme/components/License.astro";
 import PostNav from "virtual:theme/components/PostNav.astro";
 import RecommendedPost from "virtual:theme/components/RecommendedPost.astro";
+import Sidebar from "virtual:theme/components/Sidebar.astro";
 import Toc from "virtual:theme/components/Toc.astro";
 import config from "virtual:theme/config";
 import { t } from "../../i18n/index.js";
@@ -28,11 +29,13 @@ export async function getStaticPaths() {
 			prev: sorted[idx + 1] ?? null,
 			next: sorted[idx - 1] ?? null,
 			related: getRelatedPosts(sorted, post, config.relatedPosts.count),
+			// 文章页侧栏（P2）的聚合数据源
+			posts: sorted,
 		},
 	}));
 }
 
-const { post, prev, next, related } = Astro.props;
+const { post, prev, next, related, posts } = Astro.props;
 const d = post.data;
 const { Content, headings, remarkPluginFrontmatter } = await render(post);
 const { words, minutes } = remarkPluginFrontmatter as {
@@ -41,6 +44,12 @@ const { words, minutes } = remarkPluginFrontmatter as {
 };
 
 const url = new URL(`/posts/${post.id}/`, Astro.site);
+// 支持卡（P2）：打赏入口 + 分享海报，二者均关闭则整卡不渲染；加密文章不渲染
+const showShareBtn = config.sharePoster.enabled && !d.password;
+const showSponsorBtn =
+	config.sponsor.showButtonInPost && config.pages.sponsor && !d.password;
+// 文章页侧栏（P2）：onPost 开启且非加密文章；侧栏内 toc widget 承担目录
+const postSidebar = config.sidebar.onPost && !d.password;
 const jsonLd = {
 	"@context": "https://schema.org",
 	"@type": "BlogPosting",
@@ -89,29 +98,49 @@ const jsonLd = {
         <Content />
       )}
     </article>
-    {config.toc.enabled && !d.password && <Toc headings={headings} />}
+    {/* 侧栏开关（P2）：onPost 时侧栏进第二列，TOC 由侧栏 toc widget 承担；
+        关闭侧栏时 TOC 保持正文右侧原位 */}
+    {postSidebar ? (
+      <Sidebar posts={posts} variant="post" headings={headings} currentId={post.id} />
+    ) : (
+      config.toc.enabled && !d.password && <Toc headings={headings} />
+    )}
   </div>
-  <License licenseName={d.licenseName} licenseUrl={d.licenseUrl} />
+  <License licenseName={d.licenseName} licenseUrl={d.licenseUrl} enabled={d.license} />
   <PostNav prev={prev ?? undefined} next={next ?? undefined} />
-  {/* 分享海报（P1-13）：纯浏览器 canvas + qrcode；数据经 data-* 传给 share-poster.ts，加密文章不出按钮 */}
+  {/* 支持卡（P2）：打赏入口 + 分享海报（share-poster.ts 仍按 #qy-share-btn 与 data-* 绑定） */}
   {
-    config.sharePoster.enabled && !d.password && (
-      <div class="poster-actions reveal">
-        <button
-          type="button"
-          id="qy-share-btn"
-          class="btn-poster"
-          data-title={d.title}
-          data-author={d.author || config.author || config.title}
-          data-desc={d.description}
-          data-date={d.published.toISOString()}
-          data-cover={d.image ?? ''}
-          data-url={url.href}
-          data-site={config.title}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-          {t('sharePoster')}
-        </button>
+    (showSponsorBtn || showShareBtn) && (
+      <div class="support-card reveal">
+        <div class="support-info">
+          <h3>{t('supportTitle')}</h3>
+          <p>{t('supportDesc')}</p>
+        </div>
+        <div class="support-actions">
+          {showSponsorBtn && (
+            <a class="btn-sponsor" href="/sponsor/">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+              {t('sponsorMe')}
+            </a>
+          )}
+          {showShareBtn && (
+            <button
+              type="button"
+              id="qy-share-btn"
+              class="btn-poster"
+              data-title={d.title}
+              data-author={d.author || config.author || config.title}
+              data-desc={d.description}
+              data-date={d.published.toISOString()}
+              data-cover={d.image ?? ''}
+              data-url={url.href}
+              data-site={config.title}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+              {t('sharePoster')}
+            </button>
+          )}
+        </div>
       </div>
     )
   }

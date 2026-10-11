@@ -1,5 +1,7 @@
 ---
 import config from "virtual:theme/config";
+import Calendar from "./Calendar.astro";
+import type { TocHeading } from "./Toc.astro";
 import { t } from "../i18n/index.js";
 import {
 	collectCategories,
@@ -11,12 +13,24 @@ import {
 interface Props {
 	/** 全站已发布文章（用于聚合分类/标签/统计） */
 	posts: PostLike[];
+	/** list：首页/列表页；post：文章详情页（可选 toc widget） */
+	variant?: "list" | "post";
+	/** 文章标题锚点（variant=post 时供 toc widget 渲染） */
+	headings?: TocHeading[];
 }
 
-const { posts } = Astro.props;
+const { posts, variant = "list", headings = [] } = Astro.props;
+const isPost = variant === "post";
+const tocItems = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 const cats = [...collectCategories(posts).entries()];
 const tags = [...collectTags(posts).keys()];
 const runDays = config.since ? daysSince(config.since) : null;
+
+// widget 开关与顺序（P2 侧栏改造）：config.sidebar.widgets 数组即渲染顺序；
+// 列表页过滤 showOnPost=false 的项（toc 只在文章页有意义），文章页整体开关由路由层 onPost 把关
+const widgets = config.sidebar.widgets.filter((w) =>
+	w.enabled && (isPost ? true : w.showOnPost),
+);
 
 // 公告 widget（P1-17）：content 留空整卡不渲染
 const ann = config.announcement;
@@ -29,145 +43,160 @@ const adExpired = ad.expireDate ? new Date() > new Date(ad.expireDate) : false;
 const showAd =
 	ad.enabled && Boolean(ad.image || ad.content || ad.link.text) && !adExpired;
 
-// 友链 widget（决策 8）：与友链页同源 themeConfig.friends.list
+// 友链 widget（决策 8）：与友链页同源 themeConfig.friends.list；
+// random=false 时 featured 优先、其余按 weight 降序，取前 count 个
 const fw = config.sidebar.friends;
 let sideFriends: typeof config.friends.list = [];
-if (fw.enabled) {
+if (widgets.some((w) => w.type === "friends")) {
 	const enabled = config.friends.list.filter((f) => f.enabled);
 	const pool = fw.random
 		? [...enabled].sort(() => Math.random() - 0.5)
-		: [...enabled].sort((a, b) => b.weight - a.weight);
+		: [...enabled].sort((a, b) => {
+				if (a.featured !== b.featured) return a.featured ? -1 : 1;
+				return b.weight - a.weight;
+			});
 	sideFriends = pool.slice(0, fw.count);
 }
 ---
 
 <aside class="sidebar">
   {
-    showAnnouncement && (
-      <section class="side-card card reveal" id="announcement">
-        <h3>{ann.title}</h3>
-        <p class="side-announcement">{ann.content}</p>
-        {(annLink || ann.closable) && (
-          <div class="side-announcement-foot">
-            {annLink && (
-              <a
-                class="btn-ghost"
-                href={ann.link.url}
-                target={ann.link.external ? '_blank' : undefined}
-                rel={ann.link.external ? 'noopener noreferrer' : undefined}
-              >
-                {ann.link.text}
-              </a>
+    widgets.map((w) => (
+      <>
+        {w.type === 'announcement' && showAnnouncement && (
+          <section class="side-card card reveal" id="announcement">
+            <h3>{ann.title}</h3>
+            <p class="side-announcement">{ann.content}</p>
+            {(annLink || ann.closable) && (
+              <div class="side-announcement-foot">
+                {annLink && (
+                  <a
+                    class="btn-ghost"
+                    href={ann.link.url}
+                    target={ann.link.external ? '_blank' : undefined}
+                    rel={ann.link.external ? 'noopener noreferrer' : undefined}
+                  >
+                    {ann.link.text}
+                  </a>
+                )}
+                {ann.closable && (
+                  <button
+                    class="side-close"
+                    type="button"
+                    aria-label={t('closeAnnouncement')}
+                    onclick="this.closest('section').style.display='none'"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             )}
-            {ann.closable && (
+          </section>
+        )}
+        {w.type === 'categories' && cats.length > 0 && (
+          <section class="side-card card reveal">
+            <h3>{t('categories')}</h3>
+            <div class="cat-list">
+              {cats.map(([name, list]) => (
+                <a href={`/categories/${encodeURIComponent(name)}/`}>
+                  <span>{name}</span>
+                  <span class="count">{list.length}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+        {w.type === 'tags' && tags.length > 0 && (
+          <section class="side-card card reveal">
+            <h3>{t('tags')}</h3>
+            <div class="side-tags">
+              {tags.map((tag) => (
+                <a class="chip" href={`/tags/${encodeURIComponent(tag)}/`}>
+                  {tag}
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+        {w.type === 'friends' && sideFriends.length > 0 && (
+          <section class="side-card card reveal">
+            <h3>{t('friendLinks')}</h3>
+            <div class="side-friends">
+              {sideFriends.map((f) => (
+                <a href={f.site} target="_blank" rel="noopener" title={f.title}>
+                  {f.image ? (
+                    <img src={f.image} alt={f.title} loading="lazy" />
+                  ) : (
+                    <span class="avatar-fallback">{f.title.slice(0, 1)}</span>
+                  )}
+                  <span>{f.title}</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+        {w.type === 'calendar' && <Calendar lang={config.lang} />}
+        {w.type === 'toc' && isPost && config.toc.enabled && tocItems.length > 0 && (
+          <section class="side-card card reveal toc-widget">
+            <h3>{t('tocTitle')}</h3>
+            <nav class="side-toc">
+              {tocItems.map((h) => (
+                <a class={`toc-depth-${h.depth}`} href={`#${h.slug}`}>
+                  {h.text}
+                </a>
+              ))}
+            </nav>
+          </section>
+        )}
+        {w.type === 'siteInfo' && (
+          <section class="side-card card reveal">
+            <h3>{t('siteInfo')}</h3>
+            <div class="site-info">
+              <div class="row"><span>{t('posts')}</span><b>{posts.length}</b></div>
+              <div class="row"><span>{t('categories')}</span><b>{cats.length}</b></div>
+              <div class="row"><span>{t('tags')}</span><b>{tags.length}</b></div>
+              {runDays !== null && <div class="row"><span>{t('running')}</span><b>{t('daysCount', { n: runDays })}</b></div>}
+            </div>
+          </section>
+        )}
+        {w.type === 'advertisement' && showAd && (
+          <section class="side-card card reveal advertisement-widget" id="advertisement">
+            <h3>{ad.title}</h3>
+            {ad.closable && (
               <button
-                class="side-close"
+                class="ad-close"
                 type="button"
-                aria-label={t('closeAnnouncement')}
-                onclick="this.closest('section').style.display='none'"
+                aria-label={t('closeAd')}
+                onclick="window.__orchidCloseAd && window.__orchidCloseAd(this)"
               >
                 ✕
               </button>
             )}
-          </div>
-        )}
-      </section>
-    )
-  }
-  {
-    cats.length > 0 && (
-      <section class="side-card card reveal">
-        <h3>{t('categories')}</h3>
-        <div class="cat-list">
-          {cats.map(([name, list]) => (
-            <a href={`/categories/${encodeURIComponent(name)}/`}>
-              <span>{name}</span>
-              <span class="count">{list.length}</span>
-            </a>
-          ))}
-        </div>
-      </section>
-    )
-  }
-  {
-    tags.length > 0 && (
-      <section class="side-card card reveal">
-        <h3>{t('tags')}</h3>
-        <div class="side-tags">
-          {tags.map((tag) => (
-            <a class="chip" href={`/tags/${encodeURIComponent(tag)}/`}>
-              {tag}
-            </a>
-          ))}
-        </div>
-      </section>
-    )
-  }
-  {
-    sideFriends.length > 0 && (
-      <section class="side-card card reveal">
-        <h3>{t('friendLinks')}</h3>
-        <div class="side-friends">
-          {sideFriends.map((f) => (
-            <a href={f.site} target="_blank" rel="noopener" title={f.title}>
-              {f.image ? (
-                <img src={f.image} alt={f.title} loading="lazy" />
-              ) : (
-                <span class="avatar-fallback">{f.title.slice(0, 1)}</span>
+            <div class="ad-body">
+              {ad.image &&
+                (ad.imageLink ? (
+                  <a href={ad.imageLink} target="_blank" rel="noopener">
+                    <img src={ad.image} alt={ad.imageAlt} loading="lazy" />
+                  </a>
+                ) : (
+                  <img src={ad.image} alt={ad.imageAlt} loading="lazy" />
+                ))}
+              {ad.content && <p>{ad.content}</p>}
+              {ad.link.text && (
+                <a
+                  class="btn-ghost"
+                  href={ad.link.url || '#'}
+                  target={ad.link.external ? '_blank' : undefined}
+                  rel={ad.link.external ? 'noopener noreferrer' : undefined}
+                >
+                  {ad.link.text}
+                </a>
               )}
-              <span>{f.title}</span>
-            </a>
-          ))}
-        </div>
-      </section>
-    )
-  }
-  <section class="side-card card reveal">
-    <h3>{t('siteInfo')}</h3>
-    <div class="site-info">
-      <div class="row"><span>{t('posts')}</span><b>{posts.length}</b></div>
-      <div class="row"><span>{t('categories')}</span><b>{cats.length}</b></div>
-      <div class="row"><span>{t('tags')}</span><b>{tags.length}</b></div>
-      {runDays !== null && <div class="row"><span>{t('running')}</span><b>{t('daysCount', { n: runDays })}</b></div>}
-    </div>
-  </section>
-  {
-    showAd && (
-      <section class="side-card card reveal advertisement-widget" id="advertisement">
-        <h3>{ad.title}</h3>
-        {ad.closable && (
-          <button
-            class="ad-close"
-            type="button"
-            aria-label={t('closeAd')}
-            onclick="window.__orchidCloseAd && window.__orchidCloseAd(this)"
-          >
-            ✕
-          </button>
+            </div>
+          </section>
         )}
-        <div class="ad-body">
-          {ad.image &&
-            (ad.imageLink ? (
-              <a href={ad.imageLink} target="_blank" rel="noopener">
-                <img src={ad.image} alt={ad.imageAlt} loading="lazy" />
-              </a>
-            ) : (
-              <img src={ad.image} alt={ad.imageAlt} loading="lazy" />
-            ))}
-          {ad.content && <p>{ad.content}</p>}
-          {ad.link.text && (
-            <a
-              class="btn-ghost"
-              href={ad.link.url || '#'}
-              target={ad.link.external ? '_blank' : undefined}
-              rel={ad.link.external ? 'noopener noreferrer' : undefined}
-            >
-              {ad.link.text}
-            </a>
-          )}
-        </div>
-      </section>
-    )
+      </>
+    ))
   }
 </aside>
 

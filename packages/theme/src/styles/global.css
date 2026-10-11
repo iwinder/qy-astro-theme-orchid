@@ -895,6 +895,145 @@ html.dark .side-friends a:hover {
 	justify-content: space-between;
 }
 
+/* 日历 widget（月视图 + 活跃度热力图） */
+.qy-calendar {
+	--cal-cell: 13px;
+}
+.cal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 10px;
+}
+.cal-month {
+	font-size: 13.5px;
+	font-weight: 600;
+	color: var(--ink);
+	font-variant-numeric: tabular-nums;
+}
+.cal-nav {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+.cal-nav button {
+	width: 22px;
+	height: 22px;
+	display: grid;
+	place-items: center;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: transparent;
+	color: var(--muted);
+	font-size: 12px;
+	line-height: 1;
+	cursor: pointer;
+	transition:
+		color 0.2s ease,
+		border-color 0.2s ease;
+}
+.cal-nav button:hover:not(:disabled) {
+	color: var(--accent);
+	border-color: var(--accent);
+}
+.cal-nav button:disabled {
+	opacity: 0.35;
+	cursor: default;
+}
+.cal-grid {
+	display: grid;
+	grid-template-columns: repeat(7, 1fr);
+	gap: 2px;
+	text-align: center;
+}
+.cal-week {
+	font-size: 10.5px;
+	color: var(--muted);
+	padding-bottom: 4px;
+}
+.cal-day {
+	position: relative;
+	aspect-ratio: 1;
+	display: grid;
+	place-items: center;
+	font-size: 11px;
+	color: var(--ink-2);
+	border-radius: 6px;
+	font-variant-numeric: tabular-nums;
+}
+.cal-day.dim {
+	color: transparent;
+	pointer-events: none;
+}
+.cal-day.has-post {
+	background: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.16);
+	color: var(--accent-deep);
+	font-weight: 600;
+}
+html.dark .cal-day.has-post {
+	color: var(--accent);
+}
+.cal-day.today {
+	outline: 1.5px solid var(--accent);
+	outline-offset: -1.5px;
+}
+.cal-heat-title {
+	margin: 12px 0 6px;
+	font-size: 12px;
+	color: var(--muted);
+}
+.cal-heat {
+	display: flex;
+	gap: 3px;
+	justify-content: space-between;
+}
+.cal-heat-month {
+	flex: 1;
+	display: grid;
+	grid-template-rows: repeat(4, 1fr);
+	gap: 3px;
+}
+.cal-heat-month,
+.cal-heat-cell {
+	aspect-ratio: 1;
+	border-radius: 2px;
+}
+.cal-heat-cell {
+	background: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / max(var(--o, 0), 0.08));
+}
+
+/* 文章页侧栏目录 */
+.side-toc {
+	display: grid;
+	gap: 2px;
+}
+.side-toc a {
+	font-size: 13px;
+	color: var(--ink-2);
+	text-decoration: none;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	padding: 3px 6px;
+	border-radius: 6px;
+	transition:
+		color 0.2s ease,
+		background 0.2s ease;
+}
+.side-toc a:hover {
+	color: var(--accent-deep);
+	background: var(--accent-soft);
+}
+html.dark .side-toc a:hover {
+	color: var(--accent);
+}
+.side-toc .toc-depth-3 {
+	padding-left: 18px;
+}
+.side-toc .toc-depth-4 {
+	padding-left: 30px;
+}
+
 /* pagination */
 .pagination {
 	margin-top: 32px;
@@ -2755,13 +2894,17 @@ a[data-encoded-email] {
 /* ---------- 17. 相关/随机文章推荐（M3b-b9） ---------- */
 .related-grid {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	/* minmax(0,1fr) 防止轨道被 nowrap 标题的 min-content 撑破页面 */
+	grid-template-columns: repeat(2, minmax(0, 1fr));
 	gap: 16px;
 	margin: 28px 0;
 }
 .related-card {
 	display: flex;
 	flex-direction: column;
+	/* 同原版 card-base：min-width:0 + overflow:hidden 保证截断链生效 */
+	min-width: 0;
+	overflow: hidden;
 	padding: 18px 20px;
 	background: var(--surface);
 	border: 1px solid var(--border);
@@ -2925,11 +3068,66 @@ a[data-encoded-email] {
 }
 
 /* ---------- 19. 分享海报（M3b-b9） ---------- */
-/* 文章页按钮行（PostNav 后、推荐栏前） */
-.poster-actions {
-	display: flex;
-	justify-content: center;
+/* 文章页支持卡（打赏 + 分享海报入口） */
+.support-card {
 	margin-top: 28px;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 18px;
+	padding: 18px 22px;
+	border: 1px dashed var(--border);
+	border-radius: 14px;
+	background: var(--surface);
+}
+.support-info h3 {
+	margin: 0;
+	font-size: 1rem;
+	color: var(--ink);
+}
+.support-info p {
+	margin: 4px 0 0;
+	font-size: 0.85rem;
+	color: var(--muted);
+}
+.support-actions {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	flex-shrink: 0;
+}
+.btn-sponsor {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 22px;
+	border: 1px solid var(--accent);
+	border-radius: 999px;
+	background: var(--accent-soft);
+	color: var(--accent-deep);
+	font-size: 0.875rem;
+	text-decoration: none;
+	transition:
+		background 0.2s ease,
+		color 0.2s ease;
+}
+.btn-sponsor:hover {
+	background: var(--accent);
+	color: var(--surface);
+}
+.btn-sponsor svg {
+	width: 15px;
+	height: 15px;
+}
+@media (max-width: 640px) {
+	.support-card {
+		flex-direction: column;
+		align-items: stretch;
+		text-align: center;
+	}
+	.support-actions {
+		justify-content: center;
+	}
 }
 .btn-poster {
 	display: inline-flex;

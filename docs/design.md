@@ -434,6 +434,23 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - 本地已验证：actionlint（ci.yml + release.yml）、CI 各步骤命令本地逐条跑通、`pnpm lint` 0 error、`pnpm test` 3/3、`pnpm --filter site build` 无回归（62 页 pagefind 索引）、`npm publish --dry-run` 包内容核对
 - 待 push 后真实验证：GitHub Actions 页面看 CI 矩阵与 Release 全流程；发版前置 = 仓库 Secrets 配 `NPM_TOKEN`（npmjs.com Automation token，对 @windcoder scope 有发布权）；发版操作 = `git tag v0.1.0 && git push origin v0.1.0`
 
+### 4.6 侧栏体系与文章页交互改造（✅ 2026-10-11 完成）
+
+源自用户 8 条体验反馈；全部本地验证通过（build 62 页 + dev 渲染 + 交互实测）。
+
+| # | 需求 | 实现 |
+|---|---|---|
+| 1 | 相关/随机文章模块撑破页面横向滚动 | `.related-grid` 改 `repeat(2, minmax(0,1fr))` + `.related-card` 加 `min-width:0; overflow:hidden`（grid item 的 `min-width:auto` 缺省是根因）；tags/categories 页复用同卡片已确认无副作用 |
+| 2 | 许可声明可关可改 | `license.prefix/suffix` 自定义声明文案（留空用语言包默认）；`license.enabled` 全站开关；文章 frontmatter `license: false` 按篇关闭、`licenseName/licenseUrl` 按篇覆盖名称与链接（License.astro 统一裁决：文章级开关 false 强制隐藏） |
+| 3 | 文章页只有分享没有打赏 | 原「分享海报」按钮行升级为 `.support-card` 支持卡：左侧标题+文案，右侧「打赏支持」（`/sponsor/`）+「生成分享海报」双按钮；`sponsor.showButtonInPost` 控制打赏按钮；share-poster.ts 绑定契约不变（#qy-share-btn + data-*） |
+| 4 | 侧栏组件自由配置 | `sidebar.widgets` 数组化：8 种 widget（announcement/categories/tags/friends/calendar/toc/siteInfo/advertisement），数组顺序即渲染顺序，`enabled` 单项开关、`showOnPost` 控制是否出现在文章页侧栏 |
+| 5 | 文章页侧栏 | `sidebar.onPost: true` 开启；Sidebar.astro 增加 `variant="post"`（接收 headings/posts 聚合数据）；toc widget 在侧栏内联渲染（原悬浮目录退位）；加密文章不显示侧栏 |
+| 6 | 友链首页/内页分配 | friends 条目新增 `featured`：侧栏取样时 featured 优先、其余按 weight 补足（`random: true` 时仍全量洗牌）；友链页不受影响 |
+| 7 | 日历热力图 | 新增 Calendar.astro + `<qy-calendar>` custom element（VT 兼容：is:inline + get 防重复 define）：月视图（周一起始、当月发文日高亮、今日描边、翻月不可越界到未来）+ 近 12 月活跃度热力图（每月 4 周段，透明度 5 档 0/.45/.65/.85/1）；数据复用 `/api/allPostMeta.json`，与 random-posts 共享 `window.__qyAllPostMetaCache` |
+| 8 | 与参考项目差距 | 已输出对照报告：P0/P1 功能全部落地；仍缺项均为参考项目可选特性（追番页、独立搜索页、音乐播放器、Live2D、壁纸四模式、打字机副标题、布局切换、FloatingTOC、过时提醒、MDX、excerpt），暂不阻塞发布 |
+
+验证记录：dev 全页渲染（首页 widgets 顺序/日历月视图+热力图 12×4/今日标记/翻月边界；文章页侧栏 7 widget + 支持卡双按钮 + 许可行；frontmatter `license: false` 隐藏、`licenseName: "禁止转载"` 覆盖生效后还原）；`pnpm --filter site build` 62 页无回归；控制台仅 Artalk 占位服务器预期报错。i18n 新增键（calendarTitle/activityTitle/dayPostsCount/supportTitle/supportDesc/sponsorMe）zh-CN 与 en 已同步。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

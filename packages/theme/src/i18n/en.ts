@@ -44,6 +44,9 @@ const en: Record<UiKey, string> = {
 	posts: "Posts",
 	running: "Running for",
 	daysCount: "{n} days",
+	calendarTitle: "Calendar",
+	activityTitle: "Activity",
+	dayPostsCount: "{n} posts",
 	recentPosts: "Recent posts",
 	emptyPosts: "No posts yet. Write one in content/posts.",
 	pageN: "Page {n}",
@@ -106,6 +109,9 @@ const en: Record<UiKey, string> = {
 	savePoster: "Save poster",
 	scanToRead: "Scan to read",
 	author: "Author",
+	supportTitle: "Support",
+	supportDesc: "If this post helped you, consider sponsoring or sharing it.",
+	sponsorMe: "Sponsor",
 };
 
 export default en;

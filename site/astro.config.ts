@@ -22,6 +22,8 @@ export default defineConfig({
 			postList: { style: "cover", pageSize: 6 },
 			// 文章页目录 + 版权声明（默认开，显式写出便于按需关闭）
 			toc: { enabled: true },
+			// 许可声明：prefix/suffix 自定义声明文案（留空用语言包默认「本文采用…许可，转载请注明…」）；
+			// enabled: false 全站关闭；文章 frontmatter license: false / licenseName / licenseUrl 按篇覆盖
 			license: { enabled: true },
 			// 建站日期（站点信息卡「已运行」），占位日期，接入真实站点时自行修改
 			since: "2024-01-01",
@@ -43,7 +45,26 @@ export default defineConfig({
 				sponsor: true,
 				gallery: true,
 			},
+			// 侧栏体系：widgets 数组决定组件类型与渲染顺序，enabled 控制单个开关；
+			// showOnPost: false 表示该 widget 仅列表页显示（文章页侧栏不出现）。
+			// onPost: true 开启文章页侧栏（关闭时文章页退回悬浮目录）。
+			// friends.count 控制侧栏展示数量，random: true 则每次构建随机取样。
+			sidebar: {
+				onPost: true,
+				widgets: [
+					{ type: "announcement" },
+					{ type: "categories" },
+					{ type: "tags" },
+					{ type: "friends" },
+					{ type: "calendar" },
+					{ type: "toc", showOnPost: false },
+					{ type: "siteInfo" },
+					{ type: "advertisement" },
+				],
+				friends: { count: 3, random: false },
+			},
 			// 友链数据源：同时驱动友链页与首页侧栏 widget（决策 8）。
+			// featured: true 的条目优先展示在首页/列表侧栏（其余按 weight 补足）。
 			// 以下均为中性演示数据；image 留空时用首字字头像兜底
 			friends: {
 				title: "友链",
@@ -64,6 +85,8 @@ export default defineConfig({
 							"https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20green%20mountain%20and%20moon%20badge%2C%20celadon%20green%20palette&image_size=square",
 						desc: "山中岁月长，林间无事忙",
 						weight: 10,
+						// featured: true 首页侧栏优先展示
+						featured: true,
 					},
 					{
 						title: "拾光者",
@@ -140,12 +163,14 @@ export default defineConfig({
 					},
 				],
 			},
-			// 打赏页：image（收款码）与 link（跳转）至少配一个；均为空渲染占位框
+			// 打赏页：image（收款码）与 link（跳转）至少配一个；均为空渲染占位框。
+			// showButtonInPost 控制文章页支持卡的「打赏支持」按钮（关闭后仅保留分享海报）
 			sponsor: {
 				title: "打赏",
 				description: "如果内容对你有帮助，请作者喝杯茶。",
 				usage: "你的打赏将用于服务器维护、内容创作与功能开发。",
 				showSponsorsList: true,
+				showButtonInPost: true,
 				methods: [
 					{
 						name: "支付宝",
