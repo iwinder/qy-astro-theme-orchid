@@ -43,6 +43,7 @@ const excerpt = d.excerpt || d.description;
     <div class="post-meta">
       <span>{formatDate(d.published)}</span>
       {d.category && <span class="dot">{d.category}</span>}
+      {d.password && <span class="dot enc-flag">{t('postEncrypted')}</span>}
       {d.words ? <span class="dot">{t('wordsCount', { n: d.words })}</span> : null}
       {d.minutes ? <span class="dot">{t('minutesCount', { n: d.minutes })}</span> : null}
     </div>

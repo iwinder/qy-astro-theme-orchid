@@ -1,0 +1,42 @@
+---
+/**
+ * 加密内容容器（M3b-b7）：构建期把 slot 渲染为 HTML 后整体加密，
+ * 页面只输出密文（data-encrypted 属性）+ 锁 UI；解锁逻辑在 app.ts
+ * （Web Crypto 解密 → innerHTML 注入 → sessionStorage 缓存密码）。
+ * i18n 全部构建期渲染，无运行时动态文案需求。
+ */
+import { encryptContent } from '../utils/crypto.js';
+import { t } from '../i18n/index.js';
+
+interface Props {
+  password: string;
+  slug: string;
+  hint?: string;
+}
+
+const { password, slug, hint = '' } = Astro.props;
+const rawHtml = await Astro.slots.render('default');
+const encryptedData = encryptContent(rawHtml, password, slug);
+---
+
+<div id="encryptedContainer" class="enc-box" data-encrypted={encryptedData} data-slug={slug}>
+  <div class="enc-card">
+    <svg class="enc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5.5v5.2c0 5 3.4 9.4 8 10.8 4.6-1.4 8-5.8 8-10.8V5.5L12 2z"/><rect x="9" y="10.5" width="6" height="5" rx="1"/><path d="M10.5 10.5V9a1.5 1.5 0 0 1 3 0v1.5"/></svg>
+    <h2 class="enc-title">{t('passwordProtected')}</h2>
+    <p class="enc-desc">{t('passwordProtectedDesc')}</p>
+    {hint && <p class="enc-hint">{t('passwordHint')}：{hint}</p>}
+    <form id="encForm" class="enc-form">
+      <input
+        id="encInput"
+        name="password"
+        type="password"
+        placeholder={t('passwordPlaceholder')}
+        autocomplete="off"
+      />
+      <button type="submit">{t('passwordSubmit')}</button>
+    </form>
+    <p id="encError" class="enc-error" hidden>{t('passwordError')}</p>
+  </div>
+</div>
+{/* 解密后 HTML 注入点：初始隐藏，保留正文占位语义 */}
+<div id="decryptedContent" class="enc-content" hidden></div>

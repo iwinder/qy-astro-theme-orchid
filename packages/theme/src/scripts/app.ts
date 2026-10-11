@@ -3,7 +3,8 @@
    - document/window 级一次性委托监听（VT 换页不失联）
    - astro:page-load 时重初始化页面级状态（nav active / reveal / TOC spy / 灯箱 DOM / 调色面板）
    - astro:after-swap 时重应用暗色 class 与持久化 hue（VT swap 会替换 <html> 属性）
-   - 搜索浮层（M3b-b6）：Pagefind 构建期索引，运行时惰性加载 */
+   - 搜索浮层（M3b-b6）：Pagefind 构建期索引，运行时惰性加载
+   - 加密文章（M3b-b7）：Web Crypto 解密 + sessionStorage 密码缓存 */
 
 'use strict';
 
@@ -440,6 +441,107 @@ function runSearch(keyword: string) {
   }, 300);
 }
 
+/* ---------- 加密文章（M3b-b7）：Web Crypto 解密（与 utils/crypto.ts 构建期参数对齐） ---------- */
+const PW_KEY_PREFIX = 'qy-pw:';
+const ENC_SALT_LEN = 16;
+const ENC_IV_LEN = 12;
+const ENC_TAG_LEN = 16;
+
+function b64ToBytes(b64: string): Uint8Array {
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+/** base64 密文 → PBKDF2(100k, SHA-256) 派生密钥 → AES-GCM 解密 → HTML 字符串 */
+async function decryptContent(dataB64: string, pwd: string): Promise<string> {
+  const raw = b64ToBytes(dataB64);
+  const salt = raw.slice(0, ENC_SALT_LEN);
+  const iv = raw.slice(ENC_SALT_LEN, ENC_SALT_LEN + ENC_IV_LEN);
+  const tag = raw.slice(ENC_SALT_LEN + ENC_IV_LEN, ENC_SALT_LEN + ENC_IV_LEN + ENC_TAG_LEN);
+  const ct = raw.slice(ENC_SALT_LEN + ENC_IV_LEN + ENC_TAG_LEN);
+  // Web Crypto 的 GCM 密文格式为 ciphertext+tag 连续排列，与 node:crypto 的分离输出拼接
+  const combined = new Uint8Array(ct.length + ENC_TAG_LEN);
+  combined.set(ct);
+  combined.set(tag, ct.length);
+
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(pwd),
+    'PBKDF2',
+    false,
+    ['deriveKey'],
+  );
+  const key = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt'],
+  );
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, combined);
+  return new TextDecoder().decode(plain);
+}
+
+/** 解密成功：注入 HTML → 隐藏锁 UI → 重跑 reveal 动画（灯箱/复制为委托，自动生效） */
+function showDecrypted(container: HTMLElement, contentEl: HTMLElement, html: string) {
+  contentEl.innerHTML = html;
+  contentEl.hidden = false;
+  container.hidden = true;
+  initReveal();
+}
+
+function initEncrypted() {
+  const container = doc.getElementById('encryptedContainer');
+  const contentEl = doc.getElementById('decryptedContent');
+  if (!container || !contentEl || container.hidden) return;
+  const data = container.getAttribute('data-encrypted') || '';
+  if (!data) return;
+  const slug = container.getAttribute('data-slug') || '';
+  const cacheKey = PW_KEY_PREFIX + slug;
+  const form = doc.getElementById('encForm') as HTMLFormElement | null;
+  const input = doc.getElementById('encInput') as HTMLInputElement | null;
+  const errorEl = doc.getElementById('encError');
+
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const pwd = input?.value.trim() ?? '';
+    if (!pwd) return;
+    if (errorEl) errorEl.hidden = true;
+    decryptContent(data, pwd)
+      .then((html) => {
+        try {
+          sessionStorage.setItem(cacheKey, pwd);
+        } catch {
+          /* ignore */
+        }
+        showDecrypted(container, contentEl, html);
+      })
+      .catch(() => {
+        if (errorEl) errorEl.hidden = false;
+      });
+  });
+
+  /* 缓存密码自动解密（salt/iv 确定性派生：同 slug+密码同密文，缓存跨刷新有效） */
+  try {
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      decryptContent(data, cached)
+        .then((html) => showDecrypted(container, contentEl, html))
+        .catch(() => {
+          try {
+            sessionStorage.removeItem(cacheKey);
+          } catch {
+            /* ignore */
+          }
+        });
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 /* ---------- document 级委托（一次性，VT 换页不失联） ---------- */
 doc.addEventListener('click', (e) => {
   const target = e.target as Element;
@@ -609,6 +711,7 @@ function initPage() {
   initTocSpy();
   updateBackTop();
   initPalette();
+  initEncrypted();
 }
 initPage();
 doc.addEventListener('astro:page-load', initPage);

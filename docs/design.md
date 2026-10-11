@@ -287,6 +287,27 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - 文章页 h1 带 data-pagefind-body/weight=10/meta=title、article.prose 带 data-pagefind-body ✓（模板改动 HMR 生效）
 - 修复回归：app.ts 动态 import 字面量 → 变量形式（dev 启动不再报 import-analysis 错误，页面 200）
 
+**M3b-b7 实现记录**（✅ 2026-10-11，加密文章 P1-3）：
+
+| 功能 | 实现 |
+|---|---|
+| 构建期加密 | `utils/crypto.ts`：与原版 `crypto-utils.ts` 算法参数完全一致——PBKDF2-SHA256 100000 轮派生 256 位 key，AES-256-GCM，输出 `base64(salt[16] + iv[12] + authTag[16] + ciphertext)`；**确定性 salt/iv**（`HMAC-SHA256(password, "salt:"+slug / "iv:"+slug)` 截断）→ 同文同密码每次构建产出相同密文，sessionStorage 缓存跨刷新/跨构建稳定有效 |
+| 锁组件 | `components/EncryptedContent.astro`（虚拟组件自动可覆写）：Props `{password, slug, hint?}`，构建期 `Astro.slots.render('default')` → `encryptContent`；DOM = `#encryptedContainer.enc-box[data-encrypted][data-slug]`（盾锁 stroke SVG + 标题/描述/条件提示 + 密码表单 + 错误行）+ 兄弟节点 `#decryptedContent.enc-content[hidden]`（解密注入点）；全部文案构建期 `t()` 渲染，无运行时动态文案 |
+| 客户端解密 | app.ts `initEncrypted()`（`initPage` 接线，VT 安全）：Web Crypto `importKey(PBKDF2) → deriveKey → decrypt(AES-GCM)`，node:crypto 分离的 authTag 拼接至 ciphertext 尾部（`combined = ct + tag`）后解密；成功 → innerHTML 注入 + 双向 hidden 切换 + `initReveal()` 重跑（b4 mermaid 为构建期静态 SVG，无需重建）+ `sessionStorage['qy-pw:'+slug]` 缓存密码；失败 → 显示错误行；初始尝试缓存密码自动解密，失败则 removeItem |
+| 条件接入 | `[...slug].astro`：`d.password ? <EncryptedContent>…<Content/></EncryptedContent> : <Content/>`；**TOC 一并隐藏**（headings 来自构建期明文解析，会在锁旁泄漏标题结构，原版未处理此泄漏）；评论禁用（`d.comment && !d.password`）；License/PostNav 留锁外（无敏感内容）；PostCard/文章页 meta 加文字锁标 `.enc-flag`「已加密」 |
+| 范围取舍 | RSS 不改（主题包 RSS 为摘要版只输出 description，无正文泄漏，与原版行为不同故无需原版的 RSS 提示键）；列表锁标用文字而非图标；示例文章 `encrypted-demo.md`（密码 demo1234，中性演示内容） |
+
+**M3b-b7 验证记录**（2026-10-11，dev + TRAE browseruse 实测，示例密码 demo1234）：
+
+- 页面源码零明文：正文 HTML 全量在 `data-encrypted` base64 密文中，明文关键词 grep 计数 0 ✓
+- 锁 UI 完整渲染：盾锁图标/「密码保护」标题/描述/「提示：示例密码 demo1234」/占位「请输入密码」/「解锁」按钮 ✓；列表与文章页 meta 锁标「已加密」✓
+- 错误密码 → 「密码错误，请重试。」显示、正文保持隐藏、sessionStorage 不写入 ✓
+- 正确密码 → 解密渲染（h2/代码块/引用块齐全）、锁 UI 隐藏、`qy-pw:encrypted-demo` 入缓存 ✓
+- 刷新页面 → 缓存密码自动解密（确定性 salt/iv 跨构建有效）✓
+- TOC 与评论区均不渲染（curl 源码 grep 计数 0）✓
+- VT 客户端换页（文章 → 首页 → 返回）后 `initEncrypted` 经 `astro:after-swap` 重接线，缓存密码自动解锁 ✓
+- （环境备注：TRAE browseruse 出现 tab 视口归零导致滚动/点击失效，重开 tab 恢复，与主题无关）
+
 ### 4.3 P2 —— 拆分处理（2026-10-11 已确认：保留 5 项、暂时舍弃 4 项）
 
 原建议整体舍弃，经确认拆分如下。
@@ -334,7 +355,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | ✅ 完成 |
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3/b4/b5/b6 ✅ 2026-10-11，批次划分见 §4.2） |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3/b4/b5/b6/b7 ✅ 2026-10-11，批次划分见 §4.2） |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
 
 ## 6. 决策记录（2026-10-11 确认）

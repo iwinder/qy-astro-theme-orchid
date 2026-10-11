@@ -21,6 +21,10 @@ export interface PostLike {
     image?: string;
     tags: string[];
     category?: string;
+    /** 加密文章：非空即视为加密（列表锁标 / 正文条件加密 / 评论 TOC 规避） */
+    password?: string;
+    /** 加密提示（仅展示，不参与解密） */
+    passwordHint?: string;
     /** remark 插件注入：摘要 / 首图 / 字数 / 阅读时长 */
     excerpt?: string;
     firstImage?: string;

@@ -7,6 +7,7 @@ import Toc from 'virtual:theme/components/Toc.astro';
 import License from 'virtual:theme/components/License.astro';
 import PostNav from 'virtual:theme/components/PostNav.astro';
 import Comment from 'virtual:theme/components/Comment.astro';
+import EncryptedContent from 'virtual:theme/components/EncryptedContent.astro';
 import config from 'virtual:theme/config';
 import { formatDate, getSortedPosts } from '../../utils.js';
 import { t } from '../../i18n/index.js';
@@ -51,6 +52,7 @@ const jsonLd = {
       {words ? <span class="dot">{t('wordsCount', { n: words })}</span> : null}
       {minutes ? <span class="dot">{t('minutesCount', { n: minutes })}</span> : null}
       {d.pinned && <span class="dot pin-flag">{t('pinned')}</span>}
+      {d.password && <span class="dot enc-flag">{t('postEncrypted')}</span>}
     </div>
   </header>
   {
@@ -63,12 +65,21 @@ const jsonLd = {
   <div class="post-layout">
     {/* data-pagefind-body（M3b-b6）：限定 Pagefind 只索引标题与正文（h1 在 article 外，双 body 标记） */}
     <article class="prose reveal" data-pagefind-body>
-      <Content />
+      {d.password ? (
+        /* 加密文章（M3b-b7）：构建期把正文渲染后整体加密，页面只出密文 + 锁 UI；
+           TOC 的 headings 来自构建期明文解析，会在锁旁泄漏标题结构，故一并隐藏 */
+        <EncryptedContent password={d.password} slug={post.id} hint={d.passwordHint}>
+          <Content />
+        </EncryptedContent>
+      ) : (
+        <Content />
+      )}
     </article>
-    {config.toc.enabled && <Toc headings={headings} />}
+    {config.toc.enabled && !d.password && <Toc headings={headings} />}
   </div>
   <License licenseName={d.licenseName} licenseUrl={d.licenseUrl} />
   <PostNav prev={prev ?? undefined} next={next ?? undefined} />
-  <Comment path={`/posts/${post.id}`} enabled={d.comment} />
+  {/* 加密文章不渲染评论（评论内容依赖正文上下文，明文评论区会破坏加密语义） */}
+  <Comment path={`/posts/${post.id}`} enabled={d.comment && !d.password} />
   <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>

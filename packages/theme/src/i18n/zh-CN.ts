@@ -84,6 +84,14 @@ const zhCN = {
   searchNoResults: '没有找到相关结果',
   searchUnavailable: '搜索索引需构建后可用',
   searchTypeSomething: '输入关键词开始搜索',
+  /* 加密文章（M3b-b7）：postEncrypted 用于列表/文章 meta 标记，其余构建期渲染进锁 UI */
+  postEncrypted: '已加密',
+  passwordProtected: '密码保护',
+  passwordProtectedDesc: '此内容已被密码保护，请输入密码查看。',
+  passwordHint: '提示',
+  passwordPlaceholder: '请输入密码',
+  passwordSubmit: '解锁',
+  passwordError: '密码错误，请重试。',
   /* 客户端动态文案（构建期经 BaseLayout 的 #qy-ui-labels JSON 载体带入） */
   lightbox: '图片查看',
   close: '关闭',
