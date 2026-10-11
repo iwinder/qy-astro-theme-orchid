@@ -1,0 +1,49 @@
+# CI：build 矩阵（Node LTS × pnpm），从零检出完整走一遍「install → LQIP → astro build → pagefind」。
+# 与本地 pnpm --filter site build 完全同源，本地绿 = CI 绿（仅存 YAML/环境差异）。
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    runs-on: ubuntu-latest
+    name: Build (Node ${{ matrix.node }})
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup pnpm（版本读根 package.json 的 packageManager 字段）
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+
+      - name: Setup Node.js ${{ matrix.node }}
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate LQIP data
+        run: pnpm --filter site lqip
+
+      - name: Build site（astro build + pagefind 索引）
+        run: pnpm --filter site build
+
+      - name: Verify pagefind index
+        run: test -f site/dist/pagefind/pagefind-entry.json && echo "pagefind index OK"
