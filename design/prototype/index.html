@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>清言集 · 山中何事</title>
+<script>
+(function(){var m=localStorage.getItem('qy-mode');if(m==='dark'||(!m&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
+</script>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body data-page="home">
+<a class="skip-link" href="#main">跳到主要内容</a>
+<header class="site-header">
+  <div class="shell header-inner">
+    <a class="site-title" href="index.html">清言集</a>
+    <nav class="site-nav" id="siteNav" aria-label="主导航">
+      <a class="nav-link" data-nav="home" href="index.html">首页</a>
+      <a class="nav-link" data-nav="archive" href="archive.html">归档</a>
+      <a class="nav-link" data-nav="tags" href="tags.html">标签</a>
+      <a class="nav-link" data-nav="gallery" href="gallery.html">画廊</a>
+      <a class="nav-link" data-nav="friends" href="friends.html">友链</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" id="searchToggle" type="button" aria-label="搜索 (Ctrl+K)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <div class="palette-wrap">
+        <button class="icon-btn" id="paletteToggle" type="button" aria-label="主题色" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+        </button>
+        <div class="palette-pop" id="palettePop" hidden>
+          <div class="palette-title">主题色</div>
+          <div class="palette-row">
+            <button class="swatch" type="button" data-hue="170" style="--sw:hsl(170 35% 45%)" aria-label="青瓷" title="青瓷"></button>
+            <button class="swatch" type="button" data-hue="210" style="--sw:hsl(210 35% 45%)" aria-label="黛蓝" title="黛蓝"></button>
+            <button class="swatch" type="button" data-hue="285" style="--sw:hsl(285 30% 52%)" aria-label="藕紫" title="藕紫"></button>
+            <button class="swatch" type="button" data-hue="20" style="--sw:hsl(20 45% 50%)" aria-label="柿橙" title="柿橙"></button>
+          </div>
+        </div>
+      </div>
+      <button class="icon-btn" id="modeToggle" type="button" aria-label="切换深浅模式">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      </button>
+      <button class="icon-btn nav-burger" id="navToggle" type="button" aria-label="菜单" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main id="main" class="site-main">
+  <div class="shell">
+    <section class="hero reveal">
+      <h1 class="hero-quote">山中何事？<em>松花酿酒</em>，<em>春水煎茶</em>。</h1>
+      <p class="hero-sub">一个关于旅行、代码与日常的安静角落。</p>
+    </section>
+    <div class="home-layout">
+      <div class="post-list">
+        <article class="post-card featured reveal">
+          <a class="post-cover" href="post.html" aria-label="山色入城：一次江南的慢行">
+            <span class="pin-badge">置顶</span>
+            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=minimalist%20Chinese%20ink%20wash%20painting%2C%20misty%20mountains%20and%20river%2C%20celadon%20green%20accent%2C%20vast%20negative%20space%2C%20serene%20literati%20style&image_size=landscape_16_9" alt="山色入城：一次江南的慢行" loading="lazy"/>
+          </a>
+          <div class="post-body">
+            <h2 class="post-title"><a href="post.html">山色入城：一次江南的慢行</a></h2>
+            <p class="post-excerpt">三月的江南把雨下成了背景音，乌篷船、青石板和一碗片儿川，构成了这次慢行的全部注脚。</p>
+            <div class="post-meta">
+              <span>2026-09-28</span><span class="dot">旅行</span><span class="dot">3247 字</span><span class="dot">约 11 分钟</span>
+            </div>
+            <div class="post-tags"><a class="chip" href="tags.html">江南</a><a class="chip" href="tags.html">随笔</a></div>
+          </div>
+        </article>
+        <h2 class="section-title reveal">近期文章</h2>
+        <article class="post-card reveal">
+          <a class="post-cover" href="post.html" aria-label="茶室笔记：器物与留白">
+            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=quiet%20tea%20room%20corner%2C%20wooden%20table%20with%20celadon%20teapot%20and%20cup%2C%20soft%20morning%20window%20light%2C%20minimalist%20zen%20aesthetic%2C%20warm%20neutral%20tones&image_size=landscape_16_9" alt="茶室笔记：器物与留白" loading="lazy"/>
+          </a>
+          <div class="post-body">
+            <h2 class="post-title"><a href="post.html">茶室笔记：器物与留白</a></h2>
+            <p class="post-excerpt">器物不语，自有分寸。整理茶室的这个下午，我重新理解了「留白」两个字。</p>
+            <div class="post-meta">
+              <span>2026-09-12</span><span class="dot">生活</span><span class="dot">1892 字</span><span class="dot">约 7 分钟</span>
+            </div>
+            <div class="post-tags"><a class="chip" href="tags.html">茶器</a><a class="chip" href="tags.html">美学</a></div>
+          </div>
+        </article>
+        <article class="post-card reveal">
+          <a class="post-cover" href="post.html" aria-label="Astro 主题架构：把定制还给站点">
+            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=minimal%20wooden%20desk%20with%20laptop%20showing%20code%20editor%2C%20warm%20desk%20lamp%20glow%2C%20small%20green%20plant%2C%20cozy%20night%2C%20muted%20colors&image_size=landscape_16_9" alt="Astro 主题架构：把定制还给站点" loading="lazy"/>
+          </a>
+          <div class="post-body">
+            <h2 class="post-title"><a href="post.html">Astro 主题架构：把定制还给站点</a></h2>
+            <p class="post-excerpt">把主题做成 npm 包，把定制留给站点：一次 Astro Integration 的完整实践。</p>
+            <div class="post-meta">
+              <span>2026-08-30</span><span class="dot">技术</span><span class="dot">4210 字</span><span class="dot">约 14 分钟</span>
+            </div>
+            <div class="post-tags"><a class="chip" href="tags.html">Astro</a><a class="chip" href="tags.html">前端</a></div>
+          </div>
+        </article>
+        <article class="post-card reveal">
+          <a class="post-cover" href="post.html" aria-label="竹林午后：雾、光与呼吸">
+            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=bamboo%20forest%20path%20in%20soft%20fog%2C%20morning%20light%20rays%2C%20minimalist%20oriental%20aesthetic%2C%20muted%20green%20tones&image_size=landscape_16_9" alt="竹林午后：雾、光与呼吸" loading="lazy"/>
+          </a>
+          <div class="post-body">
+            <h2 class="post-title"><a href="post.html">竹林午后：雾、光与呼吸</a></h2>
+            <p class="post-excerpt">雾从山脚漫上来的时候，整片竹林只剩下风声和快门声。</p>
+            <div class="post-meta">
+              <span>2026-08-17</span><span class="dot">摄影</span><span class="dot">1206 字</span><span class="dot">约 5 分钟</span>
+            </div>
+            <div class="post-tags"><a class="chip" href="tags.html">摄影</a><a class="chip" href="tags.html">自然</a></div>
+          </div>
+        </article>
+        <article class="post-card compact text-only reveal">
+          <div class="post-body">
+            <h2 class="post-title"><a href="post.html">关于加密文章的一点想法</a></h2>
+            <p class="post-excerpt">密码学解决的是「不让看」，而写作常常是「想被看见」——这两件事在加密文章里达成了微妙的和解。</p>
+            <div class="post-meta">
+              <span>2026-07-25</span><span class="dot">技术</span><span class="dot">1538 字</span><span class="dot">约 6 分钟</span>
+            </div>
+            <div class="post-tags"><a class="chip" href="tags.html">安全</a><a class="chip" href="tags.html">随笔</a></div>
+          </div>
+        </article>
+        <article class="post-card compact reveal">
+          <a class="post-cover" href="post.html" aria-label="夜航西飞：读书摘记">
+            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=open%20book%20on%20wooden%20table%20beside%20warm%20lamp%20at%20night%2C%20dark%20moody%2C%20minimal%20composition%2C%20quiet%20reading%20atmosphere&image_size=landscape_16_9" alt="夜航西飞：读书摘记" loading="lazy"/>
+          </a>
+          <div class="post-body">
+            <h2 class="post-title"><a href="post.html">夜航西飞：读书摘记</a></h2>
+            <p class="post-excerpt">圣埃克苏佩里说，夜晚的飞行是在星辰与引擎声之间独自穿行。摘下那些击中我的句子。</p>
+            <div class="post-meta">
+              <span>2026-06-30</span><span class="dot">阅读</span><span class="dot">2340 字</span><span class="dot">约 8 分钟</span>
+            </div>
+            <div class="post-tags"><a class="chip" href="tags.html">读书</a><a class="chip" href="tags.html">摘记</a></div>
+          </div>
+        </article>
+        <nav class="pagination reveal" aria-label="分页">
+          <span class="page-item disabled">上一页</span>
+          <span>第 1 / 2 页</span>
+          <span class="page-item disabled">下一页</span>
+        </nav>
+      </div>
+      <aside class="sidebar">
+        <section class="side-card card reveal">
+          <h3>公告</h3>
+          <p>博客正在改版为 Astro 主题 Orchid，欢迎围观。</p>
+        </section>
+        <section class="side-card card reveal">
+          <h3>分类</h3>
+          <div class="cat-list">
+            <a href="archive.html"><span>旅行</span><span class="count">1</span></a>
+            <a href="archive.html"><span>生活</span><span class="count">1</span></a>
+            <a href="archive.html"><span>技术</span><span class="count">2</span></a>
+            <a href="archive.html"><span>摄影</span><span class="count">1</span></a>
+            <a href="archive.html"><span>阅读</span><span class="count">1</span></a>
+          </div>
+        </section>
+        <section class="side-card card reveal">
+          <h3>标签</h3>
+          <div class="side-tags">
+            <a class="chip" href="tags.html">江南</a>
+            <a class="chip" href="tags.html">随笔</a>
+            <a class="chip" href="tags.html">茶器</a>
+            <a class="chip" href="tags.html">美学</a>
+            <a class="chip" href="tags.html">Astro</a>
+            <a class="chip" href="tags.html">前端</a>
+            <a class="chip" href="tags.html">摄影</a>
+            <a class="chip" href="tags.html">自然</a>
+            <a class="chip" href="tags.html">安全</a>
+            <a class="chip" href="tags.html">读书</a>
+            <a class="chip" href="tags.html">摘记</a>
+          </div>
+        </section>
+        <section class="side-card card reveal">
+          <h3>友链</h3>
+          <div class="side-friends">
+            <a href="https://example.com/qingshan" target="_blank" rel="noopener"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20green%20mountain%20and%20moon%20badge%2C%20celadon%20green%20palette&image_size=square" alt="青山不改的头像" loading="lazy"/><span>青山不改</span></a>
+            <a href="https://example.com/shiguang" target="_blank" rel="noopener"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20vintage%20camera%2C%20warm%20amber%20palette&image_size=square" alt="拾光者的头像" loading="lazy"/><span>拾光者</span></a>
+            <a href="https://example.com/codenote" target="_blank" rel="noopener"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20laptop%20with%20code%20brackets%2C%20indigo%20palette&image_size=square" alt="码农手记的头像" loading="lazy"/><span>码农手记</span></a>
+          </div>
+          <a class="side-more" href="friends.html">全部友链 →</a>
+        </section>
+        <section class="side-card card reveal">
+          <h3>站点信息</h3>
+          <div class="site-info">
+            <div class="row"><span>文章</span><b>6</b></div>
+            <div class="row"><span>分类</span><b>5</b></div>
+            <div class="row"><span>标签</span><b>11</b></div>
+            <div class="row"><span>已运行</span><b>1014 天</b></div>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="shell footer-inner">
+    <div class="footer-seal">清言</div>
+    <div class="footer-line">© 2026 清言集 · 山中何事，松花酿酒，春水煎茶</div>
+    <div class="footer-sub">Powered by Astro · Theme Orchid · <span class="footer-dim">RSS / Sitemap</span></div>
+  </div>
+</footer>
+<div class="search-overlay" id="searchOverlay" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="站内搜索">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="searchInput" type="text" placeholder="搜索文章标题、标签、分类…" autocomplete="off"/>
+      <button class="icon-btn" id="searchClose" type="button" aria-label="关闭搜索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-empty" id="searchEmpty" hidden>没有找到相关文章</div>
+    <div class="search-hint">↑↓ 选择 · ↵ 打开 · Esc 关闭</div>
+  </div>
+</div>
+<button class="back-top" id="backTop" type="button" aria-label="回到顶部" hidden>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+</button>
+<script src="app.js"></script>
+</body>
+</html>

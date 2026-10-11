@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>友链 · 清言集</title>
+<script>
+(function(){var m=localStorage.getItem('qy-mode');if(m==='dark'||(!m&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
+</script>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body data-page="friends">
+<a class="skip-link" href="#main">跳到主要内容</a>
+<header class="site-header">
+  <div class="shell header-inner">
+    <a class="site-title" href="index.html">清言集</a>
+    <nav class="site-nav" id="siteNav" aria-label="主导航">
+      <a class="nav-link" data-nav="home" href="index.html">首页</a>
+      <a class="nav-link" data-nav="archive" href="archive.html">归档</a>
+      <a class="nav-link" data-nav="tags" href="tags.html">标签</a>
+      <a class="nav-link" data-nav="gallery" href="gallery.html">画廊</a>
+      <a class="nav-link" data-nav="friends" href="friends.html">友链</a>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-btn" id="searchToggle" type="button" aria-label="搜索 (Ctrl+K)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <div class="palette-wrap">
+        <button class="icon-btn" id="paletteToggle" type="button" aria-label="主题色" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
+        </button>
+        <div class="palette-pop" id="palettePop" hidden>
+          <div class="palette-title">主题色</div>
+          <div class="palette-row">
+            <button class="swatch" type="button" data-hue="170" style="--sw:hsl(170 35% 45%)" aria-label="青瓷" title="青瓷"></button>
+            <button class="swatch" type="button" data-hue="210" style="--sw:hsl(210 35% 45%)" aria-label="黛蓝" title="黛蓝"></button>
+            <button class="swatch" type="button" data-hue="285" style="--sw:hsl(285 30% 52%)" aria-label="藕紫" title="藕紫"></button>
+            <button class="swatch" type="button" data-hue="20" style="--sw:hsl(20 45% 50%)" aria-label="柿橙" title="柿橙"></button>
+          </div>
+        </div>
+      </div>
+      <button class="icon-btn" id="modeToggle" type="button" aria-label="切换深浅模式">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      </button>
+      <button class="icon-btn nav-burger" id="navToggle" type="button" aria-label="菜单" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main id="main" class="site-main">
+  <div class="shell">
+    <header class="archive-head reveal">
+      <h1 class="page-title">友链</h1>
+      <p class="page-sub">山不在高，有仙则名</p>
+    </header>
+    <div class="friend-grid reveal">
+      <a class="friend-card card" href="https://example.com/qingshan" target="_blank" rel="noopener">
+        <div class="friend-avatar"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20green%20mountain%20and%20moon%20badge%2C%20celadon%20green%20palette&image_size=square" alt="青山不改的头像" loading="lazy"/></div>
+        <div class="friend-info">
+          <div class="friend-name">青山不改</div>
+          <div class="friend-desc">山中岁月长，林间无事忙</div>
+        </div>
+      </a>
+      <a class="friend-card card" href="https://example.com/shiguang" target="_blank" rel="noopener">
+        <div class="friend-avatar"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20vintage%20camera%2C%20warm%20amber%20palette&image_size=square" alt="拾光者的头像" loading="lazy"/></div>
+        <div class="friend-info">
+          <div class="friend-name">拾光者</div>
+          <div class="friend-desc">用镜头收藏时间的碎片</div>
+        </div>
+      </a>
+      <a class="friend-card card" href="https://example.com/codenote" target="_blank" rel="noopener">
+        <div class="friend-avatar"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20laptop%20with%20code%20brackets%2C%20indigo%20palette&image_size=square" alt="码农手记的头像" loading="lazy"/></div>
+        <div class="friend-info">
+          <div class="friend-name">码农手记</div>
+          <div class="friend-desc">代码之外，还有生活</div>
+        </div>
+      </a>
+      <a class="friend-card card" href="https://example.com/yiwei" target="_blank" rel="noopener">
+        <div class="friend-avatar"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20open%20book%20with%20paper%20boat%2C%20teal%20palette&image_size=square" alt="一苇渡江的头像" loading="lazy"/></div>
+        <div class="friend-info">
+          <div class="friend-name">一苇渡江</div>
+          <div class="friend-desc">读书、行路、渡自己</div>
+        </div>
+      </a>
+      <a class="friend-card card" href="https://example.com/mushroom" target="_blank" rel="noopener">
+        <div class="friend-avatar"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20cute%20mushroom%20house%2C%20soft%20red%20and%20cream%20palette&image_size=square" alt="蘑菇房的头像" loading="lazy"/></div>
+        <div class="friend-info">
+          <div class="friend-name">蘑菇房</div>
+          <div class="friend-desc">种花、做饭、慢慢长大</div>
+        </div>
+      </a>
+      <a class="friend-card card" href="https://example.com/wanfeng" target="_blank" rel="noopener">
+        <div class="friend-avatar"><img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=flat%20minimal%20illustration%20avatar%2C%20retro%20radio%20with%20sound%20waves%2C%20dusk%20purple%20palette&image_size=square" alt="晚风电台的头像" loading="lazy"/></div>
+        <div class="friend-info">
+          <div class="friend-name">晚风电台</div>
+          <div class="friend-desc">每晚九点，声音与故事</div>
+        </div>
+      </a>
+    </div>
+    <section class="friend-apply card reveal">
+      <div>
+        <div class="fa-title">想和清言集交换链接？</div>
+        <p class="fa-desc">欢迎写信给我，附上站点名称、链接、头像和一句话介绍。认真经营的博客，我都会回访。</p>
+      </div>
+      <a class="btn" href="mailto:hi@example.com">申请友链</a>
+    </section>
+  </div>
+</main>
+<footer class="site-footer">
+  <div class="shell footer-inner">
+    <div class="footer-seal">清言</div>
+    <div class="footer-line">© 2026 清言集 · 山中何事，松花酿酒，春水煎茶</div>
+    <div class="footer-sub">Powered by Astro · Theme Orchid · <span class="footer-dim">RSS / Sitemap</span></div>
+  </div>
+</footer>
+<div class="search-overlay" id="searchOverlay" hidden>
+  <div class="search-panel" role="dialog" aria-modal="true" aria-label="站内搜索">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input id="searchInput" type="text" placeholder="搜索文章标题、标签、分类…" autocomplete="off"/>
+      <button class="icon-btn" id="searchClose" type="button" aria-label="关闭搜索">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="search-results" id="searchResults"></div>
+    <div class="search-empty" id="searchEmpty" hidden>没有找到相关文章</div>
+    <div class="search-hint">↑↓ 选择 · ↵ 打开 · Esc 关闭</div>
+  </div>
+</div>
+<button class="back-top" id="backTop" type="button" aria-label="回到顶部" hidden>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+</button>
+<script src="app.js"></script>
+</body>
+</html>
