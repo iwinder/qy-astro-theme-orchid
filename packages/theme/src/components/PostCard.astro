@@ -1,6 +1,7 @@
 ---
 import config from 'virtual:theme/config';
 import { formatDate, type PostLike } from '../utils.js';
+import { getLqipStyle } from '../utils/lqip.js';
 import { t } from '../i18n/index.js';
 
 interface Props {
@@ -33,7 +34,9 @@ const excerpt = d.excerpt || d.description;
     cover && (
       <a class="post-cover" href={href} aria-label={d.title}>
         {featured && d.pinned && <span class="pin-badge">{t('pinned')}</span>}
-        <img src={cover} alt={d.title} loading="lazy" />
+        {/* LQIP 占位渐变（b9.5）：绝对定位盖在 img 上，加载完成后由 app.ts 淡出 */}
+        <div class="qy-lqip" style={getLqipStyle(cover)} aria-hidden="true"></div>
+        <img src={cover} alt={d.title} loading="lazy" data-lqip />
       </a>
     )
   }

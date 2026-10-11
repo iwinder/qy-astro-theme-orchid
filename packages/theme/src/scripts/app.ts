@@ -8,6 +8,8 @@
 
 'use strict';
 
+import { openSharePoster } from './share-poster.js';
+
 const doc = document;
 const root = doc.documentElement;
 
@@ -688,6 +690,13 @@ doc.addEventListener('click', (e) => {
     handleCopy(copyBtn);
     return;
   }
+
+  /* 分享海报（b9.6）：文章页「生成分享海报」按钮 */
+  const shareBtn = target.closest('#qy-share-btn');
+  if (shareBtn) {
+    openSharePoster(shareBtn as HTMLElement);
+    return;
+  }
 });
 
 /* input 委托（VT 安全）：hue 滑杆 + 搜索输入 */
@@ -717,6 +726,21 @@ doc.addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowRight') lbShow(lbIdx + 1);
 });
 
+/* ---------- LQIP（b9.5）：图片加载完成后淡出占位渐变 ---------- */
+function initLqip() {
+  doc.querySelectorAll<HTMLImageElement>('img[data-lqip]').forEach((img) => {
+    const box = img.parentElement;
+    if (!box) return;
+    const done = () => box.classList.add('qy-img-in');
+    // 缓存命中立即淡出；load/error 均淡出（失败也不能永久盖住图位）
+    if (img.complete && img.naturalWidth > 0) done();
+    else {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    }
+  });
+}
+
 /* ---------- 生命周期 ---------- */
 function initPage() {
   ensureLightbox();
@@ -727,6 +751,7 @@ function initPage() {
   updateBackTop();
   initPalette();
   initEncrypted();
+  initLqip();
 }
 initPage();
 doc.addEventListener('astro:page-load', initPage);

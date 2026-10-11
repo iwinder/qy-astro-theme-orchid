@@ -13,9 +13,11 @@ interface Props {
   description?: string;
   /** body[data-page]，驱动导航高亮（home/archive/tags/post...） */
   page?: string;
+  /** OG 分享图路径（b9.4，文章页传 /og/<slug>.png）；绝对链接依赖站点 site 配置 */
+  ogImage?: string;
 }
 
-const { title, description = config.description, page } = Astro.props;
+const { title, description = config.description, page, ogImage } = Astro.props;
 const pageTitle = title ? `${title} · ${config.title}` : config.title;
 const { h, s, l } = hexToHsl(config.accentColor);
 ---
@@ -30,6 +32,13 @@ const { h, s, l } = hexToHsl(config.accentColor);
     <meta name="description" content={description} />
     <meta name="author" content={config.author} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {/* OG/Twitter meta（b9.4）：ogImage 仅文章页传入；绝对链接依赖 site 配置 */}
+    <meta property="og:type" content={ogImage ? 'article' : 'website'} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    {Astro.site && <meta property="og:url" content={new URL(Astro.url.pathname, Astro.site).href} />}
+    {ogImage && Astro.site && <meta property="og:image" content={new URL(ogImage, Astro.site).href} />}
+    <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
     <ClientRouter />
     <!-- 深浅模式 boot：先于首帧执行防 FOUC；is:inline 在 VT swap 时不重复执行 -->
     <script is:inline>
@@ -37,7 +46,7 @@ const { h, s, l } = hexToHsl(config.accentColor);
     </script>
   </head>
   <!-- 客户端动态文案载体（i18n，M3b-b5）：app.ts 读取，VT swap 后随新 body 重建 -->
-  <script type="application/json" id="qy-ui-labels" set:html={JSON.stringify({ lightbox: t('lightbox'), close: t('close'), prevImage: t('prevImage'), nextImage: t('nextImage'), copy: t('copy'), copied: t('copied'), searchLoading: t('searchLoading'), searchNoResults: t('searchNoResults'), searchUnavailable: t('searchUnavailable'), searchTypeSomething: t('searchTypeSomething') })} />
+  <script type="application/json" id="qy-ui-labels" set:html={JSON.stringify({ lightbox: t('lightbox'), close: t('close'), prevImage: t('prevImage'), nextImage: t('nextImage'), copy: t('copy'), copied: t('copied'), sharePoster: t('sharePoster'), generatingPoster: t('generatingPoster'), copyLink: t('copyLink'), savePoster: t('savePoster'), scanToRead: t('scanToRead'), author: t('author'), searchLoading: t('searchLoading'), searchNoResults: t('searchNoResults'), searchUnavailable: t('searchUnavailable'), searchTypeSomething: t('searchTypeSomething') })} />
   <body data-page={page}>
     <a class="skip-link" href="#main">{t('skipToContent')}</a>
     <Header />

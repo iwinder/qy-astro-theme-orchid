@@ -7,7 +7,8 @@
     "dev": "astro dev",
     "build": "astro build && pagefind --site dist",
     "preview": "astro preview",
-    "sync": "astro sync"
+    "sync": "astro sync",
+    "lqip": "node ../packages/theme/scripts/generate-lqips.mjs"
   },
   "dependencies": {
     "@windcoder/astro-theme-orchid": "workspace:*",

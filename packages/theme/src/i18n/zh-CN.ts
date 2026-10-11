@@ -25,6 +25,13 @@ const zhCN = {
   nextPost: '下一篇',
   firstPost: '已经是最早的一篇',
   lastPost: '已经是最新的一篇',
+  /* 相关/随机文章推荐（M3b-b9）：noRandomPosts 经 data-empty-html 带入客户端 */
+  relatedPosts: '相关文章',
+  randomPosts: '随机文章',
+  smartRecommend: '智能推荐',
+  randomRecommend: '随机推荐',
+  noRelatedPosts: '暂无相关文章',
+  noRandomPosts: '暂无随机文章',
   /* License */
   licensePrefix: '本文采用',
   licenseSuffix: '许可，转载请注明出处与作者。',
@@ -108,6 +115,13 @@ const zhCN = {
   nextImage: '下一张',
   copy: '复制',
   copied: '已复制',
+  /* 分享海报（M3b-b9.6） */
+  sharePoster: '生成分享海报',
+  generatingPoster: '海报生成中…',
+  copyLink: '复制链接',
+  savePoster: '保存海报',
+  scanToRead: '扫码阅读全文',
+  author: '作者',
 } as const;
 
 export type UiKey = keyof typeof zhCN;

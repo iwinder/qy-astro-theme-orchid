@@ -3,6 +3,7 @@
  * 相册卡片（M3b-b8）：画廊列表页网格单元，样式对齐设计原型 §9。
  * data-tags（标签数组）与 data-search（名称/描述/地点/标签全文小写）供 gallery-filter 筛选。
  */
+import { getLqipStyle } from '../utils/lqip.js';
 import { t } from '../i18n/index.js';
 
 interface Props {
@@ -35,7 +36,11 @@ const searchText = [name, description, location, ...tags].join(' ').toLowerCase(
 <a class="album-card card" href={`/gallery/${id}/`} data-tags={tags.join(',')} data-search={searchText} aria-label={encrypted ? `${name}（${t('encryptedAlbum')}）` : name}>
   <div class="album-cover">
     {cover ? (
-      <img src={cover} alt={name} loading="lazy" decoding="async" />
+      <>
+        {/* LQIP 占位渐变（b9.5）：外链封面查不到数据时降级纯色 */}
+        <div class="qy-lqip" style={getLqipStyle(cover)} aria-hidden="true"></div>
+        <img src={cover} alt={name} loading="lazy" decoding="async" data-lqip />
+      </>
     ) : (
       <span class="album-cover-fallback">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="m21 15-4.2-4.2a1.4 1.4 0 0 0-2 0L7 18.6"/></svg>

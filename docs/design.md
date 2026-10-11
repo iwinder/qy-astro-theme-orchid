@@ -333,6 +333,25 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - VT 客户端换页（列表 → 详情 → 返回相册）后点「日常」chip 筛选正常（gallery-filter re-connect）✓
 - 修复记录：详情页 frontmatter 内 JSX 片段赋值在 dev 触发 import-analysis 报错 → 改为模板内条件渲染后正常
 
+**M3b-b9 实现记录**（✅ 2026-10-11，LQIP / OG 分享图 / 相关文章+随机栏 / 分享海报，P1-11/12/13/14，M3b 收尾批次）：
+
+| 项 | 实现 |
+|---|---|
+| 相关文章（P1-12） | `utils/related.ts`：同标签×2 + 同分类×1 打分取前 count 篇，不足按最新补齐；`RecommendedPost.astro` 构建期渲染 `.related-grid` 卡片（封面 LQIP + 标题 + 日期）；`relatedPosts: { enabled, count, randomCount }` 可配，enabled 才注入数据路由 |
+| 随机栏 | 同组件右栏客户端 fetch `/api/allPostMeta.json`（构建期产物，加密文不进随机池），Fisher-Yates 抽 randomCount 篇 |
+| OG 分享图（P1-11，默认关） | `routes/og/[...slug].ts`：satori 对象树→1200×630 SVG + sharp 转 PNG；Noto Sans SC woff2 经 Google Fonts CSS2 拉取、模块级缓存，**失败降级 sharp 占位图**（修复原版 satori "No font provided" 崩构建缺陷）；草稿/加密文不生成；`og.enabled` 才 injectRoute（site 未开启 → dist/og 无产物 = 预期） |
+| LQIP（P1-14） | `scripts/generate-lqips.mjs`（sharp 三主色 → 18 字符 compact hex）产出 `site/lqips.json`；`vite.ts` themeLqipsPlugin 构建期读取注入 `virtual:theme/lqips`；`utils/lqip.ts` getLqipStyle 内联渐变占位；文章卡/相册卡/照片卡/画廊页封面接入 |
+| 分享海报（P1-13） | `scripts/share-poster.ts`：纯浏览器 canvas + qrcode 动态 import 分包（点开才加载）；布局移植原版 `SharePoster.svelte`（850px 宽 / 标题 3 行 clamp / 摘要 6 行 / footer 64px 二维码），数据经按钮 `data-*` 传入；文案读 `#qy-ui-labels` + FALLBACK 兜底；封面失败降级 accent 色块；modal 骨架静态结构 + DOM API 填动态文本（防标题引号破坏属性）；加密文章不出按钮 |
+| i18n | 7 新键三处同步（zh-CN.ts / en.ts / `#qy-ui-labels`）：`sharePoster/generatingPoster/copyLink/savePoster/scanToRead/author` |
+| 样式 | global.css §18 LQIP 占位层 + §19 分享海报（`.poster-modal` z-index 330 > lightbox 320；poster-fade/pop 动画；reduced-motion 降级） |
+| 工程 | theme +`satori` +`sharp` +`qrcode`（dev +`@types/qrcode`）；site scripts +`lqip`；pnpm-workspace.yaml 显式 `storeDir` 绝对路径（绕开 pnpm 临时文件探测在沙箱下的 EXDEV 误报，store 数据位置不变） |
+
+**M3b-b9 验证记录**（2026-10-11，dev + build 实测）：
+
+- dev：首页 LQIP 占位 ✓；普通文章页 `#qy-share-btn` + `.related-grid` ✓；加密文章页无海报按钮 ✓；`/api/allPostMeta.json` 200 ✓；qrcode 进入 Vite deps 优化列表（动态分包生效）✓
+- build：115 页构建成功 ✓；dist 首页 LQIP 3 处 ✓；features-demo 页海报按钮 + 推荐栏 ✓；加密页 0 按钮 ✓；`dist/api/allPostMeta.json` 存在 ✓；OG 默认关未注入路由（dist/og 无产物 = 预期）✓
+- LQIP 数据：9 张演示图全部生成
+
 ### 4.3 P2 —— 拆分处理（2026-10-11 已确认：保留 5 项、暂时舍弃 4 项）
 
 原建议整体舍弃，经确认拆分如下。
@@ -380,7 +399,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | ✅ 完成 |
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3/b4/b5/b6/b7/b8 ✅ 2026-10-11，批次划分见 §4.2；b8 的 LQIP 占位并入 b9） |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；**M3b ✅ 完成（2026-10-11，b0-b9 九批次全过：P1 全部 + P2 保留 5 项，批次划分见 §4.2；b8 的 LQIP 占位已并入 b9）** |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
 
 ## 6. 决策记录（2026-10-11 确认）

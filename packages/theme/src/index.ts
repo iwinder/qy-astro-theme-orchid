@@ -13,7 +13,7 @@ import 'katex/dist/contrib/mhchem.mjs';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import { themeConfigSchema, type ThemeConfig } from './schema.js';
-import { overridesPlugin, themeConfigPlugin } from './vite.js';
+import { overridesPlugin, themeConfigPlugin, themeLqipsPlugin } from './vite.js';
 import { remarkExcerpt } from './plugins/remark-excerpt.js';
 import { remarkReadingTime } from './plugins/remark-reading-time.js';
 import { remarkMermaid, remarkPlantuml } from './plugins/remark-diagram.js';
@@ -144,6 +144,14 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
           routes.push(['/gallery', 'gallery/index.astro']);
           routes.push(['/gallery/[album]', 'gallery/[album].astro']);
         }
+        // 相关/随机文章推荐（P1-12）：随机栏数据源
+        if (config.relatedPosts.enabled) {
+          routes.push(['/api/allPostMeta.json', 'api/allPostMeta.json.ts']);
+        }
+        // OG 分享图（P1-11）：每篇文章一张分享图，默认关
+        if (config.og.enabled) {
+          routes.push(['/og/[...slug]', 'og/[...slug].ts']);
+        }
         for (const [pattern, file] of routes) {
           injectRoute({
             pattern,
@@ -153,8 +161,10 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
         }
 
         updateConfig({
+          // themeLqipsPlugin 必须在 overridesPlugin 前（后者兜底所有 virtual:theme/*，
+          // 会抢走 virtual:theme/lqips 的解析，详见 vite.ts 注释）
           vite: {
-            plugins: [themeConfigPlugin(config), overridesPlugin()],
+            plugins: [themeConfigPlugin(config), themeLqipsPlugin(), overridesPlugin()],
           },
         });
       },
@@ -166,6 +176,10 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
             `declare module 'virtual:theme/config' {`,
             `  const config: import('${PKG_NAME}/schema').ResolvedThemeConfig;`,
             `  export default config;`,
+            `}`,
+            `declare module 'virtual:theme/lqips' {`,
+            `  const lqips: Record<string, string>;`,
+            `  export default lqips;`,
             `}`,
             `declare module 'virtual:theme/*' {`,
             `  const Component: any;`,

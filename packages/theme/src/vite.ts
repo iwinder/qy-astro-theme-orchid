@@ -61,3 +61,38 @@ export function themeConfigPlugin(config: ResolvedThemeConfig) {
     },
   };
 }
+
+/**
+ * LQIP 虚拟模块（M3b-b9，P1-14）：读取站点根 lqips.json
+ * （generate-lqips.mjs 产物，键 `public:<路径>` → 18 字符 compact hex），
+ * 以 `virtual:theme/lqips` 暴露给构建期内联占位渐变（utils/lqip.ts）。
+ * 文件缺失（未跑生成脚本）时导出空对象，消费端自然降级纯色，不阻塞构建。
+ * 注意：本插件必须注册在 overridesPlugin 之前——后者的 resolveId 会兜住
+ * 所有 virtual:theme/* 并返回一个不存在的文件路径。
+ */
+export function themeLqipsPlugin() {
+  const virtualId = 'virtual:theme/lqips';
+  const resolvedId = '\0' + virtualId;
+  let lqips: Record<string, string> = {};
+  return {
+    name: '@windcoder/astro-theme-orchid:lqips',
+    enforce: 'pre' as const,
+    configResolved(resolvedConfig: { root: URL | string }) {
+      const rootDir =
+        typeof resolvedConfig.root === 'string'
+          ? resolvedConfig.root
+          : fileURLToPath(resolvedConfig.root);
+      try {
+        lqips = JSON.parse(fs.readFileSync(path.join(rootDir, 'lqips.json'), 'utf8'));
+      } catch {
+        lqips = {};
+      }
+    },
+    resolveId(id: string) {
+      return id === virtualId ? resolvedId : null;
+    },
+    load(id: string) {
+      if (id === resolvedId) return `export default ${JSON.stringify(lqips)};`;
+    },
+  };
+}

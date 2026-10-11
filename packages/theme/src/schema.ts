@@ -57,6 +57,39 @@ export const themeConfigSchema = z.object({
       enabled: z.boolean().default(true),
     })
     .default({ enabled: true }),
+  /**
+   * 相关/随机文章推荐（P1-12）：文章页 PostNav 后双栏卡。
+   * 相关栏构建期评分（标签/标题 Jaccard + 时间新鲜度 + 同分类），候选排除加密文章；
+   * 随机栏客户端 fetch /api/allPostMeta.json（加密文章不进随机池）。
+   */
+  relatedPosts: z
+    .object({
+      enabled: z.boolean().default(true),
+      /** 相关栏数量 */
+      count: z.number().int().min(0).max(10).default(5),
+      /** 随机栏数量 */
+      randomCount: z.number().int().min(0).max(10).default(5),
+    })
+    .default({ enabled: true, count: 5, randomCount: 5 }),
+  /**
+   * OG 分享图（P1-11，默认关）：构建期为每篇文章生成 1200x630 分享图（/og/<slug>.png）。
+   * satori（对象树→SVG）+ sharp（SVG→PNG）；Google Fonts 拉取失败时降级纯形状占位图，
+   * 构建不中断。网络受限环境可保持关闭或接受占位图。
+   */
+  og: z
+    .object({
+      enabled: z.boolean().default(false),
+    })
+    .default({ enabled: false }),
+  /**
+   * 分享海报（P1-13）：文章页「生成分享海报」按钮，纯浏览器 canvas + qrcode 能力，
+   * 构建零开销（qrcode 动态 import 分包，点开才加载）。
+   */
+  sharePoster: z
+    .object({
+      enabled: z.boolean().default(true),
+    })
+    .default({ enabled: true }),
   /** 版权声明（文章级 licenseName/licenseUrl 可覆盖；enabled=false 全站关闭） */
   license: z
     .object({

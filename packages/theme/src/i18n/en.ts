@@ -21,6 +21,12 @@ const en: Record<UiKey, string> = {
   nextPost: 'Next',
   firstPost: 'This is the earliest post',
   lastPost: 'This is the latest post',
+  relatedPosts: 'Related Posts',
+  randomPosts: 'Random Posts',
+  smartRecommend: 'Smart',
+  randomRecommend: 'Random',
+  noRelatedPosts: 'No related posts',
+  noRandomPosts: 'No random posts',
   licensePrefix: 'This post is licensed under',
   licenseSuffix: '. Please credit the author when reposting.',
   toc: 'Table of contents',
@@ -93,6 +99,12 @@ const en: Record<UiKey, string> = {
   nextImage: 'Next image',
   copy: 'Copy',
   copied: 'Copied',
+  sharePoster: 'Generate share poster',
+  generatingPoster: 'Generating poster…',
+  copyLink: 'Copy link',
+  savePoster: 'Save poster',
+  scanToRead: 'Scan to read',
+  author: 'Author',
 };
 
 export default en;

@@ -1,0 +1,166 @@
+---
+/**
+ * 相关/随机文章推荐（P1-12，移植自 orchid-blog RecommendedPost）。
+ * 左栏：构建期静态渲染的相关文章（getRelatedPosts 评分）；
+ * 右栏：客户端 fetch /api/allPostMeta.json 随机抽取（Fisher-Yates），
+ *       加密文章已在 json 侧排除；<random-posts> 为 VT 安全 custom element
+ *       （is:inline + customElements.get 防重复 define，VT 换页自动 re-connect）。
+ */
+import type { PostLike } from '../utils.js';
+import { t } from '../i18n/index.js';
+
+interface Props {
+  related: PostLike[];
+  currentId: string;
+  randomCount?: number;
+}
+
+const { related, currentId, randomCount = 5 } = Astro.props;
+const excludeIds = JSON.stringify([currentId, ...related.map((p) => p.id)]);
+---
+
+<div class="related-grid">
+  <div class="related-card">
+    <div class="related-head">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m21.66 9.65-6.87-6.87a1.03 1.03 0 0 0-1.59.16l-2.88 4.5-4.5 2.88a1.03 1.03 0 0 0-.16 1.59l6.87 6.87c.4.4 1.07.4 1.47 0l7.66-7.66c.4-.4.4-1.07 0-1.47M8.6 9.31 4.19 6.4l2.24-2.24 2.93 4.43zm6.09 6.09 2.24-2.24-4.43-2.93-2.91 4.41z"></path></svg>
+      <span>{t('relatedPosts')}</span>
+      <span class="related-badge">{t('smartRecommend')}</span>
+    </div>
+    {related.length > 0 ? (
+      <div class="related-list">
+        {related.map((p, idx) => (
+          <a class="related-item" href={`/posts/${p.id}/`}>
+            <span class="related-num">{idx + 1}</span>
+            <span class="related-body">
+              <span class="related-title">{p.data.title}</span>
+              <span class="related-meta">
+                {p.data.category && <span class="related-cat">{p.data.category}</span>}
+                <span class="related-desc">{p.data.description || p.data.published.toISOString().substring(0, 10)}</span>
+              </span>
+            </span>
+            <svg class="related-arrow" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z"></path></svg>
+          </a>
+        ))}
+      </div>
+    ) : (
+      <div class="related-empty">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 5v14H5V5zm0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-5 4H7v2h7zm2 4H7v2h9z"></path></svg>
+        <span>{t('noRelatedPosts')}</span>
+      </div>
+    )}
+  </div>
+
+  <div class="related-card">
+    <div class="related-head">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18 7h1.5a2.5 2.5 0 0 1 0 5H18v1h2v1h-2v2h-1V7h3v1h-2zm-7 1.5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5S12.5 10.83 12.5 10s-.67-1.5-1.5-1.5M18 2H6a2 2 0 0 0-2 2v16c0 1.1.9 2 2 2h12a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2m0 18H6V4h12z" transform="scale(.9) translate(1.2 1.2)"></path><path d="M12.01 12.46c-.89 0-1.61.72-1.61 1.61s.72 1.61 1.61 1.61 1.61-.72 1.61-1.61-.72-1.61-1.61-1.61M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2m1 4v2h10V6zm1.6 8.07c0 .89.72 1.61 1.61 1.61s1.61-.72 1.61-1.61-.72-1.61-1.61-1.61-1.61.72-1.61 1.61"></path></svg>
+      <span>{t('randomPosts')}</span>
+      <span class="related-badge">{t('randomRecommend')}</span>
+    </div>
+    <random-posts
+      class="related-list"
+      data-api-url="/api/allPostMeta.json"
+      data-current-id={currentId}
+      data-exclude-ids={excludeIds}
+      data-count={randomCount}
+      data-empty-html={t('noRandomPosts')}
+    >
+      <div class="related-empty">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 5v14H5V5zm0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-5 4H7v2h7zm2 4H7v2h9z"></path></svg>
+        <span>{t('noRandomPosts')}</span>
+      </div>
+    </random-posts>
+  </div>
+</div>
+
+<script is:inline>
+  if (!customElements.get('random-posts')) {
+    customElements.define(
+      'random-posts',
+      class extends HTMLElement {
+        connectedCallback() {
+          // 随机抽取每次连接重跑：VT 往返后重新洗牌是期望行为
+          const apiUrl = this.dataset.apiUrl;
+          const excludeIds = JSON.parse(this.dataset.excludeIds || '[]');
+          const count = parseInt(this.dataset.count || '5', 10);
+          const emptyHtml = this.dataset.emptyHtml || '';
+
+          const render = (allPosts) => {
+            const candidates = allPosts.filter((p) => !excludeIds.includes(p.id));
+            // Fisher-Yates 洗牌后取前 count 个
+            for (let i = candidates.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+            }
+            const picked = candidates.slice(0, count);
+            this.innerHTML = '';
+            if (picked.length === 0) {
+              const empty = document.createElement('div');
+              empty.className = 'related-empty';
+              empty.innerHTML =
+                '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M19 5v14H5V5zm0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-5 4H7v2h7zm2 4H7v2h9z"></path></svg><span></span>';
+              empty.querySelector('span').textContent = emptyHtml;
+              this.appendChild(empty);
+              return;
+            }
+            const frag = document.createDocumentFragment();
+            picked.forEach((post, idx) => {
+              const a = document.createElement('a');
+              a.className = 'related-item';
+              a.href = '/posts/' + post.id + '/';
+              const num = document.createElement('span');
+              num.className = 'related-num';
+              num.textContent = String(idx + 1);
+              const body = document.createElement('span');
+              body.className = 'related-body';
+              const title = document.createElement('span');
+              title.className = 'related-title';
+              title.textContent = post.title;
+              const meta = document.createElement('span');
+              meta.className = 'related-meta';
+              if (post.category) {
+                const cat = document.createElement('span');
+                cat.className = 'related-cat';
+                cat.textContent = post.category;
+                meta.appendChild(cat);
+              }
+              const desc = document.createElement('span');
+              desc.className = 'related-desc';
+              desc.textContent = post.description || new Date(post.published).toISOString().substring(0, 10);
+              meta.appendChild(desc);
+              body.appendChild(title);
+              body.appendChild(meta);
+              const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+              arrow.setAttribute('class', 'related-arrow');
+              arrow.setAttribute('viewBox', '0 0 24 24');
+              arrow.setAttribute('fill', 'currentColor');
+              arrow.setAttribute('aria-hidden', 'true');
+              const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+              path.setAttribute('d', 'M9.29 6.71a1 1 0 0 0 0 1.41L13.17 12l-3.88 3.88a1 1 0 1 0 1.41 1.41l4.59-4.59a1 1 0 0 0 0-1.41L10.7 6.7a1 1 0 0 0-1.41.01z');
+              arrow.appendChild(path);
+              a.appendChild(num);
+              a.appendChild(body);
+              a.appendChild(arrow);
+              frag.appendChild(a);
+            });
+            this.appendChild(frag);
+          };
+
+          // 缓存复用：VT 导航往返不重复请求
+          if (window.__qyAllPostMetaCache) {
+            render(window.__qyAllPostMetaCache);
+          } else {
+            fetch(apiUrl)
+              .then((r) => r.json())
+              .then((data) => {
+                window.__qyAllPostMetaCache = data;
+                render(data);
+              })
+              .catch(() => {
+                /* 索引缺失等场景静默保持占位 */
+              });
+          }
+        }
+      },
+    );
+  }
+</script>

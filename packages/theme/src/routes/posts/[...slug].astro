@@ -6,10 +6,13 @@ import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
 import Toc from 'virtual:theme/components/Toc.astro';
 import License from 'virtual:theme/components/License.astro';
 import PostNav from 'virtual:theme/components/PostNav.astro';
+import RecommendedPost from 'virtual:theme/components/RecommendedPost.astro';
 import Comment from 'virtual:theme/components/Comment.astro';
 import EncryptedContent from 'virtual:theme/components/EncryptedContent.astro';
 import config from 'virtual:theme/config';
 import { formatDate, getSortedPosts } from '../../utils.js';
+import { getRelatedPosts } from '../../utils/related.js';
+import { getLqipStyle } from '../../utils/lqip.js';
 import { t } from '../../i18n/index.js';
 
 export async function getStaticPaths() {
@@ -18,11 +21,16 @@ export async function getStaticPaths() {
   // sorted 内 idx+1 为更早一篇（prev），idx-1 为更新一篇（next）
   return sorted.map((post, idx) => ({
     params: { slug: post.id },
-    props: { post, prev: sorted[idx + 1] ?? null, next: sorted[idx - 1] ?? null },
+    props: {
+      post,
+      prev: sorted[idx + 1] ?? null,
+      next: sorted[idx - 1] ?? null,
+      related: getRelatedPosts(sorted, post, config.relatedPosts.count),
+    },
   }));
 }
 
-const { post, prev, next } = Astro.props;
+const { post, prev, next, related } = Astro.props;
 const d = post.data;
 const { Content, headings, remarkPluginFrontmatter } = await render(post);
 const { words, minutes } = remarkPluginFrontmatter as { words?: number; minutes?: number };
@@ -42,7 +50,7 @@ const jsonLd = {
 };
 ---
 
-<BaseLayout title={d.title} description={d.description} page="post">
+<BaseLayout title={d.title} description={d.description} page="post" ogImage={config.og.enabled ? `/og/${post.id}.png` : undefined}>
   <header class="post-header reveal">
     {d.category && <a class="chip" href={`/categories/${encodeURIComponent(d.category)}/`}>{d.category}</a>}
     <h1 class="post-title-lg" data-pagefind-body data-pagefind-weight="10" data-pagefind-meta="title">{d.title}</h1>
@@ -58,7 +66,8 @@ const jsonLd = {
   {
     d.image && (
       <figure class="article-cover reveal" data-lightbox>
-        <img src={d.image} alt={d.title} loading="eager" />
+        <div class="qy-lqip" style={getLqipStyle(d.image)} aria-hidden="true"></div>
+        <img src={d.image} alt={d.title} loading="eager" data-lqip />
       </figure>
     )
   }
@@ -79,6 +88,34 @@ const jsonLd = {
   </div>
   <License licenseName={d.licenseName} licenseUrl={d.licenseUrl} />
   <PostNav prev={prev ?? undefined} next={next ?? undefined} />
+  {/* 分享海报（P1-13）：纯浏览器 canvas + qrcode；数据经 data-* 传给 share-poster.ts，加密文章不出按钮 */}
+  {
+    config.sharePoster.enabled && !d.password && (
+      <div class="poster-actions reveal">
+        <button
+          type="button"
+          id="qy-share-btn"
+          class="btn-poster"
+          data-title={d.title}
+          data-author={d.author || config.author || config.title}
+          data-desc={d.description}
+          data-date={d.published.toISOString()}
+          data-cover={d.image ?? ''}
+          data-url={url.href}
+          data-site={config.title}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          {t('sharePoster')}
+        </button>
+      </div>
+    )
+  }
+  {/* 相关/随机文章推荐（P1-12）：相关栏构建期评分，随机栏客户端抽取；候选均已排除加密文章 */}
+  {
+    config.relatedPosts.enabled && (
+      <RecommendedPost related={related} currentId={post.id} randomCount={config.relatedPosts.randomCount} />
+    )
+  }
   {/* 加密文章不渲染评论（评论内容依赖正文上下文，明文评论区会破坏加密语义） */}
   <Comment path={`/posts/${post.id}`} enabled={d.comment && !d.password} />
   <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
