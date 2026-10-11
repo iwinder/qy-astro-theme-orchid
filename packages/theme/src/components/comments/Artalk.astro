@@ -2,7 +2,9 @@
 /**
  * Artalk 评论实现（orchid-blog components/comment/Artalk.astro 移植）。
  * pageKey 与 orchid-blog 口径一致（/posts/<id> 无尾斜杠），迁移后既有评论数据无缝延续。
- * VT 兼容：is:inline 脚本在换页 swap 后随新页面重新执行，旧 MutationObserver 经 window 句柄清理。
+ * VT 兼容：identical inline 脚本换页后不会重跑（按内容去重），必须显式
+ * data-astro-rerun——否则 guestbook → 其他页 → guestbook（pageKey 相同、脚本内容相同）
+ * 二次进入时脚本不重执行，评论区空白。旧 MutationObserver 经 window 句柄清理。
  */
 import config from 'virtual:theme/config';
 
@@ -29,7 +31,7 @@ const artalkConfig = {
 
   <link rel="stylesheet" href="https://unpkg.com/artalk/dist/Artalk.css" />
 
-  <script is:inline type="module" define:vars={{ artalkConfig }}>
+  <script is:inline type="module" data-astro-rerun define:vars={{ artalkConfig }}>
     const ArtalkModule = await import('https://unpkg.com/artalk/dist/Artalk.mjs');
 
     // VT 换页后旧观察器随本次执行清理，避免泄漏

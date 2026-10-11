@@ -169,7 +169,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 |---|---|
 | 评论适配层（P1-1） | `components/Comment.astro` 按 `config.comment.provider` 分发（可 override 整体覆盖）；schema 新增 `comment` section（enabled 默认 false / provider 枚举 / title / artalk 子配置，全部显式默认值） |
 | Artalk 实现 | `components/comments/Artalk.astro` 移植 orchid-blog：unpkg ESM + `is:inline define:vars`、CSS 变量映射主题令牌（--accent/--surface/--border）、`html.dark` MutationObserver 暗色跟随；**pageKey 口径与 orchid-blog 完全一致**（`/posts/<id>`、`/guestbook` 无尾斜杠），M2.5 迁移时既有评论数据无缝延续 |
-| VT 兼容 | inline 脚本换页 swap 后随新页面重新执行；旧 MutationObserver 经 `window.__orchidArtalkObserver` 句柄在下次执行时 disconnect，防泄漏 |
+| VT 兼容 | Astro ClientRouter 对 **identical inline 脚本按内容去重不重跑**：换页 swap 时仅内容不同的脚本才重新执行。文章页之间 pageKey 不同 → 脚本内容不同，天然重跑；但 guestbook → 其他页 → guestbook（脚本内容相同）二次进入不会重执行导致评论区空白。**b3 修正：脚本加 `data-astro-rerun` 强制每次 swap 重跑**；旧 MutationObserver 经 `window.__orchidArtalkObserver` 句柄在下次执行时 disconnect，防泄漏 |
 | 文章页接入 | `posts/[...slug].astro` 在 PostNav 后渲染 `<Comment path={`/posts/${post.id}`} enabled={d.comment} />`（frontmatter `comment: false` 按篇关闭，M2 预留字段正式启用） |
 | 留言板接入 | guestbook 评论开 → `<Comment path="/guestbook" />`；关 → 保留「评论区即将开放」占位 |
 
@@ -182,6 +182,29 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | visitorCount 仅生成配置 | Artalk pageview 挂载点（`#artalk-pv`）由站点在需要处自行放置 | 主题不强插 PV 元素，避免与文章 meta 重复 |
 
 **M3b-b2 验证记录**（dev 实测，2026-10-11）：8 条路由全 200；文章页 HTML 含 `#comments` 区块 + `#artalk` 挂载点 + 占位 server（artalk.example.com）注入 + Artalk.css 引入；guestbook 的占位 DOM 已被评论组件替换（comment-placeholder 仅存于 CSS）；dev 日志无 ERROR。Artalk 后端为占位地址，脚本运行期请求失败不影响页面其余部分（真实后端在 M2.5 站点迁移时配置）。
+
+**M3b-b3 实现记录**（✅ 2026-10-11）：
+
+| 功能 | 实现 |
+|---|---|
+| 侧栏公告（P1-17） | schema 新增 `announcement` section（content 空 → 整卡不渲染）；Sidebar 公告卡置顶：正文（`white-space: pre-line` 支持换行）+ 可选链接按钮（`btn-ghost` 复用）+ closable 内联 onclick 前台隐藏（无持久化，与 orchid-blog 行为一致） |
+| 侧栏广告位（P2 保留项） | schema 新增 `advertisement` section（**enabled 默认 false**）；Sidebar 广告卡置底：图（可带 imageLink）/文本/链接按钮三段式 + hover 淡入关闭钮（`__orchidCloseAd` 滑出动画）+ expireDate 构建期过期判断 + displayCount localStorage 计数超限隐藏；初始化脚本**置于模板顶层**（条件表达式内脚本体含 `{}`/`=>` 会被 Astro 模板编译器误解析）+ `data-astro-rerun` 保证 VT 换页后重绑关闭钮/重计数 |
+| 站点统计（P1-16） | `components/analytics/` 四实现（GA gtag / Clarity / Umami（含 replays + 外链追踪 astro:page-load 重扫）/ 51la js-sdk-pro）+ `components/Analytics.astro` 聚合；**ID 留空即完全不注入对应脚本**，全部留空零输出；BaseLayout body 尾挂载（与 orchid-blog 口径一致） |
+| b2 VT 修正 | Artalk 脚本补 `data-astro-rerun`（修正 identical inline 脚本 guestbook 二次进入不重跑的问题，见上表 b2 VT 行修正说明） |
+
+**M3b-b3 偏差清单**：
+
+| 偏差 | 原因 | 主题实现 |
+|---|---|---|
+| 广告配置扁平化 | orchid-blog 的 `image{src/link/alt/external}` 嵌套对象配置冗余 | 扁平为 `image/imageLink/imageAlt`，语义不变 |
+| 去掉 WidgetLayout/astro-icon/Tailwind 依赖 | 主题无 astro-icon、无 Tailwind | 复用 `.side-card card` 结构 + `btn-ghost`，关闭钮用 `✕` 字符替代图标 |
+| 广告 displayCount 计数键固定 | orchid-blog 用随机 widgetId（静态构建下每页随机 → 计数键不一致，实际失效） | 卡片 id 固定 `advertisement`，键 `ad-display-advertisement`，跨页计数一致（顺带修复原实现缺陷） |
+| 关闭动画 translateX(24px) | orchid-blog 为 translateX(100%)，侧栏卡片滑出全宽会扫过正文 | 缩短位移仅淡出+微移，视觉更克制 |
+| 统计脚本去 swup 标记 | `data-swup-ignore-script` 为 swup 专属 | 主题用 ClientRouter，无对应语义，直接移除 |
+| Umami 外链追踪改 astro:page-load | orchid-blog 监听 swup 的 `contentReplaced` 事件 | document 级监听跨 VT swap 持久，`astro:page-load` 重扫新 DOM 外链 |
+| widget 置位 | orchid-blog 公告/广告位置由 widget 配置数组决定 | 主题固定：公告卡侧栏置顶、广告卡置底（简约风固定信息架构） |
+
+**M3b-b3 验证记录**（dev 实测，2026-10-11）：8 条路由全 200；首页公告卡渲染（`id="announcement"` + 演示文案 + 关闭钮）；广告默认关 → `id="advertisement"` 零渲染但 init 脚本在场（`__orchidCloseAd` + `data-astro-rerun`）；临时开启广告 → 卡片/内容/关闭钮/`ad-display-advertisement` 计数键全部在场，验证后还原默认关闭；统计 ID 全空 → 全页无 googletagmanager/clarity.ms/umami/51.la 任何脚本痕迹；文章页与 guestbook 的 Artalk 脚本均带 `data-astro-rerun`；dev 日志无 ERROR。
 
 ### 4.3 P2 —— 拆分处理（2026-10-11 已确认：保留 5 项、暂时舍弃 4 项）
 
@@ -230,7 +253,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | ✅ 完成 |
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2 ✅ 2026-10-11，批次划分见 §4.2） |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3 ✅ 2026-10-11，批次划分见 §4.2） |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
 
 ## 6. 决策记录（2026-10-11 确认）

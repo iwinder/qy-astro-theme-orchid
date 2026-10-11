@@ -198,6 +198,130 @@ export const themeConfigSchema = z.object({
       title: '评论',
       artalk: { server: '', locale: 'zh-CN', visitorCount: true },
     }),
+  /**
+   * 侧栏公告（P1-17）。content 留空则整卡不渲染；
+   * closable 仅前台隐藏（无持久化，刷新恢复）。
+   */
+  announcement: z
+    .object({
+      title: z.string().default('公告'),
+      content: z.string().default(''),
+      link: z
+        .object({
+          text: z.string().default(''),
+          url: z.string().default(''),
+          external: z.boolean().default(false),
+        })
+        .default({ text: '', url: '', external: false }),
+      closable: z.boolean().default(false),
+    })
+    .default({ title: '公告', content: '', link: { text: '', url: '', external: false }, closable: false }),
+  /**
+   * 侧栏广告位（P2 保留项，默认关闭）。enabled=false 整卡不渲染；
+   * expireDate（YYYY-MM-DD）过期不渲染；displayCount>0 时按 localStorage 计数超限隐藏。
+   */
+  advertisement: z
+    .object({
+      enabled: z.boolean().default(false),
+      title: z.string().default('广告'),
+      /** 广告图（public 路径或外链，留空跳过） */
+      image: z.string().default(''),
+      /** 点击广告图跳转的链接（留空则图不可点） */
+      imageLink: z.string().default(''),
+      imageAlt: z.string().default('广告'),
+      /** 文本内容（留空跳过） */
+      content: z.string().default(''),
+      /** 底部链接按钮（text 留空不渲染） */
+      link: z
+        .object({
+          text: z.string().default(''),
+          url: z.string().default(''),
+          external: z.boolean().default(true),
+        })
+        .default({ text: '', url: '', external: true }),
+      closable: z.boolean().default(true),
+      /** 最大展示次数；-1 不限制 */
+      displayCount: z.number().int().default(-1),
+      /** 过期日期（YYYY-MM-DD），过期不渲染 */
+      expireDate: z.string().optional(),
+    })
+    .default({
+      enabled: false,
+      title: '广告',
+      image: '',
+      imageLink: '',
+      imageAlt: '广告',
+      content: '',
+      link: { text: '', url: '', external: true },
+      closable: true,
+      displayCount: -1,
+    }),
+  /**
+   * 站点统计（P1-16）：GA / Clarity / Umami / 51la 四选多。
+   * 对应 ID 留空即不注入该统计脚本，全部留空零副作用。
+   */
+  analytics: z
+    .object({
+      /** Google Analytics 衡量 ID（G-XXXX） */
+      googleAnalyticsId: z.string().default(''),
+      /** Microsoft Clarity 项目 ID */
+      microsoftClarityId: z.string().default(''),
+      umami: z
+        .object({
+          websiteId: z.string().default(''),
+          scriptUrl: z.string().default('https://cloud.umami.is/script.js'),
+          /** Umami Live 录制（replays）脚本地址 */
+          replaysScriptUrl: z.string().default('https://cloud.umami.is/script.replays.js'),
+          /** 外链自动标记 data-umami-event 上报 */
+          trackOutboundLinks: z.boolean().default(true),
+          /** Web Vitals 采集（自建 umami 需 v2.9+） */
+          collectWebVitals: z.boolean().default(false),
+          replays: z
+            .object({
+              enabled: z.boolean().default(false),
+              sampleRate: z.number().min(0).max(1).default(0.15),
+              maskLevel: z.enum(['moderate', 'strict']).default('moderate'),
+              /** 单次录制最长毫秒 */
+              maxDuration: z.number().int().default(300000),
+              /** 录制屏蔽选择器（隐私元素） */
+              blockSelector: z.string().default(''),
+            })
+            .default({ enabled: false, sampleRate: 0.15, maskLevel: 'moderate', maxDuration: 300000, blockSelector: '' }),
+        })
+        .default({
+          websiteId: '',
+          scriptUrl: 'https://cloud.umami.is/script.js',
+          replaysScriptUrl: 'https://cloud.umami.is/script.replays.js',
+          trackOutboundLinks: true,
+          collectWebVitals: false,
+          replays: { enabled: false, sampleRate: 0.15, maskLevel: 'moderate', maxDuration: 300000, blockSelector: '' },
+        }),
+      la51: z
+        .object({
+          /** 51.la 站点 ID（CK 编码） */
+          id: z.string().default(''),
+          /** 私有部署 SDK 地址（留空用官方） */
+          sdkUrl: z.string().default(''),
+          ck: z.string().default(''),
+          autoTrack: z.boolean().default(true),
+          hashMode: z.boolean().default(false),
+          screenRecord: z.boolean().default(true),
+        })
+        .default({ id: '', sdkUrl: '', ck: '', autoTrack: true, hashMode: false, screenRecord: true }),
+    })
+    .default({
+      googleAnalyticsId: '',
+      microsoftClarityId: '',
+      umami: {
+        websiteId: '',
+        scriptUrl: 'https://cloud.umami.is/script.js',
+        replaysScriptUrl: 'https://cloud.umami.is/script.replays.js',
+        trackOutboundLinks: true,
+        collectWebVitals: false,
+        replays: { enabled: false, sampleRate: 0.15, maskLevel: 'moderate', maxDuration: 300000, blockSelector: '' },
+      },
+      la51: { id: '', sdkUrl: '', ck: '', autoTrack: true, hashMode: false, screenRecord: true },
+    }),
 });
 
 export type ThemeConfig = z.input<typeof themeConfigSchema>;

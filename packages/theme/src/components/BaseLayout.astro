@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import Header from 'virtual:theme/components/Header.astro';
 import Footer from 'virtual:theme/components/Footer.astro';
+import Analytics from 'virtual:theme/components/Analytics.astro';
 import config from 'virtual:theme/config';
 import { hexToHsl } from '../utils.js';
 import '@windcoder/astro-theme-orchid/styles/global.css';
@@ -43,6 +44,8 @@ const { h, s, l } = hexToHsl(config.accentColor);
       </div>
     </main>
     <Footer />
+    <!-- 站点统计（P1-16）：ID 全空零输出，挂 body 尾与 orchid-blog 口径一致 -->
+    <Analytics />
     <button class="back-top" id="backTop" type="button" aria-label="回到顶部" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
     </button>

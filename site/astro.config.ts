@@ -134,6 +134,34 @@ export default defineConfig({
         title: '评论',
         artalk: { server: 'https://artalk.example.com', locale: 'zh-CN', visitorCount: true },
       },
+      // 侧栏公告（P1-17）：content 留空则整卡不渲染；closable 仅前台隐藏
+      announcement: {
+        title: '公告',
+        content: '主题已支持公告栏、广告位与站点统计，欢迎体验。',
+        link: { text: '了解更多', url: '/about/', external: false },
+        closable: true,
+      },
+      // 侧栏广告位（P2 保留项，默认关闭）。完整形态示例：
+      // advertisement: {
+      //   enabled: true,
+      //   title: '广告',
+      //   image: '/assets/images/ad/banner.png',   // 或外链
+      //   imageLink: 'https://example.com',
+      //   imageAlt: '广告',
+      //   content: '一句话广告文案',
+      //   link: { text: '查看详情', url: 'https://example.com', external: true },
+      //   closable: true,
+      //   displayCount: -1,        // >0 时限制总展示次数
+      //   expireDate: '2027-12-31' // 过期自动下线
+      // },
+      advertisement: { enabled: false },
+      // 站点统计（P1-16）：四家按需填 ID，留空即不注入对应脚本；以下保持全空（中性演示）
+      analytics: {
+        googleAnalyticsId: '',
+        microsoftClarityId: '',
+        umami: { websiteId: '' },
+        la51: { id: '' },
+      },
     }),
   ],
 });

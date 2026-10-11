@@ -1,0 +1,22 @@
+---
+/**
+ * Google Analytics（gtag.js）。orchid-blog analytics/GoogleAnalytics.astro 移植，
+ * 去掉 swup 专属 data-swup-ignore-script（主题用 ClientRouter，无需该标记）。
+ */
+interface Props {
+  analyticsId: string;
+}
+
+const { analyticsId } = Astro.props;
+---
+
+<!-- Google tag (gtag.js) -->
+<script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${analyticsId}`}></script>
+<script is:inline define:vars={{ analyticsId }}>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() {
+    dataLayer.push(arguments);
+  }
+  gtag('js', new Date());
+  gtag('config', analyticsId);
+</script>

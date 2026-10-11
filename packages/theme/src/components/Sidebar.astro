@@ -17,6 +17,16 @@ const cats = [...collectCategories(posts).entries()];
 const tags = [...collectTags(posts).keys()];
 const runDays = config.since ? daysSince(config.since) : null;
 
+// 公告 widget（P1-17）：content 留空整卡不渲染
+const ann = config.announcement;
+const showAnnouncement = ann.content.trim() !== '';
+const annLink = Boolean(ann.link.text && ann.link.url);
+
+// 广告 widget（P2 保留项，默认关）：enabled + 至少一项内容 + 未过期才渲染
+const ad = config.advertisement;
+const adExpired = ad.expireDate ? new Date() > new Date(ad.expireDate) : false;
+const showAd = ad.enabled && Boolean(ad.image || ad.content || ad.link.text) && !adExpired;
+
 // 友链 widget（决策 8）：与友链页同源 themeConfig.friends.list
 const fw = config.sidebar.friends;
 let sideFriends: typeof config.friends.list = [];
@@ -30,6 +40,38 @@ if (fw.enabled) {
 ---
 
 <aside class="sidebar">
+  {
+    showAnnouncement && (
+      <section class="side-card card reveal" id="announcement">
+        <h3>{ann.title}</h3>
+        <p class="side-announcement">{ann.content}</p>
+        {(annLink || ann.closable) && (
+          <div class="side-announcement-foot">
+            {annLink && (
+              <a
+                class="btn-ghost"
+                href={ann.link.url}
+                target={ann.link.external ? '_blank' : undefined}
+                rel={ann.link.external ? 'noopener noreferrer' : undefined}
+              >
+                {ann.link.text}
+              </a>
+            )}
+            {ann.closable && (
+              <button
+                class="side-close"
+                type="button"
+                aria-label="关闭公告"
+                onclick="this.closest('section').style.display='none'"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        )}
+      </section>
+    )
+  }
   {
     cats.length > 0 && (
       <section class="side-card card reveal">
@@ -87,4 +129,71 @@ if (fw.enabled) {
       {runDays !== null && <div class="row"><span>已运行</span><b>{runDays} 天</b></div>}
     </div>
   </section>
+  {
+    showAd && (
+      <section class="side-card card reveal advertisement-widget" id="advertisement">
+        <h3>{ad.title}</h3>
+        {ad.closable && (
+          <button
+            class="ad-close"
+            type="button"
+            aria-label="关闭广告"
+            onclick="window.__orchidCloseAd && window.__orchidCloseAd(this)"
+          >
+            ✕
+          </button>
+        )}
+        <div class="ad-body">
+          {ad.image &&
+            (ad.imageLink ? (
+              <a href={ad.imageLink} target="_blank" rel="noopener">
+                <img src={ad.image} alt={ad.imageAlt} loading="lazy" />
+              </a>
+            ) : (
+              <img src={ad.image} alt={ad.imageAlt} loading="lazy" />
+            ))}
+          {ad.content && <p>{ad.content}</p>}
+          {ad.link.text && (
+            <a
+              class="btn-ghost"
+              href={ad.link.url || '#'}
+              target={ad.link.external ? '_blank' : undefined}
+              rel={ad.link.external ? 'noopener noreferrer' : undefined}
+            >
+              {ad.link.text}
+            </a>
+          )}
+        </div>
+      </section>
+    )
+  }
 </aside>
+
+<!-- 广告初始化：置于顶层（条件表达式内无法放脚本体）；data-astro-rerun 保证 VT 换页后重绑/重计数。
+     displayCount>0 时按 localStorage 计数，超限隐藏当前页的广告卡 -->
+<script is:inline data-astro-rerun define:vars={{ adEnabled: showAd, displayCount: ad.displayCount }}>
+  (function () {
+    window.__orchidCloseAd = function (btn) {
+      var wrapper = btn.closest('.advertisement-widget');
+      if (!wrapper) return;
+      wrapper.style.transition = 'all .3s ease-out';
+      wrapper.style.transform = 'translateX(24px)';
+      wrapper.style.opacity = '0';
+      setTimeout(function () {
+        wrapper.style.display = 'none';
+      }, 300);
+    };
+    if (!adEnabled) return;
+    var widget = document.getElementById('advertisement');
+    if (!widget) return;
+    if (displayCount > 0) {
+      var key = 'ad-display-advertisement';
+      var n = parseInt(localStorage.getItem(key) || '0', 10);
+      if (n >= displayCount) {
+        widget.style.display = 'none';
+        return;
+      }
+      localStorage.setItem(key, String(n + 1));
+    }
+  })();
+</script>
