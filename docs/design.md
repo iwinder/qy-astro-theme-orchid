@@ -187,7 +187,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 7. **文章列表展示样式可配置**（2026-10-11 补充）：主题配置 `postList.style: 'cover' | 'compact'`（默认 cover 图卡；compact 为紧凑行，小图 + 单行摘要），文章 frontmatter `cardStyle: 'cover' | 'compact' | 'text'` 按篇覆盖、可混排；无封面文章自动降级为纯文字卡（text）。原型首页演示全部四种形态（featured 大图 / cover 图卡 / compact 图行 / compact 文字行）
 8. **友链双形态**（2026-10-11 补充）：同一数据源（`friends.yaml`：名称/头像/描述/链接/权重/启用）驱动两处渲染——首页侧栏友链 widget（`sidebar.friends: { enabled, count, random }`，默认开、显示 3 条）+ 友链内页全量渲染；widget 可整体关闭
 9. **封面图三级回退**（2026-10-11 补充）：frontmatter `cover`（手动指定，优先级最高）> 正文首图（构建时 rehype 插件提取第一张 `<img>` 的 src 存入文章元数据）> 自动降级纯文字卡（`postList.fallbackCover` 可选配置默认占位图，默认不启用）。写文章无需为封面单独配图
-10. **仓库内容边界**（2026-10-11 修正）：主题仓库（monorepo + site demo）必须保持中性、可公开——site 仅含中性示例文（hello-world / theme-override）与占位域名 `blog.example.com`；私人内容（58 篇文章、真实域名 orchid.windcoder.com、评论数据）一律归属 orchid-blog 私人站点仓库，由 orchid-blog 接入主题包实现迁移。曾误将文章迁入主题仓库 site，已撤销该提交。主题包能力（schema 17 字段、reading-time/excerpt 插件）为通用功能，正常保留。LQIP 仅对本地图片生效——orchid-blog 图片全外链，待站点迁移后如出现本地图再启用
+10. **仓库内容边界**（2026-10-11 修正）：主题仓库（monorepo + site demo）保持中性、可公开——site 的 git 库中仅含中性示例文（hello-world / theme-override）与占位域名 `blog.example.com`；私人内容（真实域名 orchid.windcoder.com、评论数据）归属 orchid-blog 私人站点仓库接入。**允许本地开发用真实文章验证主题**：58 篇文章经 `.gitignore` 隔离在 site 本地（`site/src/content/posts/*` 忽略、示例文反排除），永不入库、不进 git 历史。主题包能力（schema 17 字段、reading-time/excerpt 插件）为通用功能，正常保留。LQIP 仅对本地图片生效——orchid-blog 图片全外链，待站点迁移后如出现本地图再启用
 11. **reading-time / excerpt 口径**（2026-10-11 确认）：零依赖自实现（不引 mdast-util-to-string）。字数 = CJK 字符数 + 非 CJK 单词数，阅读时长 = max(1, round(words / 275))；摘要 = 第一个 paragraph 节点的纯文本（忽略 html/image/code）。两插件渲染期写入 `remarkPluginFrontmatter`（不经 zod 校验），组件经 `render(post)` 读取
 
 ## 7. 工程备忘
