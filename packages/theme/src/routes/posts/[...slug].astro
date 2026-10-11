@@ -4,6 +4,7 @@ import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
 import Toc from 'virtual:theme/components/Toc.astro';
 import License from 'virtual:theme/components/License.astro';
 import PostNav from 'virtual:theme/components/PostNav.astro';
+import Comment from 'virtual:theme/components/Comment.astro';
 import config from 'virtual:theme/config';
 import { formatDate, getSortedPosts } from '../../utils.js';
 
@@ -64,5 +65,6 @@ const jsonLd = {
   </div>
   <License licenseName={d.licenseName} licenseUrl={d.licenseUrl} />
   <PostNav prev={prev ?? undefined} next={next ?? undefined} />
+  <Comment path={`/posts/${post.id}`} enabled={d.comment} />
   <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>

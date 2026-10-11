@@ -171,6 +171,33 @@ export const themeConfigSchema = z.object({
       methods: [],
       sponsors: [],
     }),
+  /**
+   * 评论系统（适配层分发：M3b-b2 先实现 Artalk，Twikoo/Waline/Giscus/Disqus 留扩展位）。
+   * enabled=false 或 provider='none' 时页面完全不渲染评论区；
+   * 文章另受 frontmatter comment 字段按篇控制。
+   */
+  comment: z
+    .object({
+      enabled: z.boolean().default(false),
+      provider: z.enum(['none', 'artalk']).default('none'),
+      /** 评论区标题 */
+      title: z.string().default('评论'),
+      artalk: z
+        .object({
+          /** Artalk 后端地址 */
+          server: z.string().default(''),
+          locale: z.string().default('zh-CN'),
+          /** 文章访问量统计（Artalk pageview，挂载点 #artalk-pv 由站点自行放置） */
+          visitorCount: z.boolean().default(true),
+        })
+        .default({ server: '', locale: 'zh-CN', visitorCount: true }),
+    })
+    .default({
+      enabled: false,
+      provider: 'none',
+      title: '评论',
+      artalk: { server: '', locale: 'zh-CN', visitorCount: true },
+    }),
 });
 
 export type ThemeConfig = z.input<typeof themeConfigSchema>;

@@ -1,0 +1,49 @@
+---
+/**
+ * Artalk 评论实现（orchid-blog components/comment/Artalk.astro 移植）。
+ * pageKey 与 orchid-blog 口径一致（/posts/<id> 无尾斜杠），迁移后既有评论数据无缝延续。
+ * VT 兼容：is:inline 脚本在换页 swap 后随新页面重新执行，旧 MutationObserver 经 window 句柄清理。
+ */
+import config from 'virtual:theme/config';
+
+interface Props {
+  path: string;
+}
+
+const { path } = Astro.props;
+
+const artalkConfig = {
+  el: '#artalk',
+  server: config.comment.artalk.server,
+  site: config.title,
+  pageKey: path,
+  pageTitle: '',
+  locale: config.comment.artalk.locale,
+  dark: 'html.dark',
+  ...(config.comment.artalk.visitorCount ? { pageview: true } : {}),
+};
+---
+
+<div class="relative w-full">
+  <div id="artalk" style="--at-color-main: var(--accent); --at-color-bg: var(--surface); --at-color-border: var(--border);"></div>
+
+  <link rel="stylesheet" href="https://unpkg.com/artalk/dist/Artalk.css" />
+
+  <script is:inline type="module" define:vars={{ artalkConfig }}>
+    const ArtalkModule = await import('https://unpkg.com/artalk/dist/Artalk.mjs');
+
+    // VT 换页后旧观察器随本次执行清理，避免泄漏
+    if (window.__orchidArtalkObserver) window.__orchidArtalkObserver.disconnect();
+
+    const artalk = ArtalkModule.default.init(artalkConfig);
+
+    function updateArtalkTheme() {
+      artalk.setDarkMode(document.documentElement.classList.contains('dark'));
+    }
+    updateArtalkTheme();
+
+    const observer = new MutationObserver(updateArtalkTheme);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    window.__orchidArtalkObserver = observer;
+  </script>
+</div>

@@ -163,6 +163,26 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **M3b-b1 验证记录**（dev 实测，2026-10-11）：`/`（侧栏友链 widget 显示 weight 前三）、`/about/`、`/friends/`（5 条全渲染、字头像兜底、apply 卡、tags）、`/guestbook/`（spec 正文 + 评论占位）、`/sponsor/`（link 型 + 双空占位型 method、打赏名单）、`/404`（404）、`/archive/`、`/tags/`、文章页回归全通过；dev 日志无 ERROR。
 
+**M3b-b2 实现记录**（✅ 2026-10-11）：
+
+| 功能 | 实现 |
+|---|---|
+| 评论适配层（P1-1） | `components/Comment.astro` 按 `config.comment.provider` 分发（可 override 整体覆盖）；schema 新增 `comment` section（enabled 默认 false / provider 枚举 / title / artalk 子配置，全部显式默认值） |
+| Artalk 实现 | `components/comments/Artalk.astro` 移植 orchid-blog：unpkg ESM + `is:inline define:vars`、CSS 变量映射主题令牌（--accent/--surface/--border）、`html.dark` MutationObserver 暗色跟随；**pageKey 口径与 orchid-blog 完全一致**（`/posts/<id>`、`/guestbook` 无尾斜杠），M2.5 迁移时既有评论数据无缝延续 |
+| VT 兼容 | inline 脚本换页 swap 后随新页面重新执行；旧 MutationObserver 经 `window.__orchidArtalkObserver` 句柄在下次执行时 disconnect，防泄漏 |
+| 文章页接入 | `posts/[...slug].astro` 在 PostNav 后渲染 `<Comment path={`/posts/${post.id}`} enabled={d.comment} />`（frontmatter `comment: false` 按篇关闭，M2 预留字段正式启用） |
+| 留言板接入 | guestbook 评论开 → `<Comment path="/guestbook" />`；关 → 保留「评论区即将开放」占位 |
+
+**M3b-b2 偏差清单**：
+
+| 偏差 | 原因 | 主题实现 |
+|---|---|---|
+| 其余 4 套评论未实现 | 决策 3：M3b 先 Artalk | 适配层 provider 枚举已含扩展位，后续各加一个分支 |
+| 无评论区装饰性背景/副标题 | orchid-blog 的装饰与 i18n 副标题属其视觉体系 | 与冻结原型对齐：section-title 标题 + `.comments` 容器 |
+| visitorCount 仅生成配置 | Artalk pageview 挂载点（`#artalk-pv`）由站点在需要处自行放置 | 主题不强插 PV 元素，避免与文章 meta 重复 |
+
+**M3b-b2 验证记录**（dev 实测，2026-10-11）：8 条路由全 200；文章页 HTML 含 `#comments` 区块 + `#artalk` 挂载点 + 占位 server（artalk.example.com）注入 + Artalk.css 引入；guestbook 的占位 DOM 已被评论组件替换（comment-placeholder 仅存于 CSS）；dev 日志无 ERROR。Artalk 后端为占位地址，脚本运行期请求失败不影响页面其余部分（真实后端在 M2.5 站点迁移时配置）。
+
 ### 4.3 P2 —— 拆分处理（2026-10-11 已确认：保留 5 项、暂时舍弃 4 项）
 
 原建议整体舍弃，经确认拆分如下。
@@ -210,7 +230,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | ✅ 完成 |
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1 ✅ 2026-10-11，批次划分见 §4.2） |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2 ✅ 2026-10-11，批次划分见 §4.2） |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
 
 ## 6. 决策记录（2026-10-11 确认）
