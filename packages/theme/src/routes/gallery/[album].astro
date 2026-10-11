@@ -1,0 +1,94 @@
+---
+/**
+ * 相册详情页（M3b-b8）：封面横幅（无封面降级卡式头部）+ 瀑布流照片墙。
+ * 加密相册复用 b7 EncryptedContent（slug = album.id），解密注入后
+ * 灯箱组委托（app.ts doc 级）依然生效。
+ */
+import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
+import PhotoCard from 'virtual:theme/components/PhotoCard.astro';
+import EncryptedContent from 'virtual:theme/components/EncryptedContent.astro';
+import config from 'virtual:theme/config';
+import { getAlbumCover, scanAlbumPhotos } from '../../utils/gallery.js';
+import { t } from '../../i18n/index.js';
+
+export function getStaticPaths() {
+  return config.gallery.albums.map((album) => ({
+    params: { album: album.id },
+    props: { album },
+  }));
+}
+
+const { album } = Astro.props;
+const photos = scanAlbumPhotos(album.id);
+const cover = getAlbumCover(album, photos);
+const tags = album.tags || [];
+---
+
+<BaseLayout title={album.name} page="gallery">
+  {
+    cover ? (
+      <header class="gallery-banner reveal">
+        <img src={cover} alt={album.name} />
+        <a class="gallery-back" href="/gallery/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+          {t('backToAlbums')}
+        </a>
+        <div class="gallery-banner-inner">
+          <h1 class="gallery-title">{album.name}</h1>
+          {album.description && <p class="gallery-desc">{album.description}</p>}
+          <div class="gallery-meta">
+            {album.date && (
+              <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>
+                {album.date}
+              </span>
+            )}
+            {album.location && (
+              <span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 1 1 16 0Z" /><circle cx="12" cy="10" r="3" /></svg>
+                {album.location}
+              </span>
+            )}
+            <span>{t('galleryPhotos', { n: photos.length })}</span>
+            {tags.length > 0 && (
+              <span class="gallery-meta-tags">
+                {tags.map((tag) => <span>{tag}</span>)}
+              </span>
+            )}
+          </div>
+        </div>
+      </header>
+    ) : (
+      <header class="gallery-head-plain card reveal">
+        <h1 class="page-title">{album.name}</h1>
+        {album.description && <p class="page-sub">{album.description}</p>}
+        <div class="gallery-meta">
+          {album.date && <span>{album.date}</span>}
+          {album.location && <span>{album.location}</span>}
+          <span>{t('galleryPhotos', { n: photos.length })}</span>
+          {tags.length > 0 && (
+            <span class="gallery-meta-tags">
+              {tags.map((tag) => <span>{tag}</span>)}
+            </span>
+          )}
+        </div>
+      </header>
+    )
+  }
+
+  {
+    photos.length === 0 ? (
+      <p class="gallery-empty reveal">{t('galleryNoPhotos')}</p>
+    ) : album.password ? (
+      <EncryptedContent password={album.password} slug={album.id} hint={album.passwordHint}>
+        <div class="gallery-masonry" data-lightbox-group style={`--col-width: ${config.gallery.columnWidth}px`}>
+          {photos.map((src, i) => <PhotoCard src={src} alt={`${album.name} · ${i + 1}`} />)}
+        </div>
+      </EncryptedContent>
+    ) : (
+      <div class="gallery-masonry" data-lightbox-group style={`--col-width: ${config.gallery.columnWidth}px`}>
+        {photos.map((src, i) => <PhotoCard src={src} alt={`${album.name} · ${i + 1}`} />)}
+      </div>
+    )
+  }
+</BaseLayout>

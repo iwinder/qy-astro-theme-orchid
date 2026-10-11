@@ -1,0 +1,100 @@
+---
+/**
+ * 画廊列表页（M3b-b8）：相册网格 + 标签 chips 筛选 + 关键词搜索。
+ * 筛选用 <gallery-filter> custom element（is:inline + 防重复 define），
+ * VT 换页后新 DOM 自动 re-connect，与原版验证过的模式一致。
+ */
+import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
+import AlbumCard from 'virtual:theme/components/AlbumCard.astro';
+import config from 'virtual:theme/config';
+import { buildAlbumIndex } from '../../utils/gallery.js';
+import { t } from '../../i18n/index.js';
+
+const albums = buildAlbumIndex(config.gallery.albums);
+const allTags = [...new Set(albums.flatMap((a) => a.tags || []))].sort();
+---
+
+<BaseLayout title={config.gallery.title} page="gallery">
+  <header class="archive-head reveal">
+    <h1 class="page-title">{config.gallery.title}</h1>
+    {config.gallery.description && <p class="page-sub">{config.gallery.description}</p>}
+  </header>
+
+  {
+    albums.length > 0 ? (
+      <gallery-filter class="reveal">
+        <div class="gallery-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+          <input type="search" data-gallery-search placeholder={t('searchAlbums')} aria-label={t('searchAlbums')} />
+        </div>
+        {allTags.length > 0 && (
+          <div class="chips">
+            <button type="button" class="chip is-on" data-tag-filter="">
+              {t('allTags')}
+            </button>
+            {allTags.map((tag) => (
+              <button type="button" class="chip" data-tag-filter={tag}>
+                {tag}
+              </button>
+            ))}
+          </div>
+        )}
+        <div class="gallery-grid">
+          {albums.map((album) => (
+            <AlbumCard
+              id={album.id}
+              name={album.name}
+              cover={album.cover}
+              description={album.description}
+              date={album.date}
+              location={album.location}
+              tags={album.tags}
+              photoCount={album.photoCount}
+              encrypted={!!album.password}
+            />
+          ))}
+        </div>
+        <p class="gallery-empty" data-gallery-empty hidden>{t('searchAlbumNoResults')}</p>
+      </gallery-filter>
+    ) : (
+      <p class="gallery-empty reveal">{t('galleryNoAlbums')}</p>
+    )
+  }
+</BaseLayout>
+
+<script is:inline>
+  if (!customElements.get('gallery-filter')) {
+    customElements.define(
+      'gallery-filter',
+      class extends HTMLElement {
+        connectedCallback() {
+          const search = this.querySelector('[data-gallery-search]');
+          const chips = Array.from(this.querySelectorAll('[data-tag-filter]'));
+          const cards = Array.from(this.querySelectorAll('.album-card'));
+          const empty = this.querySelector('[data-gallery-empty]');
+          let tag = '';
+          const apply = () => {
+            const q = (search && search.value ? search.value : '').trim().toLowerCase();
+            let visible = 0;
+            for (const card of cards) {
+              const okTag = !tag || (card.dataset.tags || '').split(',').includes(tag);
+              const okQ = !q || (card.dataset.search || '').includes(q);
+              const show = okTag && okQ;
+              card.classList.toggle('hidden', !show);
+              if (show) visible++;
+            }
+            if (empty) empty.hidden = visible > 0;
+          };
+          this.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-tag-filter]');
+            if (!btn) return;
+            tag = btn.dataset.tagFilter || '';
+            chips.forEach((c) => c.classList.toggle('is-on', c === btn));
+            apply();
+          });
+          if (search) search.addEventListener('input', apply);
+        }
+      },
+    );
+  }
+</script>

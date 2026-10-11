@@ -653,6 +653,21 @@ doc.addEventListener('click', (e) => {
     return;
   }
 
+  /* 相册组绑定（b8）：data-lightbox-group 容器内点 data-lightbox-item，整组浏览 */
+  const group = target.closest('[data-lightbox-group]');
+  if (group) {
+    const cards = Array.from(group.querySelectorAll('[data-lightbox-item]'));
+    const card = target.closest('[data-lightbox-item]');
+    if (card) {
+      const items = cards
+        .map((c) => c.querySelector('img'))
+        .filter((img): img is HTMLImageElement => !!img)
+        .map((img) => ({ src: img.src, cap: img.getAttribute('alt') || '' }));
+      openLb(items, Math.max(0, cards.indexOf(card)));
+    }
+    return;
+  }
+
   /* 单图绑定：figure[data-lightbox] / [data-lightbox]（含 rehypeFigure 产物） */
   const holder = target.closest('[data-lightbox]');
   if (holder) {

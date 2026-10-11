@@ -140,6 +140,10 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
         if (config.pages.friends) routes.push(['/friends', 'friends.astro']);
         if (config.pages.guestbook) routes.push(['/guestbook', 'guestbook.astro']);
         if (config.pages.sponsor) routes.push(['/sponsor', 'sponsor.astro']);
+        if (config.pages.gallery) {
+          routes.push(['/gallery', 'gallery/index.astro']);
+          routes.push(['/gallery/[album]', 'gallery/[album].astro']);
+        }
         for (const [pattern, file] of routes) {
           injectRoute({
             pattern,

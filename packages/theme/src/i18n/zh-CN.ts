@@ -84,6 +84,15 @@ const zhCN = {
   searchNoResults: '没有找到相关结果',
   searchUnavailable: '搜索索引需构建后可用',
   searchTypeSomething: '输入关键词开始搜索',
+  /* 画廊（M3b-b8）：title/description 走主题配置，这里只放 UI 通用文案 */
+  galleryPhotos: '{n} 张照片',
+  backToAlbums: '返回相册',
+  searchAlbums: '搜索相册…',
+  allTags: '全部',
+  galleryNoAlbums: '还没有相册，在主题配置 gallery.albums 中添加。',
+  galleryNoPhotos: '相册里还没有照片',
+  encryptedAlbum: '加密相册',
+  searchAlbumNoResults: '没有匹配的相册',
   /* 加密文章（M3b-b7）：postEncrypted 用于列表/文章 meta 标记，其余构建期渲染进锁 UI */
   postEncrypted: '已加密',
   passwordProtected: '密码保护',

@@ -84,8 +84,44 @@ export const themeConfigSchema = z.object({
       friends: z.boolean().default(true),
       guestbook: z.boolean().default(true),
       sponsor: z.boolean().default(true),
+      gallery: z.boolean().default(true),
     })
-    .default({ about: true, friends: true, guestbook: true, sponsor: true }),
+    .default({ about: true, friends: true, guestbook: true, sponsor: true, gallery: true }),
+  /**
+   * 画廊/相册（M3b-b8）。相册数据纯配置驱动，照片两个来源：
+   * 1) site/public/gallery/<id>/ 目录扫描（图片文件按名排序，cover.* 优先做首图）
+   * 2) 同目录 urls.txt（每行一个远程图片 URL，# 开头为注释），追加在本地之后
+   * 加密相册（password 非空）经 EncryptedContent 构建期加密，slug 用相册 id。
+   */
+  gallery: z
+    .object({
+      /** 画廊页标题 */
+      title: z.string().default('画廊'),
+      /** 画廊页副标题描述 */
+      description: z.string().default(''),
+      albums: z
+        .array(
+          z.object({
+            /** 相册 id：对应 public/gallery/<id>/ 目录，同时是详情 URL 段与加密 slug */
+            id: z.string(),
+            name: z.string(),
+            description: z.string().default(''),
+            date: z.string().default(''),
+            location: z.string().default(''),
+            tags: z.array(z.string()).default([]),
+            /** 封面（public 路径或外链）：留空依次取 cover.* / 第一张照片 */
+            cover: z.string().default(''),
+            /** 非空即加密相册 */
+            password: z.string().optional(),
+            /** 解锁提示（仅展示，不参与解密） */
+            passwordHint: z.string().optional(),
+          }),
+        )
+        .default([]),
+      /** 瀑布流最小列宽（px），≥640px 视口生效 */
+      columnWidth: z.number().int().min(120).default(240),
+    })
+    .default({ title: '画廊', description: '', albums: [], columnWidth: 240 }),
   /**
    * 友链数据源（决策 8）：同时驱动友链页全量渲染与首页侧栏友链 widget。
    * 头像 image 留空时以 title 首字渲染字头像兜底。

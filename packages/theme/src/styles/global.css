@@ -582,6 +582,82 @@ html.dark .timeline-item a:hover .t-title { color: var(--accent); }
 .album-count { margin-left: auto; font-size: 13px; color: var(--muted); }
 .album-tags { padding: 0 18px 16px; margin-top: -6px; display: flex; gap: 6px; }
 .album-tags .chip { font-size: 12px; padding: 1px 10px; }
+.album-sub { padding: 0 18px; margin-top: -8px; display: flex; flex-wrap: wrap; gap: 12px; font-size: 12.5px; color: var(--muted); }
+.album-cover-fallback {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); background: var(--bg-soft);
+}
+.album-cover-fallback svg { width: 34px; height: 34px; opacity: .55; }
+
+/* 相册列表搜索（M3b-b8）：与 modal input 同一套视觉 */
+.gallery-search { position: relative; margin-bottom: 16px; }
+.gallery-search svg {
+  position: absolute; left: 13px; top: 50%; transform: translateY(-50%);
+  width: 16px; height: 16px; color: var(--muted); pointer-events: none;
+}
+.gallery-search input {
+  width: 100%; padding: 10px 14px 10px 38px;
+  border-radius: var(--radius-sm); border: 1px solid var(--border-2);
+  background: var(--bg); color: var(--ink); font-size: 14px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.gallery-search input:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.gallery-empty { padding: 48px 0; text-align: center; color: var(--muted); }
+
+/* 相册详情页（M3b-b8）：封面横幅 + 瀑布流 */
+.gallery-banner {
+  position: relative; overflow: hidden; border-radius: var(--radius);
+  aspect-ratio: 3 / 1; min-height: 200px; max-height: 360px;
+  background: var(--bg-soft);
+}
+.gallery-banner > img { width: 100%; height: 100%; object-fit: cover; }
+.gallery-banner::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, .72), rgba(0, 0, 0, .28) 45%, rgba(0, 0, 0, .05));
+}
+.gallery-back {
+  position: absolute; top: 16px; left: 16px; z-index: 2;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 999px; font-size: 13px;
+  color: rgba(255, 255, 255, .92); background: rgba(0, 0, 0, .32);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  transition: background-color .15s;
+}
+.gallery-back:hover { background: rgba(0, 0, 0, .52); color: #fff; }
+.gallery-back svg { width: 14px; height: 14px; }
+.gallery-banner-inner { position: absolute; left: 0; right: 0; bottom: 0; z-index: 1; padding: 22px 26px; color: #fff; }
+.gallery-title { font-family: var(--font-display); font-size: 24px; font-weight: 700; }
+.gallery-desc { margin-top: 6px; max-width: 640px; font-size: 14px; color: rgba(255, 255, 255, .78); }
+.gallery-meta { margin-top: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 16px; font-size: 13px; color: rgba(255, 255, 255, .82); }
+.gallery-meta svg { width: 14px; height: 14px; vertical-align: -2px; margin-right: 3px; }
+.gallery-meta .gallery-meta-tags { display: inline-flex; flex-wrap: wrap; gap: 6px; }
+.gallery-meta .gallery-meta-tags span {
+  padding: 1px 10px; border-radius: 999px; font-size: 12px;
+  background: rgba(255, 255, 255, .2); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+/* 无封面降级：卡式头部 */
+.gallery-head-plain { padding: 20px 24px; }
+.gallery-head-plain .gallery-title { color: var(--ink); }
+/* 降级头部 meta 位于浅色卡面：覆盖横幅白色系配色 */
+.gallery-head-plain .gallery-meta { color: var(--muted); }
+.gallery-head-plain .gallery-meta .gallery-meta-tags span { background: var(--bg-soft); color: var(--ink-2); -webkit-backdrop-filter: none; backdrop-filter: none; }
+/* 筛选容器 custom element：默认 inline，恢复块级 */
+gallery-filter { display: block; }
+
+.gallery-masonry { column-count: 2; column-gap: 12px; }
+@media (min-width: 640px) {
+  .gallery-masonry { column-width: var(--col-width, 240px); column-count: auto; }
+}
+.gallery-photo {
+  break-inside: avoid; margin: 0 0 12px; overflow: hidden;
+  border-radius: var(--radius-sm); background: var(--bg-soft);
+  cursor: zoom-in;
+}
+.gallery-photo img { display: block; width: 100%; height: auto; transition: transform .35s ease; }
+.gallery-photo:hover img { transform: scale(1.025); }
 
 /* lightbox */
 .lightbox {

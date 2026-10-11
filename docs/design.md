@@ -308,6 +308,31 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - VT 客户端换页（文章 → 首页 → 返回）后 `initEncrypted` 经 `astro:after-swap` 重接线，缓存密码自动解锁 ✓
 - （环境备注：TRAE browseruse 出现 tab 视口归零导致滚动/点击失效，重开 tab 恢复，与主题无关）
 
+**M3b-b8 实现记录**（✅ 2026-10-11，画廊/相册 P1-8；**偏差：LQIP 占位推迟至 b9** 与 OG 图同批处理）：
+
+| 功能 | 实现 |
+|---|---|
+| 配置 schema | `pages.gallery` 开关（关闭则两路由完全不生成）+ `gallery` 块：`title/description/columnWidth`（瀑布流最小列宽 px，默认 240）+ `albums[]`（`id` 对应 `public/gallery/<id>/`；`name/description/date/location/tags`；`cover` 留空依次取 `cover.*` 文件 → 第一张照片；`password` 非空即加密相册 + `passwordHint`） |
+| 照片扫描 | `utils/gallery.ts`（构建期，`process.cwd()/public/gallery/<id>/`）：本地图片文件名排序、`cover.*` 提前；`urls.txt`（每行一个远程 URL，`#` 注释）追加在本地之后；目录不存在 = 空相册（合法，渲染空态）；`buildAlbumIndex` 一次完成扫描+封面+计数 |
+| 列表页 | `routes/gallery/index.astro`：`archive-head` + `<gallery-filter>` custom element（`is:inline` + `customElements.get` 防重复 define，VT 换页新 DOM 自动 re-connect）——搜索框（`data-search` 全文匹配）+ 标签 chips（`data-tags` 匹配，`is-on` 态）+ `gallery-grid`（AlbumCard）+ 搜索/筛选无结果空态 |
+| 详情页 | `routes/gallery/[album].astro`（getStaticPaths 按 `albums[].id` 展开）：有封面 → `.gallery-banner` 横幅（渐变遮罩 + 左上「返回相册」胶囊 + 标题/描述/日期/地点/照片数/标签 meta）；无封面 → `.gallery-head-plain` 卡式头部降级；照片区 `.gallery-masonry` CSS 多列瀑布流（`--col-width` inline 传入）+ PhotoCard（`data-lightbox-item`） |
+| 灯箱组模式 | app.ts 点击委托扩展：`[data-lightbox-group]` 容器内点 `[data-lightbox-item]` → 收集组内全部 `img` → `openLb(items, clickedIdx)` 整组浏览（prev/next/键盘/计数）；明文瀑布流与**解密注入后的**瀑布流同样生效（doc 级委托） |
+| 加密相册 | 详情页复用 b7 `EncryptedContent`（slug = album.id）：构建期整块瀑布流加密，锁卡 + 提示语；列表卡 `.lock-badge`「加密相册」锁标（blur 胶囊） |
+| 组件/样式 | `AlbumCard.astro`（封面/兜底相机图标/名称/照片数/日期地点/标签 chips slice(0,4)）+ `PhotoCard.astro`；global.css §9 扩展：`.gallery-search/.gallery-empty/.gallery-banner/.gallery-back/.gallery-masonry/.gallery-photo/.album-sub/.album-cover-fallback` 及无封面降级 meta 配色覆盖、`gallery-filter { display: block }` |
+| i18n | 8 新键（zh-CN/en 同步）：`galleryPhotos/backToAlbums/searchAlbums/allTags/galleryNoAlbums/galleryNoPhotos/encryptedAlbum/searchAlbumNoResults` |
+| 演示数据 | 3 相册（中性，`site/public/` 不忽略可入库）：`demo-spring` 本地 6 张渐变 PNG（含 `cover.png`，临时 Node 脚本生成后即删）；`demo-remote` `urls.txt` 5 张远程图（验证 urls.txt 通路 + photos[0] 兜底封面）；`demo-secret` 加密相册（密码 `orchid2026`）；nav 加「画廊」、`pages.gallery: true` |
+
+**M3b-b8 验证记录**（2026-10-11，dev + TRAE browseruse 实测）：
+
+- 列表页：3 相册卡片、chips「全部/日常/风光/徒步」、搜索框、加密卡锁标与 aria-label ✓
+- 筛选：点「徒步」→ 仅春日山行可见；搜索「私人」→ 仅私人胶片可见、空态 hidden ✓
+- demo-spring 详情：横幅（cover.png）+ 瀑布流 6 张（cover 首位）+ `--col-width: 240px` ✓
+- 灯箱组：点首图 → `1 / 6`（cover.png）→ next 按钮 `2 / 6` → ArrowRight `3 / 6` → Esc 关闭 ✓
+- demo-remote：5 张远程照片渲染、photos[0] 兜底封面生效 ✓
+- demo-secret：锁卡 + 提示语；错误路径外正确密码 `orchid2026` → 解锁注入 3 张照片 → 灯箱组 `1 / 3` ✓
+- VT 客户端换页（列表 → 详情 → 返回相册）后点「日常」chip 筛选正常（gallery-filter re-connect）✓
+- 修复记录：详情页 frontmatter 内 JSX 片段赋值在 dev 触发 import-analysis 报错 → 改为模板内条件渲染后正常
+
 ### 4.3 P2 —— 拆分处理（2026-10-11 已确认：保留 5 项、暂时舍弃 4 项）
 
 原建议整体舍弃，经确认拆分如下。
@@ -355,7 +380,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | ✅ 完成 |
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3/b4/b5/b6/b7 ✅ 2026-10-11，批次划分见 §4.2） |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 进行中（b0/b1/b2/b3/b4/b5/b6/b7/b8 ✅ 2026-10-11，批次划分见 §4.2；b8 的 LQIP 占位并入 b9） |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
 
 ## 6. 决策记录（2026-10-11 确认）

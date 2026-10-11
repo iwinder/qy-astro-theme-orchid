@@ -1,0 +1,17 @@
+---
+/**
+ * 照片卡（M3b-b8）：详情页瀑布流单元。
+ * data-lightbox-item + 外层 data-lightbox-group 容器（路由页提供）
+ * 供 QyLightbox 点击组浏览（app.ts 委托，加密解密注入后同样生效）。
+ */
+interface Props {
+  src: string;
+  alt?: string;
+}
+
+const { src, alt = '' } = Astro.props;
+---
+
+<figure class="gallery-photo" data-lightbox-item>
+  <img src={src} alt={alt} loading="lazy" decoding="async" />
+</figure>
