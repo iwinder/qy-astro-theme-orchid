@@ -135,7 +135,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | 12 | 相关文章推荐 | 文章底部 5 篇 | `misc/RecommendedPost.astro` | 中 | 可选 |
 | 13 | 分享海报 | 文章生成分享图（含二维码） | `misc/SharePoster.svelte` | 中 | 可选 |
 | 14 | 图片体系 | LQIP 占位图构建生成、随机封面 API 回退 | `scripts/generate-lqips.ts`、`coverImageConfig.ts` | 中 | **已确认要 LQIP**；随机封面与简约风不符，维持舍弃 |
-| 15 | 字体子集化 | Astro Font API + 构建时 subset-font | `config/fontConfig.ts`、`scripts/subset-fonts.ts` | 中 | 中文字体性能关键，M4 做 |
+| 15 | 字体子集化 | Astro Font API + 构建时 subset-font | `config/fontConfig.ts`、`scripts/subset-fonts.ts` | 中 | ✅ M4-3 完成（实现与原版差异见 §4.5） |
 | 16 | 站点统计 | GA / Umami / Clarity / 51la（四选几） | `analyticsConfig.ts`、`components/analytics/` | 低 | 成本低 |
 | 17 | 公告栏 | 侧边栏公告小部件 | `widget/Announcement.astro` | 低 | 成本低 |
 
@@ -391,6 +391,49 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | CI ×5 | `.github/workflows/`、`.gitea/workflows/` | GitHub Pages / rsync 自部署 / 1Panel / build 矩阵 / biome |
 | 未使用依赖 | `@astrojs/markdown-satteri`、`satteri` | 源码零引用，迁移忽略 |
 
+### 4.5 M4 工程化实现记录（✅ 2026-10-11 完成）
+
+四批次：CI → biome → 字体子集化 → 发版流程；本地验证全绿，真实验证待 push（见本节末）。
+
+**M4-1 CI 工作流**（22ff823）：
+
+| 项 | 内容 |
+|---|---|
+| 触发 | push/PR 到 main；`concurrency` 同 ref 取消旧运行 |
+| jobs | `lint`（biomejs/setup-biome 固定 2.5.15 执行 `biome check .`）+ `build` 矩阵（Node 20/22 × ubuntu）：checkout → pnpm/action-setup（读根 packageManager）→ setup-node（cache pnpm）→ `pnpm install --frozen-lockfile` → `pnpm test` → LQIP → build（astro build + 字体子集化 + pagefind）→ 校验 `pagefind-entry.json` 产物 |
+| 安全基线 | 全 action 按 commit SHA pin（checkout v4.2.2 / setup-node v4.3.0 / pnpm/action-setup v4.1.0 / biomejs/setup-biome v2.5.0）；permissions 最小化 `contents: read` |
+| 已知边界 | tag push（v*）不触发 ci.yml → 发布验证由 release.yml 自带（见 M4-4） |
+
+**M4-2 biome 门禁**（1c05149）：
+
+- biome 2.5.15 全仓 format + lint；`pnpm lint`；CI 独立 lint job 执行
+- 门禁口径：**0 error 才过**（存量 353 warnings 不阻塞，逐步消化）；新代码必须过 format（tab 缩进 + 双引号 + 行宽 80）
+- 暂降级 4 条规则（`noInnerDeclarations` + a11y 三项）待后续批次清理
+
+**M4-3 字体子集化流水线**（7f7e0d2，对应 §4.2 P1-15）：
+
+| 项 | 内容 |
+|---|---|
+| 与原版差异 | orchid-blog 的 `__SUBSET_FONT_{id}__` 占位符**只有替换方无生成方**（半成品），且原版管线休眠（`selected: system`、唯一本地字体未被引用）→ 主题改用**构建后直接 URL 重写**，不耦合 Astro Font API 与站点 src/config |
+| 脚本 | `packages/theme/scripts/subset-fonts.mjs`：读 `site/subset-fonts.json` 清单（`fonts[]: { src, id?, extraChars? }`，**无清单 no-op exit 0**，CI 安全）→ 收集 dist HTML 文本（剥 script/style，收 alt/title/aria-label/placeholder 属性值）→ `subset-font`（wasm/harfbuzzjs）子集化输出 `dist/assets/fonts/{id}.{hash}.woff2`（内容哈希命名，日志含体积对比）→ 重写 dist 内 CSS/HTML 引用（`url()` 与 href/src 两形态）→ 删 dist 原字体 |
+| 接线 | site build 链 = `astro build → subset-fonts.mjs → pagefind`；dev 不受影响（public 源文件保留，仅构建产物被子集化） |
+| 测试 | `node --test` 内置运行器（根 `pnpm test`，零测试依赖）；3 用例：无清单 no-op / 端到端（woff2 产出 + CSS/HTML 重写 + 子集小于原字体）/ dist 字体缺失（stderr 提示，spawnSync 合并流断言）；fixture 复用主题已有依赖 katex 的 TTF，仓库零二进制增量；`subset-font` 进 theme devDependencies（scripts/ 不在 files 白名单，不随包发布） |
+| demo 站取舍 | 不加真实 webfont（当前全系统字体栈）；是否启用子集化属站点设计决策，留 M2.5 站点迁移时定 |
+
+**M4-4 主题包发版流程**（9e4d26b）：
+
+| 项 | 内容 |
+|---|---|
+| 包名定案 | `@windcoder/astro-theme-orchid`——npm scope `windcoder` 为用户已注册账号（发布硬约束）；GitHub 仓库名 `iwinder/qy-astro-theme-orchid` 与 scope 分离：`repository.url` 指 GitHub、`directory` 标注 monorepo 子目录，互不冲突 |
+| 包元数据 | `license: MIT` + 仓库根 LICENSE；`publishConfig: { access: "public", registry: 官方 }`（scoped 包发布必需）；homepage/bugs 指 GitHub |
+| release.yml | tag `v*` 触发；permissions `contents: read` + `id-token: write`（provenance）；发布前自带验证：tag 与 package.json 版本一致性校验（不一致 `::error::` 退出）→ `pnpm test` → lqip + 完整 build → `npm publish --provenance`（`NODE_AUTH_TOKEN: secrets.NPM_TOKEN`，working-directory packages/theme） |
+| dry-run 验证 | `npm publish --dry-run`：tarball 85 kB，66 文件仅 package.json + `src/**`（files 白名单生效：scripts/site/docs/测试均不随包发布），public access 生效；无私人内容（统计/评论 ID 均为消费方经 schema 注入，包内为空实现） |
+
+**M4 验证口径与真实验证路径**：
+
+- 本地已验证：actionlint（ci.yml + release.yml）、CI 各步骤命令本地逐条跑通、`pnpm lint` 0 error、`pnpm test` 3/3、`pnpm --filter site build` 无回归（62 页 pagefind 索引）、`npm publish --dry-run` 包内容核对
+- 待 push 后真实验证：GitHub Actions 页面看 CI 矩阵与 Release 全流程；发版前置 = 仓库 Secrets 配 `NPM_TOKEN`（npmjs.com Automation token，对 @windcoder scope 有发布权）；发版操作 = `git tag v0.1.0 && git push origin v0.1.0`
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
@@ -400,7 +443,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
 | **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；**M3b ✅ 完成（2026-10-11，b0-b9 九批次全过：P1 全部 + P2 保留 5 项，批次划分见 §4.2；b8 的 LQIP 占位已并入 b9）** |
-| **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
+| **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | ✅ 完成（2026-10-11，实现记录见 §4.5；CI/Release 真实验证待 push） |
 
 ## 6. 决策记录（2026-10-11 确认）
 
@@ -409,7 +452,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 3. **评论方案**：先实现 Artalk（站点当前在用）；Twikoo/Waline/Giscus/Disqus 留出统一实现口（评论适配层）
 4. **P2 拆分**：保留 hue 动态调色 / i18n / PlantUML / 广告位 / 邮箱防爬；暂时舍弃音乐播放器 / 看板娘 / 番组追番 / 背景壁纸特效
 5. **视觉基线**：强调色默认青瓷绿 `#4a9d8f`（配置可改 + hue 预设切换），字体方案随原型确认后冻结
-6. **发布渠道**：待定（npm 公开 / Gitee + 私有 registry / 仅本地 workspace），不阻塞开发
+6. **发布渠道**（2026-10-11 确认）：npm 公开发布——scope 定为 `@windcoder`（用户 npm 账号）；GitHub 仓库名 `iwinder`（原账号被抢注）与 npm scope 分离，互不影响；发版走 release.yml（tag v* → 验证 → `npm publish --provenance`），前置配置仓库 Secrets `NPM_TOKEN`
 7. **文章列表展示样式可配置**（2026-10-11 补充）：主题配置 `postList.style: 'cover' | 'compact'`（默认 cover 图卡；compact 为紧凑行，小图 + 单行摘要），文章 frontmatter `cardStyle: 'cover' | 'compact' | 'text'` 按篇覆盖、可混排；无封面文章自动降级为纯文字卡（text）。原型首页演示全部四种形态（featured 大图 / cover 图卡 / compact 图行 / compact 文字行）
 8. **友链双形态**（2026-10-11 补充）：同一数据源（`friends.yaml`：名称/头像/描述/链接/权重/启用）驱动两处渲染——首页侧栏友链 widget（`sidebar.friends: { enabled, count, random }`，默认开、显示 3 条）+ 友链内页全量渲染；widget 可整体关闭
 9. **封面图三级回退**（2026-10-11 补充）：frontmatter `cover`（手动指定，优先级最高）> 正文首图（构建时 rehype 插件提取第一张 `<img>` 的 src 存入文章元数据）> 自动降级纯文字卡（`postList.fallbackCover` 可选配置默认占位图，默认不启用）。写文章无需为封面单独配图
@@ -418,7 +461,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 ## 7. 工程备忘
 
-- 开发：仓库根 `pnpm --filter site dev`；构建：`pnpm --filter site build`
+- 开发：仓库根 `pnpm --filter site dev`；构建：`pnpm --filter site build`；测试：`pnpm test`（node:test 内置运行器）；lint：`pnpm lint`（biome，0 error 门禁）
 - 依赖安装（TRAE 沙箱环境，实测有效版；**pnpm 数据只允许落在 `/Volumes/zhitai/Work/repositories/pnpm`，禁止在项目内建 store/cache**；曾用的项目内 `.npmrc` TMPDIR store 重定向与 `.pnpm-store/` 残留已于 b4 清除，`.npmrc`/`.pnpm-store/` 已入 .gitignore，装包只走下面 env 方式）：
   ```bash
   pnpm_config_store_dir=/Volumes/zhitai/Work/repositories/pnpm/bin/store pnpm_config_cache_dir=/Volumes/zhitai/Work/repositories/pnpm/cache pnpm install --no-frozen-lockfile
