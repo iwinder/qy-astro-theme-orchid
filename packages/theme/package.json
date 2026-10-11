@@ -11,6 +11,17 @@
 		"tailwindcss"
 	],
 	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/iwinder/qy-astro-theme-orchid.git",
+		"directory": "packages/theme"
+	},
+	"homepage": "https://github.com/iwinder/qy-astro-theme-orchid/tree/main/packages/theme#readme",
+	"bugs": "https://github.com/iwinder/qy-astro-theme-orchid/issues",
+	"publishConfig": {
+		"access": "public",
+		"registry": "https://registry.npmjs.org/"
+	},
 	"exports": {
 		".": "./src/index.ts",
 		"./schema": "./src/schema.ts",

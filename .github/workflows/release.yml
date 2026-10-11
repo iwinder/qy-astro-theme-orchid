@@ -1,0 +1,57 @@
+# 发版流程（M4-4）：推送 v* tag 触发 → 校验 tag 与包版本一致 →
+# test + 完整构建验证 → npm 发布（public scoped + provenance）。
+# 前置配置：仓库 Secrets 配置 NPM_TOKEN（npmjs.com 生成 Automation token，
+# 需对 @windcoder scope 有发布权）；provenance 依赖 id-token: write。
+# 注意：tag push 不会触发 ci.yml，本工作流自带发布前验证。
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+  id-token: write # npm provenance
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup pnpm（版本读根 package.json 的 packageManager 字段）
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+
+      - name: Setup Node.js 22（自带 npm ≥ 10，支持 provenance）
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify tag matches package version
+        run: |
+          PKG_VERSION=$(node -p "require('./packages/theme/package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::tag $GITHUB_REF_NAME 与 packages/theme 版本 $PKG_VERSION 不一致"
+            exit 1
+          fi
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build site（发布前完整构建验证）
+        run: |
+          pnpm --filter site lqip
+          pnpm --filter site build
+
+      - name: Publish to npm
+        run: npm publish --provenance
+        working-directory: packages/theme
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
