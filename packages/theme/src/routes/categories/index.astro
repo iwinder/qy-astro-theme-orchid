@@ -1,0 +1,26 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
+import { collectCategories, getSortedPosts } from '../../utils.js';
+
+// 分类云：复用 tag-cloud 样式，分类内文章数 > 1 用大字号
+const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
+const cats = [...collectCategories(getSortedPosts(all)).entries()];
+---
+
+<BaseLayout title="分类" page="categories">
+  <header class="archive-head reveal">
+    <h1 class="page-title">分类</h1>
+    <p class="page-sub">共 {cats.length} 个分类</p>
+  </header>
+  <div class="tag-cloud card reveal">
+    {
+      cats.map(([cat, list]) => (
+        <a class={list.length > 1 ? 'tag-s3' : 'tag-s1'} href={`/categories/${encodeURIComponent(cat)}/`}>
+          {cat}
+          <span class="tag-count">{list.length}</span>
+        </a>
+      ))
+    }
+  </div>
+</BaseLayout>

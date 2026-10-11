@@ -1,0 +1,26 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
+import { collectTags, getSortedPosts } from '../../utils.js';
+
+// 标签云：标签内文章数 > 1 用大字号（tag-s3），否则小字号（tag-s1）
+const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
+const tags = [...collectTags(getSortedPosts(all)).entries()];
+---
+
+<BaseLayout title="标签" page="tags">
+  <header class="archive-head reveal">
+    <h1 class="page-title">标签</h1>
+    <p class="page-sub">共 {tags.length} 个标签</p>
+  </header>
+  <div class="tag-cloud card reveal">
+    {
+      tags.map(([tag, list]) => (
+        <a class={list.length > 1 ? 'tag-s3' : 'tag-s1'} href={`/tags/${encodeURIComponent(tag)}/`}>
+          {tag}
+          <span class="tag-count">{list.length}</span>
+        </a>
+      ))
+    }
+  </div>
+</BaseLayout>

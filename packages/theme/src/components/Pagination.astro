@@ -1,0 +1,36 @@
+---
+interface Props {
+  /** 当前页（从 1 开始） */
+  page: number;
+  /** 总页数 */
+  total: number;
+  /** 列表基路径，如 '/'、'/tags/xx/'（带尾斜杠） */
+  basePath: string;
+}
+
+const { page, total, basePath } = Astro.props;
+const hrefFor = (p: number) =>
+  p === 1 ? basePath : `${basePath.replace(/\/$/, '')}/page/${p}/`;
+---
+
+<nav class="pagination reveal" aria-label="分页">
+  {
+    page > 1 ? (
+      <a class="page-item" href={hrefFor(page - 1)}>
+        上一页
+      </a>
+    ) : (
+      <span class="page-item disabled">上一页</span>
+    )
+  }
+  <span>第 {page} / {total} 页</span>
+  {
+    page < total ? (
+      <a class="page-item" href={hrefFor(page + 1)}>
+        下一页
+      </a>
+    ) : (
+      <span class="page-item disabled">下一页</span>
+    )
+  }
+</nav>

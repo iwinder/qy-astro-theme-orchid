@@ -1,0 +1,37 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
+import { collectTags, formatDate, getSortedPosts } from '../../utils.js';
+
+// 先排序再聚合，保证每个标签内文章按新→旧排列
+export async function getStaticPaths() {
+  const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
+  const sorted = getSortedPosts(all);
+  return [...collectTags(sorted).entries()].map(([tag, posts]) => ({
+    params: { tag },
+    props: { tag, posts },
+  }));
+}
+
+const { tag, posts } = Astro.props;
+---
+
+<BaseLayout title={`标签：${tag}`} page="tags">
+  <header class="archive-head reveal">
+    <h1 class="page-title">{tag}</h1>
+    <p class="page-sub">共 {posts.length} 篇文章</p>
+  </header>
+  <div class="tag-list">
+    {
+      posts.map((post) => (
+        <a class="related-card card tag-item reveal" href={`/posts/${post.id}/`}>
+          <div class="rc-title">{post.data.title}</div>
+          <div class="rc-meta">
+            {formatDate(post.data.published)}
+            {post.data.category ? ` · ${post.data.category}` : ''}
+          </div>
+        </a>
+      ))
+    }
+  </div>
+</BaseLayout>

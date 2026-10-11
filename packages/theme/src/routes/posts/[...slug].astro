@@ -1,48 +1,68 @@
 ---
 import { getCollection, render } from 'astro:content';
 import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
-import { formatDate } from '../../utils.js';
+import Toc from 'virtual:theme/components/Toc.astro';
+import License from 'virtual:theme/components/License.astro';
+import PostNav from 'virtual:theme/components/PostNav.astro';
+import config from 'virtual:theme/config';
+import { formatDate, getSortedPosts } from '../../utils.js';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('posts', ({ data }) =>
-    import.meta.env.PROD ? !data.draft : true,
-  );
-  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+  const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
+  const sorted = getSortedPosts(all);
+  // sorted 内 idx+1 为更早一篇（prev），idx-1 为更新一篇（next）
+  return sorted.map((post, idx) => ({
+    params: { slug: post.id },
+    props: { post, prev: sorted[idx + 1] ?? null, next: sorted[idx - 1] ?? null },
+  }));
 }
 
-const { post } = Astro.props;
-const { title, description, published, updated, tags, category, pinned } = post.data;
-const { Content } = await render(post);
+const { post, prev, next } = Astro.props;
+const d = post.data;
+const { Content, headings, remarkPluginFrontmatter } = await render(post);
+const { words, minutes } = remarkPluginFrontmatter as { words?: number; minutes?: number };
+
+const url = new URL(`/posts/${post.id}/`, Astro.site);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: d.title,
+  description: d.description,
+  datePublished: d.published.toISOString(),
+  dateModified: (d.updated ?? d.published).toISOString(),
+  wordCount: words,
+  keywords: d.tags.join(', '),
+  author: { '@type': 'Person', name: d.author || config.author },
+  mainEntityOfPage: url.href,
+};
 ---
 
-<BaseLayout title={title} description={description}>
-  <article class="pt-12 pb-16">
-    <header class="pb-8">
-      <h1 class="text-[26px] leading-snug font-semibold text-ink">{title}</h1>
-      <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted">
-        <time datetime={published.toISOString()}>发布于 {formatDate(published)}</time>
-        {
-          updated && (
-            <time datetime={updated.toISOString()}>更新于 {formatDate(updated)}</time>
-          )
-        }
-        {category && <span>{category}</span>}
-        {pinned && <span class="text-accent">置顶</span>}
-      </div>
-      {
-        tags.length > 0 && (
-          <div class="mt-3 flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <span class="rounded-full px-2 py-0.5 text-[11px] text-accent ring-1 ring-line">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )
-      }
-    </header>
-    <div class="qy-prose">
-      <Content />
+<BaseLayout title={d.title} description={d.description} page="post">
+  <header class="post-header reveal">
+    {d.category && <a class="chip" href={`/categories/${encodeURIComponent(d.category)}/`}>{d.category}</a>}
+    <h1 class="post-title-lg">{d.title}</h1>
+    <div class="post-meta">
+      <span>{formatDate(d.published)} 发布</span>
+      {d.updated && <span class="dot">{formatDate(d.updated)} 更新</span>}
+      {words ? <span class="dot">{words} 字</span> : null}
+      {minutes ? <span class="dot">约 {minutes} 分钟</span> : null}
+      {d.pinned && <span class="dot pin-flag">置顶</span>}
     </div>
-  </article>
+  </header>
+  {
+    d.image && (
+      <figure class="article-cover reveal" data-lightbox>
+        <img src={d.image} alt={d.title} loading="eager" />
+      </figure>
+    )
+  }
+  <div class="post-layout">
+    <article class="prose reveal">
+      <Content />
+    </article>
+    {config.toc.enabled && <Toc headings={headings} />}
+  </div>
+  <License licenseName={d.licenseName} licenseUrl={d.licenseUrl} />
+  <PostNav prev={prev ?? undefined} next={next ?? undefined} />
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
 </BaseLayout>

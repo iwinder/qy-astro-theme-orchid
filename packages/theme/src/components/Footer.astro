@@ -1,13 +1,20 @@
 ---
 import config from 'virtual:theme/config';
-const year = new Date().getFullYear();
+
+const { title, author, footerText, since } = config;
+const now = new Date().getFullYear();
+const startYear = since ? parseInt(since.slice(0, 4), 10) : NaN;
+const yearLabel =
+  !Number.isNaN(startYear) && startYear < now ? `${startYear}-${now}` : String(now);
 ---
 
-<footer class="border-t border-line">
-  <div
-    class="mx-auto flex w-full max-w-[720px] flex-col gap-1 px-5 py-8 text-[12px] text-muted"
-  >
-    <p>© {year} {config.author || config.title} · 由 {config.title} 驱动</p>
-    {config.footerText && <p>{config.footerText}</p>}
+<footer class="site-footer">
+  <div class="shell footer-inner">
+    <div class="footer-seal">{title.slice(0, 2)}</div>
+    <div class="footer-line">© {yearLabel} {author || title}{footerText ? ` · ${footerText}` : ''}</div>
+    <div class="footer-sub">
+      Powered by Astro · Theme Orchid ·
+      <a href="/rss.xml">RSS</a> / <a href="/sitemap.xml">Sitemap</a>
+    </div>
   </div>
 </footer>

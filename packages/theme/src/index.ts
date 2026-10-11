@@ -1,9 +1,18 @@
+import { unified } from '@astrojs/markdown-remark';
 import type { AstroIntegration } from 'astro';
 import tailwindcss from '@tailwindcss/vite';
 import { themeConfigSchema, type ThemeConfig } from './schema.js';
 import { overridesPlugin, themeConfigPlugin } from './vite.js';
 import { remarkExcerpt } from './plugins/remark-excerpt.js';
 import { remarkReadingTime } from './plugins/remark-reading-time.js';
+import {
+  rehypeAnchor,
+  rehypeCallouts,
+  rehypeCodeBlock,
+  rehypeExternalLinks,
+  rehypeFigure,
+  rehypeFirstImage,
+} from './plugins/rehype.js';
 
 export const PKG_NAME = '@windcoder/astro-theme-orchid';
 
@@ -29,22 +38,47 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
           vite: {
             plugins: [tailwindcss()],
           },
-          // 阅读时长/字数 + 自动摘要：渲染期写入 remarkPluginFrontmatter
+          // remark：阅读时长/字数 + 自动摘要（渲染期写入 remarkPluginFrontmatter）
+          // rehype：外链新窗/提示块/图片 figure 化+灯箱/首图提取/标题锚点/代码块包装（顺序敏感）
+          // Astro 7 默认 Sätteri 处理器不执行 JS 插件，须显式 unified() 处理器承载
+          // shiki：代码高亮（github-dark），替代 Expressive Code（零新依赖）
           markdown: {
-            remarkPlugins: [remarkReadingTime, remarkExcerpt],
+            processor: unified({
+              remarkPlugins: [remarkReadingTime, remarkExcerpt],
+              rehypePlugins: [
+                rehypeExternalLinks,
+                rehypeCallouts,
+                rehypeFigure,
+                rehypeFirstImage,
+                rehypeAnchor,
+                rehypeCodeBlock,
+              ],
+            }),
+            shikiConfig: { theme: 'github-dark' },
           },
         });
 
-        injectRoute({
-          pattern: '/',
-          entrypoint: `${PKG_NAME}/routes/index.astro`,
-          prerender: true,
-        });
-        injectRoute({
-          pattern: '/posts/[...slug]',
-          entrypoint: `${PKG_NAME}/routes/posts/[...slug].astro`,
-          prerender: true,
-        });
+        const routes: [pattern: string, file: string][] = [
+          ['/', 'index.astro'],
+          ['/page/[page]', 'page/[page].astro'],
+          ['/archive', 'archive.astro'],
+          ['/tags', 'tags/index.astro'],
+          ['/tags/[tag]', 'tags/[tag].astro'],
+          ['/categories', 'categories/index.astro'],
+          ['/categories/[category]', 'categories/[category].astro'],
+          ['/posts/[...slug]', 'posts/[...slug].astro'],
+          ['/rss.xml', 'rss.xml.ts'],
+          ['/sitemap.xml', 'sitemap.xml.ts'],
+          ['/robots.txt', 'robots.txt.ts'],
+          ['/404', '404.astro'],
+        ];
+        for (const [pattern, file] of routes) {
+          injectRoute({
+            pattern,
+            entrypoint: `${PKG_NAME}/routes/${file}`,
+            prerender: true,
+          });
+        }
 
         updateConfig({
           vite: {

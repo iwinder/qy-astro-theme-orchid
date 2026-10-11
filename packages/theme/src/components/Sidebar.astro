@@ -1,0 +1,60 @@
+---
+import config from 'virtual:theme/config';
+import {
+  collectCategories,
+  collectTags,
+  daysSince,
+  type PostLike,
+} from '../utils.js';
+
+interface Props {
+  /** 全站已发布文章（用于聚合分类/标签/统计） */
+  posts: PostLike[];
+}
+
+const { posts } = Astro.props;
+const cats = [...collectCategories(posts).entries()];
+const tags = [...collectTags(posts).keys()];
+const runDays = config.since ? daysSince(config.since) : null;
+---
+
+<aside class="sidebar">
+  {
+    cats.length > 0 && (
+      <section class="side-card card reveal">
+        <h3>分类</h3>
+        <div class="cat-list">
+          {cats.map(([name, list]) => (
+            <a href={`/categories/${encodeURIComponent(name)}/`}>
+              <span>{name}</span>
+              <span class="count">{list.length}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+  {
+    tags.length > 0 && (
+      <section class="side-card card reveal">
+        <h3>标签</h3>
+        <div class="side-tags">
+          {tags.map((tag) => (
+            <a class="chip" href={`/tags/${encodeURIComponent(tag)}/`}>
+              {tag}
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
+  <section class="side-card card reveal">
+    <h3>站点信息</h3>
+    <div class="site-info">
+      <div class="row"><span>文章</span><b>{posts.length}</b></div>
+      <div class="row"><span>分类</span><b>{cats.length}</b></div>
+      <div class="row"><span>标签</span><b>{tags.length}</b></div>
+      {runDays !== null && <div class="row"><span>已运行</span><b>{runDays} 天</b></div>}
+    </div>
+  </section>
+</aside>

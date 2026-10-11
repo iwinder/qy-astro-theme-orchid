@@ -3,18 +3,21 @@
 // 覆盖路径镜像虚拟模块路径：virtual:theme/components/PostCard.astro
 //   → site/src/overrides/components/PostCard.astro
 // 文件内 import 同一虚拟路径时拿到的是包内默认实现，可直接包装复用。
+// 注意：Props 需要透传主题默认实现的全部入参（post/featured），否则功能会静默丢失。
 import DefaultCard from 'virtual:theme/components/PostCard.astro';
 import type { CollectionEntry } from 'astro';
 
 interface Props {
   post: CollectionEntry<'posts'>;
+  /** 置顶/特写形态，透传给默认实现 */
+  featured?: boolean;
 }
 
-const { post } = Astro.props;
+const { post, featured = false } = Astro.props;
 ---
 
 <div class="relative">
-  <DefaultCard {post} />
+  <DefaultCard {post} {featured} />
   <!--
     站点附加元素示例：这里加一个小圆点标记。
     删除本文件即回到主题默认渲染，主题升级不影响这个行为。

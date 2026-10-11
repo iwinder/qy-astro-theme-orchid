@@ -1,40 +1,60 @@
 ---
-import type { CollectionEntry } from 'astro';
-import { formatDate } from '../utils.js';
+import config from 'virtual:theme/config';
+import { formatDate, type PostLike } from '../utils.js';
 
 interface Props {
-  post: CollectionEntry<'posts'>;
+  post: PostLike;
+  /** 置顶/特写形态（大图卡 + 置顶徽标） */
+  featured?: boolean;
 }
 
-const { post } = Astro.props;
-const { title, description, published, tags } = post.data;
+const { post, featured = false } = Astro.props;
+const d = post.data;
+
+/* 形态判定：frontmatter.cardStyle 按篇覆盖 > 全局 postList.style；无图可降级为纯文字 */
+const style = d.cardStyle ?? config.postList.style;
+const cover = d.image || d.firstImage || config.postList.fallbackCover;
+const classes = [
+  'post-card',
+  featured ? 'featured' : '',
+  style === 'cover' ? '' : 'compact',
+  style !== 'cover' && !cover ? 'text-only' : '',
+]
+  .filter(Boolean)
+  .join(' ');
+
+const href = `/posts/${post.id}/`;
+const excerpt = d.excerpt || d.description;
 ---
 
-<article class="group">
-  <a href={`/posts/${post.id}`} class="block py-5">
-    <div class="flex items-baseline justify-between gap-4">
-      <h2 class="text-[17px] font-semibold text-ink transition-colors group-hover:text-accent">
-        {title}
-      </h2>
-      <time datetime={published.toISOString()} class="shrink-0 text-[12px] text-muted">
-        {formatDate(published)}
-      </time>
+<article class={classes}>
+  {
+    cover && (
+      <a class="post-cover" href={href} aria-label={d.title}>
+        {featured && d.pinned && <span class="pin-badge">置顶</span>}
+        <img src={cover} alt={d.title} loading="lazy" />
+      </a>
+    )
+  }
+  <div class="post-body">
+    <h2 class="post-title"><a href={href}>{d.title}</a></h2>
+    {excerpt && <p class="post-excerpt">{excerpt}</p>}
+    <div class="post-meta">
+      <span>{formatDate(d.published)}</span>
+      {d.category && <span class="dot">{d.category}</span>}
+      {d.words ? <span class="dot">{d.words} 字</span> : null}
+      {d.minutes ? <span class="dot">约 {d.minutes} 分钟</span> : null}
     </div>
     {
-      description && (
-        <p class="mt-1.5 line-clamp-2 text-[14px] leading-relaxed text-muted">{description}</p>
-      )
-    }
-    {
-      tags.length > 0 && (
-        <div class="mt-2.5 flex flex-wrap gap-2">
-          {tags.map((tag) => (
-            <span class="rounded-full px-2 py-0.5 text-[11px] text-accent ring-1 ring-line">
+      d.tags.length > 0 && (
+        <div class="post-tags">
+          {d.tags.map((tag) => (
+            <a class="chip" href={`/tags/${encodeURIComponent(tag)}/`}>
               {tag}
-            </span>
+            </a>
           ))}
         </div>
       )
     }
-  </a>
+  </div>
 </article>

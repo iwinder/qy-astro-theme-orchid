@@ -1,0 +1,39 @@
+---
+import type { PostLike } from '../utils.js';
+
+interface Props {
+  prev?: PostLike;
+  next?: PostLike;
+}
+
+const { prev, next } = Astro.props;
+---
+
+<nav class="post-nav" aria-label="上下篇">
+  {
+    prev ? (
+      <a href={`/posts/${prev.id}/`}>
+        <div class="pn-label">上一篇</div>
+        <div class="pn-title">{prev.data.title}</div>
+      </a>
+    ) : (
+      <div class="pn-disabled">
+        <div class="pn-label">上一篇</div>
+        <div class="pn-title">已经是最早的一篇</div>
+      </div>
+    )
+  }
+  {
+    next ? (
+      <a class="next" href={`/posts/${next.id}/`}>
+        <div class="pn-label">下一篇</div>
+        <div class="pn-title">{next.data.title}</div>
+      </a>
+    ) : (
+      <div class="pn-disabled">
+        <div class="pn-label">下一篇</div>
+        <div class="pn-title">已经是最新的一篇</div>
+      </div>
+    )
+  }
+</nav>

@@ -2,29 +2,47 @@
 import { getCollection } from 'astro:content';
 import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
 import PostCard from 'virtual:theme/components/PostCard.astro';
+import Pagination from 'virtual:theme/components/Pagination.astro';
+import Sidebar from 'virtual:theme/components/Sidebar.astro';
 import config from 'virtual:theme/config';
+import { getSortedPosts } from '../utils.js';
+import { hydratePosts } from './_hydrate.js';
 
-const posts = (await getCollection('posts', ({ data }) =>
-  import.meta.env.PROD ? !data.draft : true,
-))
-  .sort((a, b) => b.data.published.valueOf() - a.data.published.valueOf())
-  .sort((a, b) => Number(b.data.pinned) - Number(a.data.pinned));
+// 首页 = 分页第 1 页。置顶文章作为 featured 卡固定在列表最前（不重复进入分页列表）。
+const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
+const sorted = getSortedPosts(all);
+const featured = sorted.filter((p) => p.data.pinned);
+const rest = sorted.filter((p) => !p.data.pinned);
+const total = Math.max(1, Math.ceil(rest.length / config.postList.pageSize));
+
+const [featuredPosts, pagePosts] = await Promise.all([
+  hydratePosts(featured),
+  hydratePosts(rest.slice(0, config.postList.pageSize)),
+]);
 ---
 
-<BaseLayout>
+<BaseLayout page="home">
   {
-    config.description && (
-      <section class="pt-12 pb-8">
-        <p class="text-[15px] leading-relaxed text-muted">{config.description}</p>
+    config.hero.quote && (
+      <section class="hero reveal">
+        <h1 class="hero-quote" set:html={config.hero.quote} />
+        {config.hero.sub && <p class="hero-sub">{config.hero.sub}</p>}
       </section>
     )
   }
-  <section class="border-t border-line">
-    {posts.map((post) => <PostCard {post} />)}
-    {
-      posts.length === 0 && (
-        <p class="py-16 text-center text-[14px] text-muted">还没有文章，去 content/posts 里写一篇吧。</p>
-      )
-    }
-  </section>
+  <div class="home-layout">
+    <div class="post-list">
+      {featuredPosts.map((post) => <PostCard post={post} featured />)}
+      <h2 class="section-title reveal">近期文章</h2>
+      {
+        pagePosts.length > 0 ? (
+          pagePosts.map((post) => <PostCard post={post} />)
+        ) : (
+          <p class="empty-note card">还没有文章，去 content/posts 里写一篇吧。</p>
+        )
+      }
+      <Pagination page={1} total={total} basePath="/" />
+    </div>
+    <Sidebar posts={sorted} />
+  </div>
 </BaseLayout>

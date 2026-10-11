@@ -1,0 +1,43 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from 'virtual:theme/components/BaseLayout.astro';
+import PostCard from 'virtual:theme/components/PostCard.astro';
+import Pagination from 'virtual:theme/components/Pagination.astro';
+import Sidebar from 'virtual:theme/components/Sidebar.astro';
+import config from 'virtual:theme/config';
+import { getSortedPosts } from '../../utils.js';
+import { hydratePosts } from '../_hydrate.js';
+
+export async function getStaticPaths() {
+  const all = await getCollection('posts', ({ data }) => (import.meta.env.PROD ? !data.draft : true));
+  const rest = getSortedPosts(all).filter((p) => !p.data.pinned);
+  const total = Math.max(1, Math.ceil(rest.length / config.postList.pageSize));
+  // 第 1 页由 / 承担，这里生成 /page/2/ 起的分页
+  return Array.from({ length: total - 1 }, (_, i) => ({
+    params: { page: String(i + 2) },
+    props: { page: i + 2, total, posts: rest },
+  }));
+}
+
+const { page, total, posts } = Astro.props;
+const pagePosts = await hydratePosts(posts.slice((page - 1) * config.postList.pageSize, page * config.postList.pageSize));
+---
+
+<BaseLayout title={`第 ${page} 页`} page="home">
+  {
+    config.hero.quote && (
+      <section class="hero reveal">
+        <h1 class="hero-quote" set:html={config.hero.quote} />
+        {config.hero.sub && <p class="hero-sub">{config.hero.sub}</p>}
+      </section>
+    )
+  }
+  <div class="home-layout">
+    <div class="post-list">
+      <h2 class="section-title reveal">近期文章</h2>
+      {pagePosts.map((post) => <PostCard post={post} />)}
+      <Pagination page={page} total={total} basePath="/" />
+    </div>
+    <Sidebar posts={posts} />
+  </div>
+</BaseLayout>

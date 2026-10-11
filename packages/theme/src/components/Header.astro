@@ -1,24 +1,40 @@
 ---
 import config from 'virtual:theme/config';
+
 const { title, nav } = config;
+
+/** 内置页导航高亮 key（body[data-page] ↔ .nav-link[data-nav]） */
+function navKey(href: string): string | null {
+  if (href === '/') return 'home';
+  if (href === '/archive' || href.startsWith('/archive/')) return 'archive';
+  if (href === '/tags' || href.startsWith('/tags/')) return 'tags';
+  return null;
+}
 ---
 
-<header class="border-b border-line">
-  <div class="mx-auto flex h-14 w-full max-w-[720px] items-center justify-between px-5">
-    <a href="/" class="text-[15px] font-semibold tracking-wide text-ink hover:text-accent">
-      {title}
-    </a>
-    <nav class="flex items-center gap-5">
+<header class="site-header">
+  <div class="shell header-inner">
+    <a class="site-title" href="/">{title}</a>
+    <nav class="site-nav" id="siteNav" aria-label="主导航">
       {
-        nav.map((item) => (
-          <a
-            href={item.href}
-            class="text-[13px] text-muted transition-colors hover:text-accent"
-          >
-            {item.label}
-          </a>
-        ))
+        nav.map((item) => {
+          const key = navKey(item.href);
+          return (
+            <a class="nav-link" data-nav={key ?? undefined} href={item.href}>
+              {item.label}
+            </a>
+          );
+        })
       }
     </nav>
+    <div class="header-actions">
+      <button class="icon-btn" id="modeToggle" type="button" aria-label="切换深浅模式">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      </button>
+      <button class="icon-btn nav-burger" id="navToggle" type="button" aria-label="菜单" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+      </button>
+    </div>
   </div>
 </header>

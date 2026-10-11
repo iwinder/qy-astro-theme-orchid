@@ -87,7 +87,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 > 复杂度 = 迁移到本主题的工作量粗估。P0/P1/P2 为初始建议分级，**实际取舍见第 6 节决策记录**（2026-10-11 已确认）。
 
-### 4.1 P0 —— 主题核心，默认实现（M3a）
+### 4.1 P0 —— 主题核心，默认实现（M3a）✅ 已完成（2026-10-11）
 
 | 功能 | 具体内容 | orchid-blog 实现 | 复杂度 |
 |---|---|---|---|
@@ -103,6 +103,19 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | 404 页 | 自定义 404 | `pages/404.astro` | 低 |
 | 返回顶部 | 右下角悬浮按钮 | `controls/BackToTop.astro` | 低 |
 | 页面过渡 | 路由切换动画（用 Astro 内置 View Transitions，不引入 swup） | `@swup/astro`（本主题改用内置方案） | 低 |
+
+**M3a 实现偏差清单**（与上表 orchid-blog 原实现的差异，均已验证可用）：
+
+| 偏差 | 原因 | 主题实现 |
+|---|---|---|
+| Shiki 替代 Expressive Code | EC 依赖重且与主题包耦合；Shiki 为 Astro 内置 | `shikiConfig: { theme: 'github-dark' }` + 自实现代码块包装（复制按钮）；**无行号/折叠/语言角标**（如需后续补） |
+| RSS 为摘要版 | 全文 RSS 需在构建期二次渲染全文，成本高 | description 取 excerpt 插件产物；站点可在 override 中改全文 |
+| 无 sectionize | TOC 依赖它做包裹锚点；Astro 原生 `render()` 已返回 headings | 标题锚点插件直接给 h1-h6 加 `id`；TOC 组件读官方 headings + IntersectionObserver 高亮 |
+| 标签/分类筛选路由化 | 原站为 Svelte 客户端筛选 | `/tags/[tag]/`、`/categories/[category]/` 静态聚合页（SSG 更符合主题包形态） |
+| 侧栏无公告/友链卡 | 属 P1（公告）/P2→P1（友链 widget）范围 | Sidebar 预留 widget 插槽结构，M3b 填充 |
+| **新增依赖 `@astrojs/markdown-remark@^7.3.2`** | Astro 7 默认 Sätteri（Rust）处理器**不执行 remark/rehype JS 插件**，仅装包不够，须显式声明 unified 处理器 | `markdown.processor: unified({ remarkPlugins, rehypePlugins })`（`packages/theme/src/index.ts`）；legacy `remarkPlugins/rehypePlugins` 写法在 Astro 7.3.8 只警告不生效 |
+
+**M3a 验证记录**（dev 实测，2026-10-11）：13 条路由全部 200/404 符合预期；remark 插件（字数/时长/摘要写入 `remarkPluginFrontmatter`）与 rehype 插件（外链/callouts/figure/首图/锚点/代码块包装）全部生效；featured 置顶卡仅首页渲染；分页/归档时间线/标签云（字号分级）/分类聚合正常；RSS/sitemap/robots 均中性占位域名。
 
 ### 4.2 P1 —— 已确认全部采用（M3b）
 
@@ -173,7 +186,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | ✅ 完成 |
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | 待开始 |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；M3b 待开始 |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | 待开始 |
 
 ## 6. 决策记录（2026-10-11 确认）
@@ -193,7 +206,13 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 ## 7. 工程备忘
 
 - 开发：仓库根 `pnpm --filter site dev`；构建：`pnpm --filter site build`
-- 依赖安装（本机沙箱环境）：`PNPM_HOME="$PWD/.pnpm-home" pnpm --store-dir="$TMPDIR/qy-store" --config.package-import-method=copy install`
-- ⚠️ TRAE 沙箱拦截 unlink/rmdir：`astro build` 的正常清理步骤在沙箱内会失败，**build 请在本机终端跑**；删除文件/目录一律走 IDE 删除工具
-- override 新增/移动文件后需重启 dev server（Vite 虚拟模块 resolveId 缓存）
+- 依赖安装（TRAE 沙箱环境，实测有效版）：
+  ```bash
+  pnpm_config_store_dir="$PWD/.tmp-m3a/store" pnpm_config_cache_dir="$PWD/.tmp-m3a/cache" pnpm install --no-frozen-lockfile
+  ```
+  要点：① pnpm 11 对**非 `~/` 开头的显式 store 路径跳过探测**（探测会在挂载根建 `_tmp_*` 硬链接探针被沙箱拦截）；② env 前缀是 `pnpm_config_` 且**必须下划线形式**（`npm_config_*`、连字符变体均无效）；③ TRAE 终端被判定 CI → frozen-lockfile 默认 true，锁文件有变更时加 `--no-frozen-lockfile`；④ 首次重定向安装需把现有 store 复制进目标目录（`cp -R` 本机 store）。本机终端正常装包不受此影响
+- ⚠️ TRAE 沙箱拦截 unlink/rmdir（EXDEV）：`astro build` 的正常清理、astro dev 的 `.astro/dev.json` 锁清理、pnpm store WAL 清理均会失败——锁文件被拦时用 IDE 删除工具清掉再重启；**build 请在本机终端跑**；删除文件/目录一律走 IDE 删除工具
+- override 新增/移动文件后需重启 dev server（Vite 虚拟模块 resolveId 缓存）；**修改主题包内 integration/index.ts 后也需重启**（Vite 不监听 workspace 包内文件）
+- Astro 7 markdown：JS 插件必须走 `markdown.processor: unified({...})`（`@astrojs/markdown-remark`），legacy `remarkPlugins/rehypePlugins` 字段只触发警告不生效
+- Astro 组件 frontmatter（`---` 区）**不能包含 JSX**（返回 JSX 的箭头函数会在 vite import analysis 报 invalid JS syntax），JSX 片段只能写在模板区
 - 主题包版本升级策略：功能进 `minor`、修复进 `patch`、破坏性配置变更进 `major` 并保留 default 回退

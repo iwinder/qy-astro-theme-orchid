@@ -1,20 +1,25 @@
 ---
+import { ClientRouter } from 'astro:transitions';
 import Header from 'virtual:theme/components/Header.astro';
 import Footer from 'virtual:theme/components/Footer.astro';
 import config from 'virtual:theme/config';
+import { hexToHsl } from '../utils.js';
 import '@windcoder/astro-theme-orchid/styles/global.css';
 
 interface Props {
   title?: string;
   description?: string;
+  /** body[data-page]，驱动导航高亮（home/archive/tags/post...） */
+  page?: string;
 }
 
-const { title, description = config.description } = Astro.props;
+const { title, description = config.description, page } = Astro.props;
 const pageTitle = title ? `${title} · ${config.title}` : config.title;
+const { h, s, l } = hexToHsl(config.accentColor);
 ---
 
 <!doctype html>
-<html lang="zh-CN" style={`--qy-accent: ${config.accentColor}`}>
+<html lang={config.lang} style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%`}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -23,12 +28,27 @@ const pageTitle = title ? `${title} · ${config.title}` : config.title;
     <meta name="description" content={description} />
     <meta name="author" content={config.author} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <ClientRouter />
+    <!-- 深浅模式 boot：先于首帧执行防 FOUC；is:inline 在 VT swap 时不重复执行 -->
+    <script is:inline>
+      (function(){var m=localStorage.getItem('qy-mode');if(m==='dark'||(!m&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
+    </script>
   </head>
-  <body class="flex min-h-screen flex-col">
+  <body data-page={page}>
+    <a class="skip-link" href="#main">跳到主要内容</a>
     <Header />
-    <main class="mx-auto w-full max-w-[720px] flex-1 px-5">
-      <slot />
+    <main id="main" class="site-main">
+      <div class="shell">
+        <slot />
+      </div>
     </main>
     <Footer />
+    <button class="back-top" id="backTop" type="button" aria-label="回到顶部" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
+    </button>
+    <!-- 全局交互（VT 兼容：document 级委托 + astro:page-load 重初始化） -->
+    <script>
+      import '../scripts/app';
+    </script>
   </body>
 </html>

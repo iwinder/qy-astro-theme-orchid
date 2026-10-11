@@ -7,6 +7,11 @@ dist/
 .env.*
 .idea/
 
+# 沙箱环境 pnpm store/cache 重定向目录（约 420MB，仅本机安装用）
+.tmp-m3a/
+# pnpm store 探测残留的硬链接探针
+_tmp_*
+
 # 本地开发用真实文章（来自 orchid-blog 的私人内容，永不入库、不进历史）
 site/src/content/posts/*
 !site/src/content/posts/hello-world.md
