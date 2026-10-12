@@ -545,6 +545,28 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证**：dev 重启（config 传递依赖不热更）逐 provider 断言——artalk（`#artalk` + Artalk.css）、twikoo（`#tcomment` + twikoo.min.js，artalk 0 残留）、waline（`#waline` + waline.css/js + serverURL 注入）、giscus（`<giscus-widget>` 全属性 + esm.sh import）、disqus（`#disqus_thread` + disqus_config 三件套 + embed 注入）全部命中后还原 artalk；过时卡片 browser 实测——2013 年旧文卡片显示、天数「4832 天」填充、警告行可见、computed style 琥珀色系生效，features-demo（30 天内）保持 hidden；`pnpm --filter site build` 回归通过（62 页）
 
+### 4.12 站点体验与 SEO 头部优化（✅ 2026-10-12 完成）
+
+审计既有能力（back-top/复制按钮/语言标签/skip-link/reduced-motion/外链新窗口/OG·Twitter/JSON-LD/灯箱键盘均已具备）后的查漏补缺，三件套：
+
+**SEO 头部补全**（`BaseLayout.astro` head）
+- `canonical`：`Astro.site` 存在才输出（`new URL(Astro.url.pathname, Astro.site)`），防聚合页重复内容
+- `<link rel="alternate" type="application/rss+xml">`：供阅读器自动发现订阅（`Astro.site` 拼绝对地址，缺省回退 `/rss.xml`）
+- `og:site_name`（站点名）与 `og:locale`（`config.lang` 的 `-` 转 `_`）
+- `theme-color` 双 `media`（light `#f6f4ef` / dark `#131516`）——色值与 global.css `:root` 的 `--bg` 同步，浏览器地址栏跟随深浅模式
+
+**阅读进度条**（`[...slug].astro` 元素 + `.read-progress` 样式 + app.ts 驱动）
+- 仅文章页渲染 `<div class="read-progress" id="readProgress" aria-hidden="true">`（post-layout 顶部）；fixed 顶边 3px、`transform: scaleX()` 驱动（零重排），`transform-origin: 0 50%`，accent 渐变，`pointer-events: none`
+- 层级 z-index 150：盖过 header(100)、让位 skip-link(200)
+- app.ts `updateReadProgress()`：`max = scrollHeight - innerHeight`，`max <= 0`（内容不足一屏）时 `hidden`；scroll 监听合并回调（`updateBackTop` + `updateReadProgress`），另挂 resize 防窗口变化后比例失真；`initPage()` 尾部初始化（VT 换页后元素现查，与 back-top 同模式）
+
+**搜索快捷键**（app.ts keydown + Header title + i18n）
+- `/` 或 ⌘/Ctrl+K 打开搜索浮层：新增 `openSearch()`（`pop.hidden = false` + `aria-expanded` + input 聚焦，已开不重复聚焦）
+- 守卫：输入态（INPUT/TEXTAREA/SELECT/contenteditable）与灯箱打开时不触发；Alt/Shift 组合跳过；命中即 `preventDefault()`（拦 `/` 的 Firefox 快速查找与 ⌘K 浏览器行为）
+- `#searchToggle` 加 `title={t('searchShortcut')}`（zh: 「按 / 或 Ctrl+K 快速搜索」/ en: 「Press / or Ctrl+K to search」），i18n 两语言同步 `UiKey` 推导
+
+**验证**：dev 重启后 curl 断言——首页 canonical/rss alternate/theme-color ×2/og:site_name/og:locale 六项全中且无 read-progress，文章页 canonical 指向文章 URL、进度条元素与按钮 title 命中；`pnpm --filter site build` 回归通过（62 页），dist 产物复核（首页 meta 齐、`read-progress` 文章页 1 次/首页 0 次）。进度条滚动与按键交互的 browser 实测因 IDE 浏览器桥卡死（自动化窗口失焦致输入类事件不生效，导航等待拖垮桥接会话）未能完成，逻辑与已实测的 back-top/closeSearch/点击 toggle 同构，留待手动验证
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

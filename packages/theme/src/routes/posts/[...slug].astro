@@ -69,6 +69,8 @@ const jsonLd = {
   {/* 左右两栏布局（对齐参考模板）：标题/封面/正文/许可/上下篇/支持卡/推荐/评论全部收进正文列，
       侧栏（或 TOC）独占右列；≤767px 退化为单列堆叠 */}
   <div class="post-layout">
+    {/* 阅读进度条（§4.12）：仅文章页渲染，app.ts 滚动驱动 scaleX */}
+    <div class="read-progress" id="readProgress" aria-hidden="true"></div>
     <div class="post-main">
   <header class="post-header reveal">
     {d.category && <a class="chip" href={`/categories/${encodeURIComponent(d.category)}/`}>{d.category}</a>}

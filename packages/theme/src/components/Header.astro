@@ -42,7 +42,7 @@ const presetHues = [0, 30, 60, 100, 140, 170, 210, 250, 290, 330];
         /* 搜索（M3b-b6）：按钮 + 浮层，桌面/移动统一；索引由构建期 pagefind 生成，dev 下降级提示 */
       }
       <div class="search-wrap">
-        <button class="icon-btn" id="searchToggle" type="button" aria-label={t('search')} aria-expanded="false">
+        <button class="icon-btn" id="searchToggle" type="button" aria-label={t('search')} title={t('searchShortcut')} aria-expanded="false">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
         </button>
         <div class="search-pop" id="searchPop" hidden>

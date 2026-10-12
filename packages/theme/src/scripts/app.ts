@@ -306,7 +306,24 @@ function updateBackTop() {
 	if (!backTop) return;
 	backTop.hidden = (window.scrollY || root.scrollTop) <= 480;
 }
-window.addEventListener("scroll", updateBackTop, { passive: true });
+
+/* 阅读进度条（§4.12）：仅文章页有元素，scaleX 驱动零重排；内容不足一屏时隐藏 */
+function updateReadProgress() {
+	const bar = doc.getElementById("readProgress");
+	if (!bar) return;
+	const max = doc.documentElement.scrollHeight - window.innerHeight;
+	if (max <= 0) {
+		bar.hidden = true;
+		return;
+	}
+	bar.hidden = false;
+	bar.style.transform = `scaleX(${Math.min((window.scrollY || 0) / max, 1)})`;
+}
+window.addEventListener("scroll", () => {
+	updateBackTop();
+	updateReadProgress();
+}, { passive: true });
+window.addEventListener("resize", updateReadProgress, { passive: true });
 
 /* ---------- 代码块复制（原型 post.html 同款：clipboard 优先 + execCommand 兜底） ---------- */
 function handleCopy(btn: Element) {
@@ -420,6 +437,15 @@ function closeSearch() {
 		box.hidden = true;
 		box.replaceChildren();
 	}
+}
+
+/* 打开搜索浮层（§4.12 快捷键用；已开则不重复聚焦） */
+function openSearch() {
+	const pop = doc.getElementById("searchPop");
+	if (!pop || !pop.hidden) return;
+	pop.hidden = false;
+	doc.getElementById("searchToggle")?.setAttribute("aria-expanded", "true");
+	(doc.getElementById("searchInput") as HTMLInputElement | null)?.focus();
 }
 
 /* 输入 → 300ms 防抖查询；searchSeq 丢弃过期响应 */
@@ -746,6 +772,17 @@ doc.addEventListener("keydown", (e) => {
 			return;
 		}
 	}
+	/* 搜索快捷键（§4.12）：/ 或 ⌘/Ctrl+K；输入中、灯箱打开时不触发 */
+	if (e.key === "/" || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k")) {
+		if (e.altKey || e.shiftKey) return;
+		const el = e.target as HTMLElement | null;
+		const typing = !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+		if (!typing && !lb?.classList.contains("open")) {
+			e.preventDefault();
+			openSearch();
+		}
+		return;
+	}
 	if (!lb || !lb.classList.contains("open")) return;
 	if (e.key === "Escape") closeLb();
 	else if (e.key === "ArrowLeft") lbShow(lbIdx - 1);
@@ -775,6 +812,7 @@ function initPage() {
 	initReveal();
 	initTocSpy();
 	updateBackTop();
+	updateReadProgress();
 	initPalette();
 	initEncrypted();
 	initLqip();

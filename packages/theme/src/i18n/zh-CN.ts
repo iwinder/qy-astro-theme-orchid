@@ -90,6 +90,7 @@ const zhCN = {
 	noSponsors: "还没有打赏，快来做第一个吧",
 	/* 搜索（M3b-b6）：search 用于 placeholder（服务端渲染），其余经 #qy-ui-labels 带入客户端 */
 	search: "搜索",
+	searchShortcut: "按 / 或 Ctrl+K 快速搜索",
 	searchLoading: "搜索中…",
 	searchNoResults: "没有找到相关结果",
 	searchUnavailable: "搜索索引需构建后可用",

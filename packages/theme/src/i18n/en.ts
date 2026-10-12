@@ -77,6 +77,7 @@ const en: Record<UiKey, string> = {
 	sponsorList: "Sponsors",
 	noSponsors: "Be the first to sponsor",
 	search: "Search",
+	searchShortcut: "Press / or Ctrl+K to search",
 	searchLoading: "Searching…",
 	searchNoResults: "No results found",
 	searchUnavailable: "Search index available after build",

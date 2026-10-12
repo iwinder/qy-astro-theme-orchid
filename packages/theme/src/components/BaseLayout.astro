@@ -32,10 +32,17 @@ const { h, s, l } = hexToHsl(config.accentColor);
     <meta name="description" content={description} />
     <meta name="author" content={config.author} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {/* SEO 头部补全（§4.12）：canonical 防重复内容；RSS 供阅读器发现；theme-color 与 global.css :root 同步 */}
+    {Astro.site && <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />}
+    <link rel="alternate" type="application/rss+xml" title={config.title} href={Astro.site ? new URL("rss.xml", Astro.site).href : "/rss.xml"} />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f4ef" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131516" />
     {/* OG/Twitter meta（b9.4）：ogImage 仅文章页传入；绝对链接依赖 site 配置 */}
     <meta property="og:type" content={ogImage ? 'article' : 'website'} />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
+    <meta property="og:site_name" content={config.title} />
+    <meta property="og:locale" content={config.lang.replace("-", "_")} />
     {Astro.site && <meta property="og:url" content={new URL(Astro.url.pathname, Astro.site).href} />}
     {ogImage && Astro.site && <meta property="og:image" content={new URL(ogImage, Astro.site).href} />}
     <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
