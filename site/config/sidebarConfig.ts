@@ -10,6 +10,8 @@ import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 export const sidebarConfig: ThemeConfig["sidebar"] = {
 	onPost: true,
 	widgets: [
+		// 个人资料卡（§4.15）：内容见 profileConfig.ts
+		{ type: "profile" },
 		{ type: "announcement" },
 		{ type: "categories" },
 		{ type: "tags" },

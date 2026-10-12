@@ -61,6 +61,8 @@ const zhCN = {
 	emptyPosts: "还没有文章，去 content/posts 里写一篇吧。",
 	pageN: "第 {n} 页",
 	archive: "归档",
+	home: "首页",
+	categoryNav: "分类导航",
 	totalPosts: "共 {n} 篇文章",
 	postsInYear: "{n} 篇",
 	yearUnit: "{n} 年",
@@ -70,6 +72,7 @@ const zhCN = {
 	categoryTitle: "分类：{category}",
 	publishedOn: "{date} 发布",
 	updatedOn: "{date} 更新",
+	pageviews: "浏览量",
 	/* 404 */
 	notFound: "页面不存在",
 	notFoundDesc: "页面不存在，或已被移动到别处。",

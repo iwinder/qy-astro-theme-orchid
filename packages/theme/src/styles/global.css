@@ -78,6 +78,9 @@ html.dark {
 html {
 	-webkit-text-size-adjust: 100%;
 	scroll-behavior: smooth;
+	/* 移动端横向滚动兜底（§4.13）：hidden 为旧浏览器回退，clip 不产生滚动容器、不影响 sticky */
+	overflow-x: hidden;
+	overflow-x: clip;
 }
 body {
 	font-family: var(--font-body);
@@ -218,6 +221,91 @@ html.dark .site-title:hover {
 .nav-link:hover {
 	color: var(--ink);
 	background: var(--bg-soft);
+}
+/* nav 子菜单（§4.16）：桌面 hover 展开，无 href 父项/移动端点击 toggle */
+.nav-item {
+	position: relative;
+}
+.nav-sub-toggle {
+	background: none;
+	border: 0;
+	cursor: pointer;
+	font: inherit;
+}
+.nav-sub {
+	position: absolute;
+	top: calc(100% + 6px);
+	left: 50%;
+	transform: translateX(-50%) translateY(4px);
+	min-width: 128px;
+	padding: 6px;
+	border-radius: var(--radius);
+	background: var(--surface);
+	border: 1px solid var(--border);
+	box-shadow: var(--shadow-md);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	opacity: 0;
+	visibility: hidden;
+	pointer-events: none;
+	transition:
+		opacity 0.15s,
+		transform 0.15s,
+		visibility 0.15s;
+	z-index: 110;
+}
+.nav-item.has-sub:hover .nav-sub,
+.nav-item.open-sub .nav-sub {
+	opacity: 1;
+	visibility: visible;
+	pointer-events: auto;
+	transform: translateX(-50%) translateY(0);
+}
+.nav-sub-link {
+	padding: 7px 12px;
+	border-radius: var(--radius-sm);
+	font-size: 14px;
+	color: var(--ink-2);
+	white-space: nowrap;
+}
+.nav-sub-link:hover {
+	color: var(--ink);
+	background: var(--bg-soft);
+}
+.nav-item.is-active > .nav-link,
+.nav-item.is-active > .nav-sub-toggle {
+	color: var(--accent-ink);
+	background: var(--accent-soft);
+}
+@media (max-width: 860px) {
+	.nav-sub-toggle {
+		width: 100%;
+		text-align: left;
+	}
+	.nav-sub {
+		position: static;
+		transform: none;
+		display: none;
+		border: 0;
+		background: transparent;
+		box-shadow: none;
+		padding: 2px 0 4px 14px;
+		min-width: 0;
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+	}
+	.nav-item.has-sub:hover .nav-sub {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+		transform: none;
+	}
+	.nav-item.open-sub .nav-sub {
+		display: flex;
+		transform: none;
+	}
 }
 .nav-link.is-active {
 	color: var(--accent-ink);
@@ -738,6 +826,68 @@ html.dark .post-card:hover .post-title a {
 	grid-template-columns: 1fr;
 }
 
+/* 分类导航栏（§4.15）：全站顶部横条，pill 横排 + 滚动区隐藏滚动条 */
+.category-bar {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 24px;
+	padding: 8px 12px;
+}
+.bar-scroll {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex: 1;
+	min-width: 0;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+.bar-scroll::-webkit-scrollbar {
+	display: none;
+}
+.category-pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 14px;
+	border-radius: 999px;
+	font-size: 14px;
+	color: var(--ink-2);
+	white-space: nowrap;
+	transition:
+		color 0.15s,
+		background-color 0.15s;
+}
+.category-pill:hover {
+	color: var(--ink);
+	background: var(--bg-soft);
+}
+.category-pill.is-active {
+	color: var(--accent-ink);
+	background: var(--accent-soft);
+}
+.pill-count {
+	padding: 3px 7px;
+	border-radius: 999px;
+	background: var(--bg-soft);
+	color: var(--muted);
+	font-size: 11px;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+}
+.category-pill.is-active .pill-count {
+	background: var(--accent);
+	color: #fff;
+}
+.bar-divider {
+	width: 1px;
+	height: 18px;
+	flex: none;
+	margin-inline: 4px;
+	background: var(--border);
+}
+
 /* sidebar */
 .sidebar {
 	display: grid;
@@ -773,6 +923,79 @@ html.dark .post-card:hover .post-title a {
 .cat-list .count {
 	color: var(--muted);
 	font-variant-numeric: tabular-nums;
+}
+/* 个人资料卡（§4.15）：头像 + 昵称 + 装饰条 + 简介 + 社交链接行 */
+.profile-card .profile-head {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+.profile-avatar-link {
+	flex: none;
+}
+.profile-avatar {
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 1px solid var(--border);
+}
+.profile-id {
+	display: grid;
+	gap: 7px;
+	min-width: 0;
+}
+.profile-name {
+	font-family: var(--font-display);
+	font-size: 17px;
+	font-weight: 700;
+	color: var(--ink);
+}
+a.profile-name:hover {
+	color: var(--accent-deep);
+}
+html.dark a.profile-name:hover {
+	color: var(--accent);
+}
+.profile-bar {
+	width: 20px;
+	height: 4px;
+	border-radius: 2px;
+	background: var(--accent);
+}
+.profile-bio {
+	margin-top: 12px;
+	font-size: 13.5px;
+	line-height: 1.7;
+	color: var(--ink-2);
+}
+.profile-links {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 14px;
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px dashed var(--border);
+}
+.profile-links a {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 13px;
+	color: var(--muted);
+	transition: color 0.15s;
+}
+.profile-links a:hover {
+	color: var(--accent-ink);
+}
+.profile-link-icon {
+	display: inline-flex;
+	width: 16px;
+	height: 16px;
+}
+.profile-link-icon svg {
+	width: 100%;
+	height: 100%;
 }
 .side-tags {
 	display: flex;
@@ -1078,6 +1301,21 @@ a.page-item:hover {
 .post-header .post-meta {
 	margin-top: 16px;
 }
+/* meta 区图标化（§4.14，参考 orchid-blog PostMeta）：图标 + 文本同行 */
+.post-meta .meta-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+}
+.post-meta .meta-item svg {
+	width: 14px;
+	height: 14px;
+	flex-shrink: 0;
+	opacity: 0.85;
+}
+.post-header-tags {
+	margin-top: 14px;
+}
 .article-cover {
 	position: relative;
 	margin: 0 0 36px;
@@ -1122,6 +1360,8 @@ a.page-item:hover {
 .prose {
 	font-size: 16.5px;
 	color: var(--ink);
+	/* 长英文词/URL 换行（§4.13）：防撑破窄屏容器 */
+	overflow-wrap: break-word;
 }
 .prose > * + * {
 	margin-top: 1em;
@@ -1243,8 +1483,12 @@ html.dark .code-head {
 	background: transparent !important;
 	color: #d6dbdf;
 }
+/* 宽表滚动容器化（§4.13）：display:block + overflow-x:auto，多列宽表窄屏内滚不撑破页面 */
 .prose table {
-	width: 100%;
+	display: block;
+	width: max-content;
+	max-width: 100%;
+	overflow-x: auto;
 	border-collapse: collapse;
 	font-size: 14.5px;
 }
@@ -2462,6 +2706,16 @@ html.dark .friend-card:hover .friend-name {
 	font-size: 12.5px;
 	color: var(--muted);
 }
+.footer-custom {
+	margin-top: 6px;
+	font-size: 12.5px;
+	color: var(--muted);
+}
+.footer-custom a {
+	color: inherit;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
 .footer-dim {
 	opacity: 0.75;
 }
@@ -2630,6 +2884,16 @@ html.dark .friend-card:hover .friend-name {
 	}
 }
 @media (max-width: 640px) {
+	/* 小屏留白收紧（§4.13）：24px 留白在窄屏占比过大 */
+	.shell {
+		padding-inline: 16px;
+	}
+	.post-body {
+		padding: 18px 18px 20px;
+	}
+	.side-card {
+		padding: 16px 18px;
+	}
 	.site-main {
 		padding-top: 24px;
 	}

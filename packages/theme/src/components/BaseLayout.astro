@@ -1,6 +1,7 @@
 ---
 import { ClientRouter } from "astro:transitions";
 import Analytics from "virtual:theme/components/Analytics.astro";
+import CategoryBar from "./CategoryBar.astro";
 import Footer from "virtual:theme/components/Footer.astro";
 import Header from "virtual:theme/components/Header.astro";
 import config from "virtual:theme/config";
@@ -23,7 +24,7 @@ const { h, s, l } = hexToHsl(config.accentColor);
 ---
 
 <!doctype html>
-<html lang={config.lang} style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%`} data-accent-h={h}>
+<html lang={config.lang} style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%`} data-accent-h={h} data-color-mode={config.colorMode}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -47,9 +48,10 @@ const { h, s, l } = hexToHsl(config.accentColor);
     {ogImage && Astro.site && <meta property="og:image" content={new URL(ogImage, Astro.site).href} />}
     <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
     <ClientRouter />
-    <!-- 深浅模式 boot：先于首帧执行防 FOUC；is:inline 在 VT swap 时不重复执行 -->
+    <!-- 深浅模式 boot：先于首帧执行防 FOUC；is:inline 在 VT swap 时不重复执行。
+         默认模式读 html[data-color-mode]（§4.16 colorMode），用户选择以 localStorage('qy-mode') 优先 -->
     <script is:inline>
-      (function(){var m=localStorage.getItem('qy-mode');if(m==='dark'||(!m&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
+      (function(){var m=localStorage.getItem('qy-mode');var d=document.documentElement.dataset.colorMode||'system';if(m==='dark'||(!m&&d==='dark')||(!m&&d==='system'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
     </script>
   </head>
   <!-- 客户端动态文案载体（i18n，M3b-b5）：app.ts 读取，VT swap 后随新 body 重建 -->
@@ -59,6 +61,8 @@ const { h, s, l } = hexToHsl(config.accentColor);
     <Header />
     <main id="main" class="site-main">
       <div class="shell">
+        <!-- 分类导航栏（§4.15）：categoryBar.enabled 开关，全站生效 -->
+        <CategoryBar />
         <slot />
       </div>
     </main>

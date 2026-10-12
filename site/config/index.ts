@@ -12,6 +12,7 @@ import { friendsConfig } from "./friendsConfig";
 import { galleryConfig } from "./galleryConfig";
 import { licenseConfig } from "./licenseConfig";
 import { navBarConfig } from "./navBarConfig";
+import { profileConfig } from "./profileConfig";
 import { sidebarConfig } from "./sidebarConfig";
 import { siteConfig } from "./siteConfig";
 import { sponsorConfig } from "./sponsorConfig";
@@ -26,8 +27,12 @@ export const themeConfig = {
 	since: siteConfig.since,
 	footerText: siteConfig.footerText,
 	pages: siteConfig.pages,
+	categoryBar: siteConfig.categoryBar,
+	colorMode: siteConfig.colorMode,
+	footer: siteConfig.footer,
 	nav: navBarConfig,
 	sidebar: sidebarConfig,
+	profile: profileConfig,
 	postList,
 	toc,
 	license: licenseConfig,
@@ -57,6 +62,7 @@ export {
 	licenseConfig,
 	navBarConfig,
 	postList,
+	profileConfig,
 	sidebarConfig,
 	siteConfig,
 	sponsorConfig,

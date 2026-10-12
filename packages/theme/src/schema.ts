@@ -57,6 +57,38 @@ export const themeConfigSchema = z.object({
 			enabled: z.boolean().default(true),
 		})
 		.default({ enabled: true }),
+	/** 分类导航栏（§4.15）：BaseLayout 全站顶部横条，关闭则不渲染 */
+	categoryBar: z
+		.object({
+			enabled: z.boolean().default(false),
+		})
+		.default({ enabled: false }),
+	/**
+	 * 个人资料卡（§4.15）：sidebar widgets 中 type:"profile" 时渲染。
+	 * 头像 + 昵称 + 简介 + 社交链接行；links[].icon 存内联 SVG 字符串。
+	 */
+	profile: z
+		.object({
+			/** 头像图 URL（留空渲染昵称首字 fallback） */
+			avatar: z.string().default(""),
+			name: z.string().default(""),
+			bio: z.string().default(""),
+			/** 点击头像/昵称跳转（如 /about/），留空则不包链接 */
+			url: z.string().default(""),
+			links: z
+				.array(
+					z.object({
+						name: z.string(),
+						url: z.string(),
+						/** 内联 SVG 字符串（经 set:html 渲染） */
+						icon: z.string().default(""),
+						/** true 时在图标旁显示名称文字 */
+						showName: z.boolean().default(false),
+					}),
+				)
+				.default([]),
+		})
+		.default({ avatar: "", name: "", bio: "", url: "", links: [] }),
 	/**
 	 * 相关/随机文章推荐（P1-12）：文章页 PostNav 后双栏卡。
 	 * 相关栏构建期评分（标签/标题 Jaccard + 时间新鲜度 + 同分类），候选排除加密文章；
@@ -116,17 +148,42 @@ export const themeConfigSchema = z.object({
 		}),
 	/** 建站日期（YYYY-MM-DD，站点信息卡「已运行」；不配置则不显示该行） */
 	since: z.string().optional(),
-	/** 顶部导航 */
+	/**
+	 * 顶部导航（§4.16 扩展）：item 可带 children 下拉与 external 外链标记；
+	 * 配了 children 时 href 可省略（父项仅作下拉入口，点击展开/收起）。
+	 */
 	nav: z
 		.array(
 			z.object({
 				label: z.string(),
-				href: z.string().url().or(z.string().startsWith("/")),
+				href: z.string().url().or(z.string().startsWith("/")).optional(),
+				/** true = 外部链接，新窗口打开 */
+				external: z.boolean().default(false),
+				children: z
+					.array(
+						z.object({
+							label: z.string(),
+							href: z.string().url().or(z.string().startsWith("/")),
+							external: z.boolean().default(false),
+						}),
+					)
+					.default([]),
 			}),
 		)
 		.default([]),
 	/** 页脚附加文案 */
 	footerText: z.string().default(""),
+	/** 页脚自定义 HTML（§4.16）：备案号等，经 set:html 渲染在页脚最底部 */
+	footer: z
+		.object({
+			customHtml: z.string().default(""),
+		})
+		.default({ customHtml: "" }),
+	/**
+	 * 默认深浅模式（§4.16）：仅作用户未选择时的初值，
+	 * 切换后以 localStorage('qy-mode') 为准。
+	 */
+	colorMode: z.enum(["light", "dark", "system"]).default("system"),
 	/** 独立页开关：关闭后主题不注入对应路由（路由完全不生成） */
 	pages: z
 		.object({
@@ -228,7 +285,7 @@ export const themeConfigSchema = z.object({
 	/**
 	 * 侧栏 widget 体系（P2 侧栏改造）：
 	 * - widgets 数组即渲染顺序，可自由增删/排序/开关；类型：
-	 *   announcement / categories / tags / friends / calendar / toc / siteInfo / advertisement
+	 *   announcement / categories / tags / friends / calendar / toc / siteInfo / advertisement / profile
 	 * - enabled=false 跳过该 widget；两个方向的显隐（对齐参考模板 showOnPostPage/hideOnNonPostPage）：
 	 *   showOnPost=false 仅列表页显示；postOnly=true 仅文章页侧栏显示（如 toc）
 	 * - onPost=false 时文章详情页不渲染侧栏（TOC 保持正文右侧原位）
@@ -242,15 +299,16 @@ export const themeConfigSchema = z.object({
 				.array(
 					z.object({
 						type: z.enum([
-							"announcement",
-							"categories",
-							"tags",
-							"friends",
-							"calendar",
-							"toc",
-							"siteInfo",
-							"advertisement",
-						]),
+						"announcement",
+						"categories",
+						"tags",
+						"friends",
+						"calendar",
+						"toc",
+						"siteInfo",
+						"advertisement",
+						"profile",
+					]),
 						enabled: z.boolean().default(true),
 						/** 文章页侧栏是否保留该 widget（false = 仅首页/列表页显示） */
 						showOnPost: z.boolean().default(true),

@@ -567,6 +567,41 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证**：dev 重启后 curl 断言——首页 canonical/rss alternate/theme-color ×2/og:site_name/og:locale 六项全中且无 read-progress，文章页 canonical 指向文章 URL、进度条元素与按钮 title 命中；`pnpm --filter site build` 回归通过（62 页），dist 产物复核（首页 meta 齐、`read-progress` 文章页 1 次/首页 0 次）。进度条滚动与按键交互的 browser 实测因 IDE 浏览器桥卡死（自动化窗口失焦致输入类事件不生效，导航等待拖垮桥接会话）未能完成，逻辑与已实测的 back-top/closeSearch/点击 toggle 同构，留待手动验证
 
+### 4.13 移动端自适应修复（✅ 2026-10-12 完成）
+
+针对「页面横向滚动/左右晃动」的四项修复（均 global.css）：
+
+- **横向滚动兜底**：`html, body` 加 `overflow-x: hidden`（旧浏览器回退）+ `overflow-x: clip`（clip 不产生滚动容器、不影响 sticky）
+- **宽表滚动容器化**：`.prose table` 改 `display: block + width: max-content + max-width: 100% + overflow-x: auto`，多列宽表窄屏内滚不撑破页面
+- **长词换行**：prose 区域 `overflow-wrap: break-word`，长英文词/URL 不再撑破窄屏容器
+- **小屏留白收紧**（≤640px）：`.shell` 24px→16px，`.post-body`/`.side-card`/`.site-main` 同步收紧
+
+### 4.14 文章 meta 区改造（✅ 2026-10-12 完成）
+
+参考 orchid-blog PostMeta，改造 `routes/posts/[...slug].astro` + global.css：
+
+- **meta 区图标化**：日期/更新时间/字数/时长/置顶/加密 各配 1.75 stroke 内联 SVG；`.post-meta.meta-icons` flex-wrap 自动换行适配窄屏
+- **标签行**：分类 chip 保持标题上方，标签 `#tag` chips 移至 meta 行下方（`.post-tags.post-header-tags`）
+- **字数/预计阅读时长**：取 remarkPluginFrontmatter 的 `words`/`minutes`（reading-time 插件），有值才渲染（i18n wordsCount/minutesCount）
+- **浏览量**：复用评论系统 pageview 能力——artalk/waline 由 SDK init 自动扫描填充选择器（`.artalk-pv-count`/`.waline-pageview-count`），twikoo 由 Twikoo.astro `getCommentsCount` 填充 `#twikoo_visitors`（与 orchid-blog 口径一致）；渲染条件 = 评论启用 + provider 支持计数 + 文章允许评论且未加密（评论不渲染时无数据来源）
+
+### 4.15 分类导航栏 + 个人资料组件（✅ 2026-10-12 完成）
+
+- **CategoryBar**（新组件）：`categoryBar.enabled` 开关（默认 false），挂 BaseLayout `.shell` 内 slot 之前全站生效；组件内自取 `getCollection("posts")` + `collectCategories` 聚合（仅取分类名与计数，不需 hydrate）；结构 = 首页 pill + 归档 pill + 分隔线 + 分类横向滚动区（pill + count 徽标）；激活态用 `Astro.url.pathname` 去尾斜杠后 SSR 判断（首页/归档/分类页），零 JS；i18n 两语言加 categoryNav
+- **Profile widget**（新）：schema 加顶层 `profile`（avatar/name/bio/url + links[]{name,url,icon,showName}，icon 为内联 SVG 字符串经 set:html 渲染）+ widgets 枚举加 `"profile"`；Sidebar 渲染 profile-head（头像 56px 圆形，留空渲染首字 fallback）+ profile-name/bar 装饰 + bio + profile-links（外链 target=_blank rel=noopener noreferrer）；三要素全空则整卡不渲染（默认 widgets 数组不含 profile，保持主题中性）
+- **site 演示**：新建 `site/config/profileConfig.ts`（name/bio/url + GitHub/邮箱/RSS 三链接），sidebarConfig widgets 首位加 `{type:"profile"}`，siteConfig 加 `categoryBar:{enabled:true}`
+
+### 4.16 配置补齐：nav 子菜单/外链 + footer 自定义 HTML + colorMode（✅ 2026-10-12 完成）
+
+对照 orchid-blog config 差距清单的 P0 三项（postList meta 细化留 P1；effects/music/pio/背景壁纸/keywords/随机封面/双侧栏等维持舍弃，见 §4.3）：
+
+- **nav 子菜单与外链**：nav item 加 `children[]`（label/href/external）与 `external` 标记；children 非空渲染下拉（父项有 href 渲染 a，无则渲染 button `.nav-sub-toggle`，href 可省略）；桌面 hover 纯 CSS 展开 + 无 href 父项点击 toggle `.open-sub`（app.ts 事件委托 + aria-expanded），移动端 ≤860px 静态内联展开；高亮 app.ts `initNavActive` 改「先清全部 `.nav-item.is-active` 再按子链接激活并传播父项」（防同容器内子链接遍历误删父项高亮）
+- **footer customHtml**：`footer.customHtml`（默认空串）经 set:html 渲染于 footer-sub 之后（备案号等合规信息刚需，内容安全由作者自担）；留空不渲染
+- **colorMode**：顶层枚举 `light/dark/system` 默认 system，作访客未手动选择时的初值——html `data-color-mode` 属性 → boot inline script 兜底（localStorage `qy-mode` 优先）→ app.ts applyPreferredDark 同源逻辑，三处一致防 FOUC/视图切换态不一致
+- **site 演示**：navBarConfig 改「首页/归档/标签/画廊 + 更多（children：关于/友链/留言板）」演示下拉与用法注释；siteConfig 加 `colorMode`/`footer` 散键并经 index.ts 组装
+
+**验证**：`pnpm --filter site build` 回归通过（62 页）；dev 重启后 12 项 curl 断言全过——`data-color-mode="system"`、`nav-item has-sub`/`nav-sub-toggle` DOM、下拉 3 子项、footer-custom 留空不渲染（dev 内联 CSS 规则名会污染类名 grep，须按 `<div class="footer-custom">` 元素匹配）、category-bar/profile 回归、首页/归档 pill 激活正确（注意 CategoryBar pill href 为无尾斜杠 `/archive`）
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

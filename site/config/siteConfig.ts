@@ -22,4 +22,15 @@ export const siteConfig = {
 		sponsor: true,
 		gallery: true,
 	},
+	// 分类导航栏（§4.15）：BaseLayout 全站顶部横条（首页/归档 + 分类滚动区）
+	categoryBar: {
+		enabled: true,
+	},
+	// 默认深浅模式（访客未手动切换时的初值）：light / dark / system
+	colorMode: "system",
+	// 页脚自定义 HTML（备案号等合规信息），留空不渲染；
+	// 示例：'<a href="https://beian.miit.gov.cn/" target="_blank">某ICP备xxxx号</a>'
+	footer: {
+		customHtml: "",
+	},
 };

@@ -1,7 +1,7 @@
 ---
 import config from "virtual:theme/config";
 
-const { title, author, footerText, since } = config;
+const { title, author, footerText, since, footer } = config;
 const now = new Date().getFullYear();
 const startYear = since ? parseInt(since.slice(0, 4), 10) : NaN;
 const yearLabel =
@@ -18,5 +18,7 @@ const yearLabel =
       Powered by Astro · Theme Orchid ·
       <a href="/rss.xml">RSS</a> / <a href="/sitemap.xml">Sitemap</a>
     </div>
+    {/* 页脚自定义 HTML（§4.16）：备案号等站点自有内容，作者自担内容安全 */}
+    {footer.customHtml && <div class="footer-custom" set:html={footer.customHtml} />}
   </div>
 </footer>

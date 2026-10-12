@@ -44,6 +44,20 @@ const twikooConfig = {
       }
       el.innerHTML = "";
       twikoo.init(twikooConfig);
+      // meta 区浏览量（§4.14）：getCommentsCount 填充头部 #twikoo_visitors（与 orchid-blog 口径一致）
+      var pv = document.getElementById("twikoo_visitors");
+      if (pv) {
+        twikoo
+          .getCommentsCount({
+            envId: twikooConfig.envId,
+            urls: [twikooConfig.path],
+            includeReply: false,
+          })
+          .then(function (r) {
+            pv.textContent = String((r && r[0] && r[0].count) || 0);
+          })
+          .catch(function () {});
+      }
     }
 
     initTwikoo();

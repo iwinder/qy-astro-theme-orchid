@@ -4,6 +4,11 @@ import { t } from "../i18n/index.js";
 
 const { title, nav } = config;
 
+/** 外链统一属性（§4.16）：新窗口 + noopener */
+function externalAttrs(external?: boolean) {
+	return external ? { target: "_blank", rel: "noopener noreferrer" } : {};
+}
+
 /** 内置页导航高亮 key（body[data-page] ↔ .nav-link[data-nav]） */
 function navKey(href: string): string | null {
 	if (href === "/") return "home";
@@ -28,9 +33,35 @@ const presetHues = [0, 30, 60, 100, 140, 170, 210, 250, 290, 330];
     <nav class="site-nav" id="siteNav" aria-label={t('mainNav')}>
       {
         nav.map((item) => {
-          const key = navKey(item.href);
+          const key = item.href ? navKey(item.href) : null;
+          /* 子菜单（§4.16）：父项有 href 则可点击跳转（hover 展开）；无 href 仅作下拉入口 */
+          if (item.children.length > 0) {
+            return (
+              <div class="nav-item has-sub">
+                {item.href ? (
+                  <a class="nav-link" data-nav={key ?? undefined} href={item.href} {...externalAttrs(item.external)}>
+                    {item.label}
+                  </a>
+                ) : (
+                  <button class="nav-link nav-sub-toggle" type="button" aria-expanded="false">
+                    {item.label}
+                  </button>
+                )}
+                <div class="nav-sub">
+                  {item.children.map((c) => {
+                    const ck = c.href ? navKey(c.href) : null;
+                    return (
+                      <a class="nav-sub-link" data-nav={ck ?? undefined} href={c.href} {...externalAttrs(c.external)}>
+                        {c.label}
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
           return (
-            <a class="nav-link" data-nav={key ?? undefined} href={item.href}>
+            <a class="nav-link" data-nav={key ?? undefined} href={item.href ?? '#'} {...externalAttrs(item.external)}>
               {item.label}
             </a>
           );

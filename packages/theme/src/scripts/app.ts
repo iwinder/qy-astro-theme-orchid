@@ -19,9 +19,13 @@ function applyPreferredDark() {
 	} catch {
 		/* ignore */
 	}
+	/* 未选择时回落到 colorMode 配置（§4.16，boot 脚本同源逻辑） */
+	const fallback = root.dataset.colorMode || "system";
 	const dark = mode
 		? mode === "dark"
-		: window.matchMedia("(prefers-color-scheme: dark)").matches;
+		: fallback === "dark" ||
+			(fallback === "system" &&
+				window.matchMedia("(prefers-color-scheme: dark)").matches);
 	root.classList.toggle("dark", dark);
 }
 applyPreferredDark();
@@ -220,9 +224,19 @@ function closeLb() {
 function initNavActive() {
 	const page = doc.body.getAttribute("data-page");
 	if (!page) return;
-	doc.querySelectorAll<HTMLElement>(".nav-link[data-nav]").forEach((link) => {
-		link.classList.toggle("is-active", link.getAttribute("data-nav") === page);
-	});
+	doc
+		.querySelectorAll<HTMLElement>(".nav-item.is-active")
+		.forEach((n) => n.classList.remove("is-active"));
+	doc
+		.querySelectorAll<HTMLElement>(
+			".nav-link[data-nav], .nav-sub-link[data-nav]",
+		)
+		.forEach((link) => {
+			const on = link.getAttribute("data-nav") === page;
+			link.classList.toggle("is-active", on);
+			/* 子链接激活时父项同步高亮（§4.16 子菜单） */
+			if (on) link.closest(".nav-item")?.classList.add("is-active");
+		});
 }
 
 function closeMobileNav() {
@@ -676,6 +690,18 @@ doc.addEventListener("click", (e) => {
 			const open = nav.classList.toggle("open");
 			target
 				.closest("#navToggle")!
+				.setAttribute("aria-expanded", open ? "true" : "false");
+		}
+		return;
+	}
+
+	/* nav 子菜单 toggle（§4.16）：无 href 的父项点击展开/收起 */
+	if (target.closest(".nav-sub-toggle")) {
+		const item = target.closest(".nav-item");
+		if (item) {
+			const open = item.classList.toggle("open-sub");
+			target
+				.closest(".nav-sub-toggle")!
 				.setAttribute("aria-expanded", open ? "true" : "false");
 		}
 		return;

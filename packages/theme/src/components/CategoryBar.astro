@@ -1,0 +1,53 @@
+---
+/**
+ * 分类导航栏（§4.15，参考 orchid-blog CategoryBar）：
+ * 全站顶部横条 = 首页 pill + 归档 pill + 分隔线 + 分类滚动区（pill 带计数）。
+ * 挂 BaseLayout（无 posts 上下文），组件内自行聚合分类；
+ * 仅取分类名与数量，不做 hydrate（那是为了 excerpt/words 等字段）。
+ * 激活态在构建期由 Astro.url.pathname 判断（SSG 每页 pathname 可用），零客户端 JS。
+ */
+import { getCollection } from "astro:content";
+import config from "virtual:theme/config";
+import { t } from "../i18n/index.js";
+import { collectCategories } from "../utils.js";
+
+const posts = await getCollection("posts", ({ data }) =>
+	import.meta.env.PROD ? !data.draft : true,
+);
+const cats = [...collectCategories(posts).entries()];
+
+// 统一去尾斜杠后比较（dev 与 prerender 的 pathname 尾斜杠行为一致化）
+const path = Astro.url.pathname.replace(/\/+$/, "");
+const isHome = path === "";
+const isArchive = path === "/archive";
+const isCategory = (name: string) =>
+	path === `/categories/${encodeURIComponent(name)}`;
+---
+
+{
+	config.categoryBar.enabled && (
+		<nav class="category-bar card reveal" aria-label={t("categoryNav")}>
+			<a class:list={["category-pill", { "is-active": isHome }]} href="/">
+				{t("home")}
+			</a>
+			<a
+				class:list={["category-pill", { "is-active": isArchive }]}
+				href="/archive"
+			>
+				{t("archive")}
+			</a>
+			<span class="bar-divider" aria-hidden="true" />
+			<div class="bar-scroll">
+				{cats.map(([name, list]) => (
+					<a
+						class:list={["category-pill", { "is-active": isCategory(name) }]}
+						href={`/categories/${encodeURIComponent(name)}/`}
+					>
+						{name}
+						<span class="pill-count">{list.length}</span>
+					</a>
+				))}
+			</div>
+		</nav>
+	)
+}

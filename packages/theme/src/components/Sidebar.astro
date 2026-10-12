@@ -38,6 +38,11 @@ const ann = config.announcement;
 const showAnnouncement = ann.content.trim() !== "";
 const annLink = Boolean(ann.link.text && ann.link.url);
 
+// 个人资料卡（§4.15）：头像/昵称/简介至少配一项才渲染
+const profile = config.profile;
+const showProfile = Boolean(profile.name || profile.avatar || profile.bio);
+const profileInitial = (profile.name || "?").trim().slice(0, 1) || "?";
+
 // 广告 widget（P2 保留项，默认关）：enabled + 至少一项内容 + 未过期才渲染
 const ad = config.advertisement;
 const adExpired = ad.expireDate ? new Date() > new Date(ad.expireDate) : false;
@@ -64,6 +69,52 @@ if (widgets.some((w) => w.type === "friends")) {
   {
     widgets.map((w) => (
       <>
+        {w.type === 'profile' && showProfile && (
+          <section class="side-card card reveal profile-card">
+            <div class="profile-head">
+              {profile.url ? (
+                <a class="profile-avatar-link" href={profile.url} aria-label={profile.name}>
+                  {profile.avatar ? (
+                    <img class="profile-avatar" src={profile.avatar} alt={profile.name} loading="lazy" />
+                  ) : (
+                    <span class="profile-avatar avatar-fallback">{profileInitial}</span>
+                  )}
+                </a>
+              ) : profile.avatar ? (
+                <img class="profile-avatar" src={profile.avatar} alt={profile.name} loading="lazy" />
+              ) : (
+                <span class="profile-avatar avatar-fallback">{profileInitial}</span>
+              )}
+              <div class="profile-id">
+                {profile.url ? (
+                  <a class="profile-name" href={profile.url}>{profile.name}</a>
+                ) : (
+                  <span class="profile-name">{profile.name}</span>
+                )}
+                <span class="profile-bar" aria-hidden="true" />
+              </div>
+            </div>
+            {profile.bio && <p class="profile-bio">{profile.bio}</p>}
+            {profile.links.length > 0 && (
+              <div class="profile-links">
+                {profile.links.map((lk) => {
+                  const external = /^https?:\/\//.test(lk.url);
+                  return (
+                    <a
+                      href={lk.url}
+                      target={external ? '_blank' : undefined}
+                      rel={external ? 'noopener noreferrer' : undefined}
+                      title={lk.name}
+                    >
+                      {lk.icon && <span class="profile-link-icon" set:html={lk.icon} />}
+                      {lk.showName && <span class="profile-link-name">{lk.name}</span>}
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+        )}
         {w.type === 'announcement' && showAnnouncement && (
           <section class="side-card card reveal" id="announcement">
             <h3>{ann.title}</h3>
