@@ -1,20 +1,25 @@
 ---
 /**
- * 评论适配层：按 config.comment.provider 分发到具体实现。
- * M3b-b2 先实现 Artalk；Twikoo/Waline/Giscus/Disqus 后续在分发区各加一个分支即可。
+ * 评论适配层：按 config.comment.provider 分发到具体实现（五套可切换）。
  * 站点可经 override 覆盖本组件整体替换评论区外观。
  */
 import config from "virtual:theme/config";
 import Artalk from "./comments/Artalk.astro";
+import Disqus from "./comments/Disqus.astro";
+import Giscus from "./comments/Giscus.astro";
+import Twikoo from "./comments/Twikoo.astro";
+import Waline from "./comments/Waline.astro";
 
 interface Props {
-	/** Artalk pageKey（与 orchid-blog 口径一致：/posts/<id>、/guestbook，均无尾斜杠） */
+	/** 各实现共享的页面路径（与 orchid-blog 口径一致：/posts/<id>、/guestbook，均无尾斜杠） */
 	path: string;
 	/** 页面级开关（文章传 frontmatter comment；缺省 true） */
 	enabled?: boolean;
+	/** Disqus 用页面标题（缺省回退 path） */
+	title?: string;
 }
 
-const { path, enabled = true } = Astro.props;
+const { path, enabled = true, title } = Astro.props;
 const c = config.comment;
 const active = enabled && c.enabled && c.provider !== "none";
 ---
@@ -24,6 +29,10 @@ const active = enabled && c.enabled && c.provider !== "none";
     <section class="comments reveal" id="comments">
       <h2 class="section-title">{c.title}</h2>
       {c.provider === 'artalk' && <Artalk path={path} />}
+      {c.provider === 'twikoo' && <Twikoo path={path} />}
+      {c.provider === 'waline' && <Waline path={path} />}
+      {c.provider === 'giscus' && <Giscus />}
+      {c.provider === 'disqus' && <Disqus path={path} title={title} />}
     </section>
   )
 }

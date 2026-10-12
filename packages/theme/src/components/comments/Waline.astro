@@ -1,0 +1,36 @@
+---
+/**
+ * Waline 评论实现（orchid-blog components/comment/Waline.astro 移植）。
+ * dark: 'html.dark' 由 Waline 自身监听根元素 class，无需 MutationObserver。
+ * VT 兼容：identical module 脚本换页不重跑（评论区 DOM 已随 swap 重建），
+ * data-astro-rerun 强制重新 init。
+ */
+import config from "virtual:theme/config";
+
+interface Props {
+	path: string;
+}
+
+const { path } = Astro.props;
+const w = config.comment.waline;
+const walineConfig = {
+	el: "#waline",
+	serverURL: w.serverURL,
+	path,
+	lang: w.lang,
+	dark: "html.dark",
+	wordLimit: [2, 300],
+	...(w.visitorCount ? { pageview: true } : {}),
+};
+---
+
+<div class="relative w-full">
+  <div id="waline"></div>
+
+  <link rel="stylesheet" href="https://unpkg.com/@waline/client@v3/dist/waline.css" />
+
+  <script is:inline type="module" data-astro-rerun define:vars={{ walineConfig }}>
+    const { init } = await import("https://unpkg.com/@waline/client@v3/dist/waline.js");
+    init(walineConfig);
+  </script>
+</div>

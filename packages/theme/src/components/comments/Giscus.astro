@@ -1,0 +1,50 @@
+---
+/**
+ * Giscus 评论实现（orchid-blog components/comment/Giscus.astro 移植）。
+ * 官方 Web Component 用法（esm.sh 动态 import，零 npm 依赖，静态输出兼容）。
+ * VT 兼容：合并进单个 inline module 并 data-astro-rerun——外部 identical 脚本
+ * 换页不重跑，observer 不会重建；await import 幂等（模块缓存，customElements
+ * 不会重复 define）。旧 MutationObserver 经 window 句柄清理，防泄漏。
+ */
+import config from "virtual:theme/config";
+
+const g = config.comment.giscus;
+---
+
+<giscus-widget
+  id="comments"
+  repo={g.repo}
+  repoId={g.repoId}
+  category={g.category}
+  categoryId={g.categoryId}
+  mapping={g.mapping}
+  strict={g.strict}
+  reactionsEnabled={g.reactionsEnabled}
+  emitMetadata={g.emitMetadata}
+  inputPosition={g.inputPosition}
+  theme="light"
+  lang={g.lang}
+  loading={g.loading}
+/>
+
+<script is:inline type="module" data-astro-rerun>
+  await import("https://esm.sh/giscus");
+
+  // 换页重跑时清理旧观察器，避免泄漏
+  if (window.__orchidGiscusObserver) window.__orchidGiscusObserver.disconnect();
+
+  function updateGiscusTheme() {
+    const widget = document.querySelector("giscus-widget");
+    if (widget) {
+      widget.setAttribute(
+        "theme",
+        document.documentElement.classList.contains("dark") ? "dark" : "light",
+      );
+    }
+  }
+  updateGiscusTheme();
+
+  const observer = new MutationObserver(updateGiscusTheme);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  window.__orchidGiscusObserver = observer;
+</script>

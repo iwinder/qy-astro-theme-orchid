@@ -1400,6 +1400,54 @@ html.dark .callout.success {
 }
 
 /* post footer */
+/* outdated-card（§4.11 文章过时提醒）：琥珀色警示调，与卡片设计语言一致 */
+.outdated-card {
+	margin-top: 36px;
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 14px 18px;
+	font-size: 13.5px;
+	line-height: 1.7;
+	color: hsl(30 22% 40%);
+	border: 1px solid hsl(38 55% 78%);
+	border-radius: var(--radius-sm);
+	background: hsl(40 60% 95%);
+}
+.outdated-icon {
+	flex: none;
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	border-radius: var(--radius-sm);
+	color: hsl(28 60% 42%);
+	background: hsl(38 70% 87%);
+}
+.outdated-line {
+	color: var(--muted);
+}
+.outdated-line strong,
+.outdated-days {
+	color: inherit;
+}
+.outdated-warning {
+	margin-top: 4px;
+	font-weight: 600;
+	color: hsl(28 55% 44%);
+}
+html.dark .outdated-card {
+	color: hsl(38 22% 74%);
+	border-color: hsl(38 25% 28%);
+	background: hsl(38 22% 15%);
+}
+html.dark .outdated-icon {
+	color: hsl(38 65% 72%);
+	background: hsl(38 25% 22%);
+}
+html.dark .outdated-warning {
+	color: hsl(38 65% 66%);
+}
 .license {
 	margin-top: 36px;
 	padding: 14px 18px;

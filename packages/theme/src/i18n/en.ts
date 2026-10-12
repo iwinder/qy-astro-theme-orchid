@@ -112,6 +112,9 @@ const en: Record<UiKey, string> = {
 	supportTitle: "Support",
 	supportDesc: "If this post helped you, consider sponsoring or sharing it.",
 	sponsorMe: "Sponsor",
+	lastModifiedPrefix: "Last updated on ",
+	lastModifiedDaysAgo: ", {days} days ago",
+	lastModifiedOutdated: "Some content may be outdated.",
 };
 
 export default en;

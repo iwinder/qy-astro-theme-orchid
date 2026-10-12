@@ -6,6 +6,7 @@ import BaseLayout from "virtual:theme/components/BaseLayout.astro";
 import Comment from "virtual:theme/components/Comment.astro";
 import EncryptedContent from "virtual:theme/components/EncryptedContent.astro";
 import License from "virtual:theme/components/License.astro";
+import OutdatedCard from "virtual:theme/components/OutdatedCard.astro";
 import PostNav from "virtual:theme/components/PostNav.astro";
 import RecommendedPost from "virtual:theme/components/RecommendedPost.astro";
 import Sidebar from "virtual:theme/components/Sidebar.astro";
@@ -101,6 +102,8 @@ const jsonLd = {
         <Content />
       )}
     </article>
+    {/* 过时提醒（§4.11）：许可卡之前展示；加密文章不渲染 */}
+    {!d.password && <OutdatedCard updated={d.updated ?? d.published} published={d.published} />}
     <License licenseName={d.licenseName} licenseUrl={d.licenseUrl} enabled={d.license} />
     <PostNav prev={prev ?? undefined} next={next ?? undefined} />
   {/* 支持卡（P2）：打赏入口 + 分享海报（share-poster.ts 仍按 #qy-share-btn 与 data-* 绑定） */}
@@ -146,7 +149,7 @@ const jsonLd = {
     )
   }
   {/* 加密文章不渲染评论（评论内容依赖正文上下文，明文评论区会破坏加密语义） */}
-  <Comment path={`/posts/${post.id}`} enabled={d.comment && !d.password} />
+  <Comment path={`/posts/${post.id}`} enabled={d.comment && !d.password} title={d.title} />
     </div>
     {/* 侧栏开关（P2）：onPost 时侧栏进右列，TOC 由侧栏 toc widget 承担；
         关闭侧栏时 TOC 保持正文右侧原位 */}

@@ -338,14 +338,16 @@ export const themeConfigSchema = z.object({
 			sponsors: [],
 		}),
 	/**
-	 * 评论系统（适配层分发：M3b-b2 先实现 Artalk，Twikoo/Waline/Giscus/Disqus 留扩展位）。
+	 * 评论系统（适配层分发，五套可切换：artalk/twikoo/waline/giscus/disqus）。
 	 * enabled=false 或 provider='none' 时页面完全不渲染评论区；
 	 * 文章另受 frontmatter comment 字段按篇控制。
 	 */
 	comment: z
 		.object({
 			enabled: z.boolean().default(false),
-			provider: z.enum(["none", "artalk"]).default("none"),
+			provider: z
+				.enum(["none", "artalk", "twikoo", "waline", "giscus", "disqus"])
+				.default("none"),
 			/** 评论区标题 */
 			title: z.string().default("评论"),
 			artalk: z
@@ -357,13 +359,106 @@ export const themeConfigSchema = z.object({
 					visitorCount: z.boolean().default(true),
 				})
 				.default({ server: "", locale: "zh-CN", visitorCount: true }),
+			twikoo: z
+				.object({
+					/** Twikoo 云函数/后端地址（Vercel/Netlify 部署 URL 或腾讯云环境 ID） */
+					envId: z.string().default(""),
+					/** 前端脚本地址（默认 npmmirror CDN，可换自部署或 jsdelivr） */
+					jsUrl: z
+						.string()
+						.default(
+							"https://registry.npmmirror.com/twikoo/1.7.13/files/dist/twikoo.min.js",
+						),
+					/** 自定义样式表（留空不加载） */
+					cssUrl: z.string().default(""),
+				})
+				.default({
+					envId: "",
+					jsUrl: "https://registry.npmmirror.com/twikoo/1.7.13/files/dist/twikoo.min.js",
+					cssUrl: "",
+				}),
+			waline: z
+				.object({
+					/** Waline 服务端地址（如 https://waline.example.com） */
+					serverURL: z.string().default(""),
+					lang: z.string().default("zh-CN"),
+					/** 文章访问量统计（Waline pageview） */
+					visitorCount: z.boolean().default(true),
+				})
+				.default({ serverURL: "", lang: "zh-CN", visitorCount: true }),
+			giscus: z
+				.object({
+					repo: z.string().default(""),
+					repoId: z.string().default(""),
+					category: z.string().default(""),
+					categoryId: z.string().default(""),
+					/** giscus.app 生成参数，默认值与官方一致 */
+					mapping: z.string().default("pathname"),
+					strict: z.string().default("0"),
+					reactionsEnabled: z.string().default("1"),
+					emitMetadata: z.string().default("0"),
+					inputPosition: z.string().default("top"),
+					lang: z.string().default("zh-CN"),
+					loading: z.string().default("lazy"),
+				})
+				.default({
+					repo: "",
+					repoId: "",
+					category: "",
+					categoryId: "",
+					mapping: "pathname",
+					strict: "0",
+					reactionsEnabled: "1",
+					emitMetadata: "0",
+					inputPosition: "top",
+					lang: "zh-CN",
+					loading: "lazy",
+				}),
+			disqus: z
+				.object({
+					/** Disqus shortname（站点 shortname.disqus.com） */
+					shortname: z.string().default(""),
+				})
+				.default({ shortname: "" }),
 		})
 		.default({
 			enabled: false,
 			provider: "none",
 			title: "评论",
 			artalk: { server: "", locale: "zh-CN", visitorCount: true },
+			twikoo: {
+				envId: "",
+				jsUrl: "https://registry.npmmirror.com/twikoo/1.7.13/files/dist/twikoo.min.js",
+				cssUrl: "",
+			},
+			waline: { serverURL: "", lang: "zh-CN", visitorCount: true },
+			giscus: {
+				repo: "",
+				repoId: "",
+				category: "",
+				categoryId: "",
+				mapping: "pathname",
+				strict: "0",
+				reactionsEnabled: "1",
+				emitMetadata: "0",
+				inputPosition: "top",
+				lang: "zh-CN",
+				loading: "lazy",
+			},
+			disqus: { shortname: "" },
 		}),
+	/**
+	 * 文章过时提醒（orchid-blog showLastModified/outdatedThreshold 对齐）。
+	 * 距最后更新（updated ?? published）超过 threshold 天时，文章页显示
+	 * 「最后更新」卡片与过时警告；天数由客户端计算（静态站构建期计算会随时间失效）。
+	 */
+	outdated: z
+		.object({
+			enabled: z.boolean().default(true),
+			/** 过期阈值（天）：距最后更新超过该天数才显示卡片 */
+			threshold: z.number().int().min(1).default(30),
+		})
+		.default({ enabled: true, threshold: 30 }),
 	/**
 	 * 侧栏公告（P1-17）。content 留空则整卡不渲染；
 	 * closable 仅前台隐藏（无持久化，刷新恢复）。

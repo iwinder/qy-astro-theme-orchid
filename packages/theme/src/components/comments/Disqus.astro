@@ -1,0 +1,43 @@
+---
+/**
+ * Disqus 评论实现（orchid-blog components/comment/Disqus.astro 移植）。
+ * identifier 口径与 orchid-blog 一致：post id（如 posts/<id>）、guestbook，
+ * 迁移后既有评论数据无缝延续；url = 站点域名 + path。
+ * VT 兼容：data-astro-rerun 重执行，注入前移除旧 embed 脚本防重复加载。
+ */
+import config from "virtual:theme/config";
+
+interface Props {
+	path: string;
+	/** 页面标题（Disqus 后台按 title 展示） */
+	title?: string;
+}
+
+const { path, title } = Astro.props;
+const shortname = config.comment.disqus.shortname;
+const siteHref = Astro.site?.href ?? "/";
+---
+
+<div id="disqus_thread"></div>
+
+<script is:inline data-astro-rerun define:vars={{ shortname, path, title, siteHref }}>
+  window.disqus_config = function () {
+    this.page.url = siteHref.replace(/\/$/, "") + path;
+    // 与 orchid-blog 口径一致：去首尾斜杠的 path（posts/<id>、guestbook）
+    this.page.identifier = path.replace(/^\/+|\/+$/g, "") || "index";
+    this.page.title = title || path;
+  };
+
+  // 换页重跑防护：移除旧 embed 脚本再注入
+  const old = document.getElementById("qy-disqus-embed");
+  if (old) old.remove();
+  const s = document.createElement("script");
+  s.id = "qy-disqus-embed";
+  s.src = `https://${shortname}.disqus.com/embed.js`;
+  s.setAttribute("data-timestamp", new Date().toString());
+  (document.head || document.body).appendChild(s);
+</script>
+
+<noscript>
+  请启用 JavaScript 以查看 <a href="https://disqus.com/?ref_noscript">Disqus 评论</a>。
+</noscript>

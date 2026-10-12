@@ -1,0 +1,51 @@
+---
+/**
+ * Twikoo 评论实现（orchid-blog components/comment/Twikoo.astro 移植）。
+ * path 口径与 Artalk 一致（/posts/<id>、/guestbook，无尾斜杠），迁移后既有评论数据无缝延续。
+ * VT 兼容：identical inline 脚本换页不重跑，data-astro-rerun 强制重执行；
+ * 脚本加载失败时的 500ms 重试链经 window 句柄清理，防重入叠加。
+ */
+import config from "virtual:theme/config";
+
+interface Props {
+	path: string;
+}
+
+const { path } = Astro.props;
+const tw = config.comment.twikoo;
+const twikooConfig = {
+	el: "#tcomment",
+	envId: tw.envId,
+	path,
+};
+---
+
+<div class="relative w-full">
+  <div id="tcomment"></div>
+
+  {tw.cssUrl && <link rel="stylesheet" href={tw.cssUrl} />}
+
+  <script is:inline src={tw.jsUrl}></script>
+
+  <script is:inline data-astro-rerun define:vars={{ twikooConfig }}>
+    // 换页重跑时清掉上次执行遗留的重试定时器，防叠加
+    if (window.__orchidTwikooTimer) {
+      clearTimeout(window.__orchidTwikooTimer);
+      window.__orchidTwikooTimer = undefined;
+    }
+
+    function initTwikoo() {
+      const el = document.getElementById("tcomment");
+      if (!el) return;
+      if (typeof twikoo === "undefined") {
+        // 脚本尚在加载，稍后重试
+        window.__orchidTwikooTimer = setTimeout(initTwikoo, 500);
+        return;
+      }
+      el.innerHTML = "";
+      twikoo.init(twikooConfig);
+    }
+
+    initTwikoo();
+  </script>
+</div>

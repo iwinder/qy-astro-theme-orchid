@@ -524,6 +524,27 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - 排障记录：dev HTML 断言 → 最小复现（remark-parse+remark-directive 纯管线）→ 属性形式二分 → micromark 源码状态机走查 + 注入日志定位 name 未在 `=` 退出 → 对比 unpkg 2.0.0/2.1.1 确认版本差异。期间 index.ts 曾漏挂官方 `remarkDirective`（容器指令失效），已补
 - 验证：features-demo 断言 GitHub 卡片 ×2（含 api.github.com 内联脚本/fetch-waiting/gc-description）、image-grid data-cols=4/2、callout info×2 + tip/success/quote/warn 各 1、自定义标题（`[!NOTE] xxx` 与 `:::tip[x]` 两形态）均渲染、无残留 `<github>` 字面标签；`pnpm build` 通过
 
+### 4.11 评论系统五套收官 + 文章过时提醒（✅ 2026-10-12 完成）
+
+兑现决策 3 的「留口」：补齐 Twikoo/Waline/Giscus/Disqus 四套实现，评论适配层五套（含 Artalk）全可切换；同步移植 orchid-blog 的文章过时提醒卡片。
+
+**评论四套组件**（`components/comments/{Twikoo,Waline,Giscus,Disqus}.astro` + `Comment.astro` 分发）
+- **Twikoo**：CSS link（`cssUrl` 非空才加载）+ external `jsUrl`（默认 npmmirror CDN 1.7.13）+ inline init；`typeof twikoo === "undefined"` 时 500ms 重试链（`window.__orchidTwikooTimer` 句柄，VT 重进先 clearTimeout 清旧定时器），init 前 `el.innerHTML = ""` 防重复挂载
+- **Waline**：unpkg `@waline/client@v3` CSS + inline module `await import(...waline.js)` 动态初始化；`dark: "html.dark"` 跟随主题暗色；`visitorCount` 开启时传 `pageview: true`
+- **Giscus**：`<giscus-widget>` 服务端渲染全部配置属性（repo/repoId/category/categoryId/mapping/strict/reactions/emitMetadata/inputPosition/lang/loading）；**esm.sh 版合并为单个 inline module**（`await import("https://esm.sh/giscus")` 幂等——模块缓存使 customElements.define 不重复执行）+ `data-astro-rerun`，MutationObserver 监听 `html.dark` 切 theme（`window.__orchidGiscusObserver` 句柄防泄漏）。对比 orchid 原版（external script + 独立观察器 inline）规避了 VT identical-script 去重导致观察器不重建的隐患
+- **Disqus**：`disqus_config` 三件套——`url = Astro.site.href 去尾斜杠 + path`、`identifier = path 去首尾斜杠 || "index"`（与 orchid 的 `removeFileExtension(post.id)` 迁移口径一致，posts/<id> 与 guestbook 通用）、`title` 透传文章标题；重进先移除旧 `#qy-disqus-embed` 再注入 embed.js
+- **分发层**：`Comment.astro` 按 `provider` 五路条件分发，新增可选 `title` prop（Disqus 用，缺省回退 path）；`[...slug].astro` 传 `title={d.title}`，guestbook 沿用 `path="/guestbook"` 不变
+- schema：provider 枚举扩为 6 值（含 none），四个子配置全部显式完整默认值字面量（Zod v4 `.default({})` 不解析内层默认值铁律）
+
+**过时提醒卡片**（`components/OutdatedCard.astro` + schema `outdated` section + i18n 三键）
+- 配置 `{ enabled: true, threshold: 30 }`：距最后更新（`updated ?? published`）超过 threshold 天才显示——与 orchid-blog `showLastModified/outdatedThreshold` 对齐
+- **天数必须客户端算**（静态站构建期计算会随访问时间失效）：构建期输出 `hidden` 卡片 + `data-date`（ISO）+ `data-threshold`；inline 脚本（`data-astro-rerun`）算 `daysDiff >= threshold` 才取消隐藏、填充天数文本、显示警告行
+- i18n 方案：`data-template` 服务端渲染模板进 DOM（`"，距今已过 {days} 天"`），客户端仅 `replace("{days}")`——绕开 `#qy-ui-labels` 载体扩展，三键（zh-CN/en）进 `t()` 体系
+- 位置：许可卡之前，`{!d.password && ...}` 加密文章不渲染；样式为琥珀色警示调卡片（icon 圆角块 + 警告行加重），明暗双模式
+- 显隐一律原生 `hidden` 属性（主题无全局 `.hidden` class，仅有 `.album-card.hidden`）
+
+**验证**：dev 重启（config 传递依赖不热更）逐 provider 断言——artalk（`#artalk` + Artalk.css）、twikoo（`#tcomment` + twikoo.min.js，artalk 0 残留）、waline（`#waline` + waline.css/js + serverURL 注入）、giscus（`<giscus-widget>` 全属性 + esm.sh import）、disqus（`#disqus_thread` + disqus_config 三件套 + embed 注入）全部命中后还原 artalk；过时卡片 browser 实测——2013 年旧文卡片显示、天数「4832 天」填充、警告行可见、computed style 琥珀色系生效，features-demo（30 天内）保持 hidden；`pnpm --filter site build` 回归通过（62 页）
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
@@ -532,7 +553,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M1.5 视觉原型** | 高保真 HTML 原型定视觉：首页/文章页/归档/标签/画廊/友链 + 暗色模式 + hue 调色演示 + 评论位 + 搜索浮层；确认后冻结设计令牌 | ✅ 完成 |
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
-| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；**M3b ✅ 完成（2026-10-11，b0-b9 九批次全过：P1 全部 + P2 保留 5 项，批次划分见 §4.2；b8 的 LQIP 占位已并入 b9）** |
+| **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；**M3b ✅ 完成（2026-10-11，b0-b9 九批次全过：P1 全部 + P2 保留 5 项，批次划分见 §4.2；b8 的 LQIP 占位已并入 b9）**；**评论五套收官 + 过时提醒 ✅ 补齐（2026-10-12，见 §4.11，决策 3 留口兑现）** |
 | **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | ✅ 完成（2026-10-11，实现记录见 §4.5；CI/Release 真实验证待 push） |
 
 ## 6. 决策记录（2026-10-11 确认）

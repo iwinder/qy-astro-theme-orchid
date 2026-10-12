@@ -129,6 +129,10 @@ const zhCN = {
 	supportTitle: "支持一下",
 	supportDesc: "如果这篇文章对你有帮助，欢迎打赏或分享。",
 	sponsorMe: "打赏支持",
+	/* 文章过时提醒 */
+	lastModifiedPrefix: "最后更新于 ",
+	lastModifiedDaysAgo: "，距今已过 {days} 天",
+	lastModifiedOutdated: "部分内容可能已过时，请注意信息时效。",
 } as const;
 
 export type UiKey = keyof typeof zhCN;
