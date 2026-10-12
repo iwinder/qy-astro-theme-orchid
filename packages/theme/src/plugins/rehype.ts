@@ -50,11 +50,31 @@ const CALLOUT_META: Record<
 	{ cls: string; title: string; icon: string }
 > = {
 	NOTE: { cls: "info", title: "注", icon: "info" },
+	INFO: { cls: "info", title: "信息", icon: "info" },
 	TIP: { cls: "tip", title: "技巧", icon: "tip" },
+	ABSTRACT: { cls: "tip", title: "摘要", icon: "tip" },
+	SUMMARY: { cls: "tip", title: "摘要", icon: "tip" },
+	TLDR: { cls: "tip", title: "摘要", icon: "tip" },
+	TODO: { cls: "tip", title: "待办", icon: "tip" },
 	IMPORTANT: { cls: "important", title: "重要", icon: "important" },
+	EXAMPLE: { cls: "important", title: "示例", icon: "important" },
 	WARNING: { cls: "warn", title: "注意", icon: "warn" },
 	CAUTION: { cls: "warn", title: "警告", icon: "warn" },
+	ATTENTION: { cls: "warn", title: "注意", icon: "warn" },
+	QUESTION: { cls: "warn", title: "问题", icon: "help" },
+	HELP: { cls: "warn", title: "帮助", icon: "help" },
+	FAQ: { cls: "warn", title: "问答", icon: "help" },
 	DANGER: { cls: "danger", title: "危险", icon: "danger" },
+	ERROR: { cls: "danger", title: "错误", icon: "x" },
+	FAILURE: { cls: "danger", title: "失败", icon: "x" },
+	FAIL: { cls: "danger", title: "失败", icon: "x" },
+	MISSING: { cls: "danger", title: "缺失", icon: "x" },
+	BUG: { cls: "danger", title: "缺陷", icon: "bug" },
+	SUCCESS: { cls: "success", title: "成功", icon: "check" },
+	CHECK: { cls: "success", title: "成功", icon: "check" },
+	DONE: { cls: "success", title: "完成", icon: "check" },
+	QUOTE: { cls: "quote", title: "引用", icon: "quote" },
+	CITE: { cls: "quote", title: "引用", icon: "quote" },
 };
 
 /** 与原型一致的 lucide 风格图标（stroke 1.75） */
@@ -65,6 +85,12 @@ const CALLOUT_ICONS: Record<string, string> = {
 		'<path d="M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41l-7.59-7.59a2.41 2.41 0 0 0-3.41 0z"/><path d="M12 8v4"/><path d="M12 16h.01"/>',
 	warn: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
 	danger: '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>',
+	check: '<path d="M20 6 9 17l-5-5"/>',
+	help: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+	x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+	bug: '<path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M6 13H2"/><path d="M3 21c0-2.1 1.7-3.9 3.8-4"/><path d="M20.97 5c0 2.1-1.6 3.8-3.5 4"/><path d="M22 13h-4"/><path d="M17.2 17c2.1.1 3.8 1.9 3.8 4"/>',
+	quote:
+		'<path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/>',
 };
 
 function iconSvg(name: string) {
@@ -88,9 +114,9 @@ function iconSvg(name: string) {
 }
 
 /**
- * GitHub 警告块语法：> [!NOTE] / TIP / IMPORTANT / WARNING / CAUTION / DANGER
+ * GitHub 警告块语法：> [!TYPE]（26 种别名，GFM alert + Obsidian callout 集合）
  * 转换为 <div class="callout {cls}"><svg class="co-icon"/><div><b>标题</b>…原内容</div></div>
- * 中文默认标题；WARNING/CAUTION 共用 warn 配色。
+ * 中文默认标题；[!TYPE] 同一行剩余文字作为自定义标题；语义相近的别名共用配色。
  */
 export function rehypeCallouts(): Transformer {
 	return (tree) => {
@@ -105,12 +131,28 @@ export function rehypeCallouts(): Transformer {
 			const firstText = first.children?.find((c: any) => c.type === "text");
 			if (!firstText) return;
 			const m = String(firstText.value).match(
-				/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION|DANGER)\][ \t]*\n?/i,
+				/^\[!(NOTE|INFO|TIP|ABSTRACT|SUMMARY|TLDR|TODO|IMPORTANT|EXAMPLE|WARNING|CAUTION|ATTENTION|QUESTION|HELP|FAQ|DANGER|ERROR|BUG|FAILURE|FAIL|MISSING|SUCCESS|CHECK|DONE|QUOTE|CITE)\][ \t]*\n?/i,
 			);
 			if (!m) return;
 			const meta = CALLOUT_META[m[1].toUpperCase()];
-			// 移除标记文本
-			firstText.value = String(firstText.value).slice(m[0].length);
+			// 移除标记文本；[!TYPE] 同一行剩余文字作为自定义标题（GitHub 语法）。
+			// 「无标题」时正则已吃掉换行（m[0] 以 \n 结尾），「有标题」时只吃到空格，
+			// 故以 m[0] 是否以 \n 结尾区分，避免把正文首行误当标题
+			const rest = String(firstText.value).slice(m[0].length);
+			let custom = "";
+			let bodyText = rest;
+			if (!m[0].endsWith("\n")) {
+				const nl = rest.indexOf("\n");
+				if (nl === -1) {
+					custom = rest.trim();
+					bodyText = "";
+				} else {
+					custom = rest.slice(0, nl).trim();
+					bodyText = rest.slice(nl + 1);
+				}
+			}
+			firstText.value = bodyText;
+			const title = custom || meta.title;
 			if (!firstText.value && first.children.length === 1) {
 				node.children = node.children.filter((c: any) => c !== first);
 			}
@@ -123,7 +165,7 @@ export function rehypeCallouts(): Transformer {
 						type: "element",
 						tagName: "b",
 						properties: {},
-						children: [{ type: "text", value: meta.title }],
+						children: [{ type: "text", value: title }],
 					},
 					...node.children,
 				],

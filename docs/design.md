@@ -499,6 +499,31 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - 验证：features-demo 结构恢复 `code-block → code-head(math) → katex-display`，提亮规则注入页面 ✓；theme-override 普通代码块不受影响（未触碰）✓；`pnpm build` 115 页无回归
 - 踩坑记录：改 rehype 插件后仅重启 dev server **不够**——Astro content store（`site/.astro/`）缓存旧渲染产物，须先删 `.astro/` 再重启（§7 已有备忘，本次实测再次命中）
 
+### 4.10 图片网格 + GitHub 仓库卡片 + callout 扩充（✅ 2026-10-12 完成）
+
+三特性移植自参考模板 orchid-blog 对应插件，同时补齐 Markdown 指令（directive）语法链路：
+
+**A1 图片网格 `[grid]`**（`remark-image-grid.ts` + global.css `.image-grid`）
+- 语法两形态：同段 `[grid] ![a](…) ![b](…) [/grid]`；跨段 `[grid]` 独行、图片段落若干、`[/grid]` 独行（未闭合原样输出不转换）
+- 列数 = 网格内图片数（上限 4，无图缺省 2），输出 `div.image-grid[data-cols="N"]`；布局由主题 CSS 按 `data-cols` 生成，不用参考模板的 tailwind 动态拼接类（`md:grid-cols-N` 在 node_modules symlink 源码中不可靠扫描）
+
+**A2 GitHub 仓库卡片**（`remark-directives.ts` + `rehype-github-card.ts` + global.css `.card-github/.gc-*`）
+- 语法：`::github{repo="user/repo"}`（leaf 指令，两个冒号）
+- 链路：remarkDirectives 将非 admonition 指令经 hastscript 转同名自定义标签 `<github repo="…">` → rehypeGithubCard walk 替换为 `a.card-github.fetch-waiting` 卡片骨架（titlebar + description + infobar）+ 内联脚本客户端 fetch `api.github.com` 回填 star/fork/描述；样式带 hover 反馈，fetch 失败降级显示仓库名
+
+**A3 callout 扩充至 26 种**（`remark-directives.ts` ADMONITION_TYPES）
+- GitHub 原生 6 种 + Obsidian 风格别名扩充（abstract/summary/tldr、success/check/done、question/help/faq、failure/missing/fail、danger/error/bug、example、quote/cite、info/todo 等），共用既有 5+2 配色（note/tip/success/question/warning + 引用系/危险系）
+- 容器指令双形态：`:::note` 无标题；`:::tip[自定义标题]` 带标题——统一在首段注入 `[!TYPE]` 标记后转 blockquote，**复用既有 rehypeCallouts 渲染**（含图标/配色/暗色模式），零重复实现
+
+**directive 三段处理链**（`index.ts` remarkPlugins，缺一不可）
+1. `remarkDirective`（官方 remark-directive）：`:::`/`::`/`:` 语法 → containerDirective/leafDirective/textDirective 节点
+2. `remarkDirectives`（自写分发）：26 种 admonition 容器 → blockquote + `[!TYPE]` 标记；其余指令 → `data.hName/hProperties` 同名自定义标签
+3. `rehypeGithubCard`：tagName==="github" → 仓库卡片
+
+**版本陷阱（重要踩坑）**：micromark-extension-directive@4.0.0 依赖 micromark-util-character `^2.0.0`，但 **2.0.0 的 `unicodePunctuation` 正则为 `/\p{P}/u`（不含 `\p{S}` 符号类）**——`=` 属 Sm 类不匹配，指令属性状态机 name 在 `=` 处不退出：带 `=` initializer 的属性（`repo="x/y"`、官方 README 例 `key="quoted value"`）全部解析失败回退段落；`{a=b}` 假象通过实为 name 吞掉整体。**2.1.x 起修复为 `/\p{P}|\p{S}/u`**。因 pnpm v11 的 `pnpm up` 不更新 transitive 依赖、overrides 也已迁出 package.json 的 `pnpm` 字段，最终在 **pnpm-workspace.yaml `overrides`** 锁 `micromark-util-character: ^2.1.1`（附注释防回退）
+- 排障记录：dev HTML 断言 → 最小复现（remark-parse+remark-directive 纯管线）→ 属性形式二分 → micromark 源码状态机走查 + 注入日志定位 name 未在 `=` 退出 → 对比 unpkg 2.0.0/2.1.1 确认版本差异。期间 index.ts 曾漏挂官方 `remarkDirective`（容器指令失效），已补
+- 验证：features-demo 断言 GitHub 卡片 ×2（含 api.github.com 内联脚本/fetch-waiting/gc-description）、image-grid data-cols=4/2、callout info×2 + tip/success/quote/warn 各 1、自定义标题（`[!NOTE] xxx` 与 `:::tip[x]` 两形态）均渲染、无残留 `<github>` 字面标签；`pnpm build` 通过
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

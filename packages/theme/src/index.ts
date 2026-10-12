@@ -25,9 +25,15 @@ import {
 	rehypeMermaid,
 	rehypePlantuml,
 } from "./plugins/rehype-diagram.js";
+import { rehypeGithubCard } from "./plugins/rehype-github-card.js";
 import { rehypeEmailProtection } from "./plugins/rehype-email.js";
 import { remarkMermaid, remarkPlantuml } from "./plugins/remark-diagram.js";
+// 官方解析器：把 :::container / ::leaf / :text 语法解析为 directive 节点，
+// 供 remarkDirectives 后处理（缺它则指令按字面文本渲染，卡片/容器全部失效）
+import remarkDirective from "remark-directive";
+import { remarkDirectives } from "./plugins/remark-directives.js";
 import { remarkExcerpt } from "./plugins/remark-excerpt.js";
+import { remarkImageGrid } from "./plugins/remark-image-grid.js";
 import { remarkReadingTime } from "./plugins/remark-reading-time.js";
 import { type ThemeConfig, themeConfigSchema } from "./schema.js";
 import {
@@ -71,8 +77,22 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 				//     报 "Cannot read properties of undefined (reading 'children')"，且与文档内容无关
 				// shiki：代码高亮（github-dark），替代 Expressive Code（零新依赖）
 				// 顶层 shikiConfig 由 Astro 传入 createRenderer(shikiConfig)，与 unified 处理器兼容
-				const remarkPlugins: any[] = [remarkReadingTime, remarkExcerpt];
+				const remarkPlugins: any[] = [
+					remarkReadingTime,
+					remarkExcerpt,
+					// [grid]…[/grid] 图片网格（§4.10）：聚合图片 → div.image-grid[data-cols=N]
+					remarkImageGrid,
+					// directive 处理链（§4.10，三段缺一不可）：
+					//   ① remarkDirective 官方解析器：:::note / ::github 语法 → directive 节点
+					//   ② remarkDirectives 后处理：26 种 admonition 容器 → blockquote +
+					//      [!TYPE] 标记（复用 rehypeCallouts 渲染）；其余指令 → 同名自定义标签
+					//   ③ rehypeGithubCard：github 标签 → 仓库卡片
+					remarkDirective,
+					remarkDirectives,
+				];
 				const rehypePlugins: any[] = [
+					// GitHub 仓库卡片（§4.10）：github 标签 → 卡片（自带 target，须在外链处理前）
+					rehypeGithubCard,
 					rehypeExternalLinks,
 					rehypeCallouts,
 					rehypeFigure,

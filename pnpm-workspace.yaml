@@ -9,3 +9,8 @@ storeDir: /Volumes/zhitai/Work/repositories/pnpm/store
 # mhchem 宏（import 'katex/contrib/mhchem'）才能对 rehype-katex 生效
 overrides:
   katex: ^0.19.0
+  # micromark-util-character@2.0.0 的 unicodePunctuation 正则缺 \p{S}，
+  # 导致 remark-directive 无法解析带 "=" initializer 的指令属性
+  # （如 ::github{repo="user/repo"}，"=" 属 Sm 类不匹配 /\p{P}/u）；
+  # 2.1.x 起修复为 /\p{P}|\p{S}/u，锁死升级防回退
+  micromark-util-character: ^2.1.1
