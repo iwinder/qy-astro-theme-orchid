@@ -30,6 +30,7 @@ export const themeConfig = {
 	categoryBar: siteConfig.categoryBar,
 	colorMode: siteConfig.colorMode,
 	footer: siteConfig.footer,
+	codeTheme: siteConfig.codeTheme,
 	nav: navBarConfig,
 	sidebar: sidebarConfig,
 	profile: profileConfig,

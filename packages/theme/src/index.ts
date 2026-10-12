@@ -75,8 +75,10 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 				//     千万不能 push remarkMermaid() 这种"已调用的 transformer"——unified freeze 时
 				//     会把数组元素当 attacher 再调用一次（第一参数 tree=undefined），
 				//     报 "Cannot read properties of undefined (reading 'children')"，且与文档内容无关
-				// shiki：代码高亮（github-dark），替代 Expressive Code（零新依赖）
-				// 顶层 shikiConfig 由 Astro 传入 createRenderer(shikiConfig)，与 unified 处理器兼容
+				// shiki：代码高亮双主题（§4.17，codeTheme 配置），替代 Expressive Code（零新依赖）
+				// 顶层 shikiConfig 由 Astro 传入 createRenderer(shikiConfig)，与 unified 处理器兼容。
+				// defaultColor: false → token 色不写死，输出 var(--shiki-light/-dark) CSS 变量，
+				// 由 global.css 按 html.dark 切换（与站点深浅模式同源，无 FOUC）
 				const remarkPlugins: any[] = [
 					remarkReadingTime,
 					remarkExcerpt,
@@ -144,7 +146,13 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 					},
 					markdown: {
 						processor: unified({ remarkPlugins, rehypePlugins }),
-						shikiConfig: { theme: "github-dark" },
+						shikiConfig: {
+							themes: {
+								light: config.codeTheme.light,
+								dark: config.codeTheme.dark,
+							},
+							defaultColor: false,
+						},
 					},
 				});
 

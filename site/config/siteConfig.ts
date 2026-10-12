@@ -33,4 +33,9 @@ export const siteConfig = {
 	footer: {
 		customHtml: "",
 	},
+	// 代码高亮双主题（§4.17）：Shiki 内置主题名，light/dark 跟随站点深浅模式
+	codeTheme: {
+		light: "github-light",
+		dark: "github-dark",
+	},
 };

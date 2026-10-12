@@ -53,6 +53,7 @@ const en: Record<UiKey, string> = {
 	archive: "Archive",
 	home: "Home",
 	categoryNav: "Category navigation",
+	more: "More",
 	totalPosts: "{n} posts in total",
 	postsInYear: "{n} posts",
 	yearUnit: "{n}",

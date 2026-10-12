@@ -184,6 +184,13 @@ export const themeConfigSchema = z.object({
 	 * 切换后以 localStorage('qy-mode') 为准。
 	 */
 	colorMode: z.enum(["light", "dark", "system"]).default("system"),
+	/** 代码高亮双主题（§4.17）：值为 Shiki 内置主题名，light/dark 跟随站点深浅模式切换 */
+	codeTheme: z
+		.object({
+			light: z.string().default("github-light"),
+			dark: z.string().default("github-dark"),
+		})
+		.default({}),
 	/** 独立页开关：关闭后主题不注入对应路由（路由完全不生成） */
 	pages: z
 		.object({

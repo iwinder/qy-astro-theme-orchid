@@ -602,6 +602,26 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证**：`pnpm --filter site build` 回归通过（62 页）；dev 重启后 12 项 curl 断言全过——`data-color-mode="system"`、`nav-item has-sub`/`nav-sub-toggle` DOM、下拉 3 子项、footer-custom 留空不渲染（dev 内联 CSS 规则名会污染类名 grep，须按 `<div class="footer-custom">` 元素匹配）、category-bar/profile 回归、首页/归档 pill 激活正确（注意 CategoryBar pill href 为无尾斜杠 `/archive`）
 
+### 4.17 代码高亮双主题（✅ 2026-10-12 完成）
+
+代码块 light/dark 跟随站点深浅模式（P1 备选池，替代原 §4.9 常驻深底方案）：
+
+- **方案**：Astro 内置 Shiki `shikiConfig: { themes: { light, dark }, defaultColor: false }`——token inline style 只写 `--shiki-light:#xxx;--shiki-dark:#yyy` 变量定义（不写 `color:`），由 CSS 按主题取值；与站点 `html.dark` 切换同源（无 FOUC）、零新依赖。orchid-blog 用 astro-expressive-code + JS 切 `data-theme`，不采用
+- **schema/config**：顶层 `codeTheme: { light: "github-light", dark: "github-dark" }`（值为 Shiki 内置主题名，schema 默认 github 系）；site 演示接线 siteConfig + index.ts 组装
+- **global.css**：`.prose .code-block pre span { color: var(--shiki-light) }` + `html.dark` 下 `color: var(--shiki-dark) !important`（!important 覆盖 inline 变量为切换所必需）；pre 自带 `--shiki-*-bg` 仍由 `background: transparent !important` 压回容器底；代码块容器/head/copy-btn/file/KaTeX 提亮全部双主题化（base=亮色值 + `html.dark` 覆盖=暗色值）——亮色底 `#f6f8fa` 浅底、暗色维持 `#101314` 深底
+- **教训**：`defaultColor: false` 下 shiki 不写 `color:` 属性，仅靠 `html.dark` 覆盖会让亮色 token 全部继承 pre 单色（语法高亮丢失）——首验即发现，补 `color: var(--shiki-light)` 亮色规则
+
+### 4.18 CategoryBar 溢出折叠进「更多」下拉（✅ 2026-10-12 完成）
+
+分类按屏幕宽度只展示放得下的一部分，放不下的收进「更多」下拉（orchid-blog 的「更多」实为固定跳转 `/categories/` 链接、溢出走横向滚动，按用户要求实现真折叠）：
+
+- **SSR 双份全量渲染**：滚动区 9 个 pill 与「更多」面板 9 个链接均带 `data-cat={name}` 关联；「更多」按钮/分割线默认 `display:none`——无 JS 时回落为整条横向滚动，完美降级
+- **客户端测量**（app.ts `initCategoryBar`）：逐 pill 判溢出（`p.getBoundingClientRect().right - scroll.getBoundingClientRect().left > scroll.clientWidth + 1`，不用 offsetLeft 避开 offsetParent 基准歧义）——溢出 pill 加 `.is-overflow` 隐藏、面板对应项解除 `.is-redundant` 隐藏；有溢出时 `.category-bar.has-more` 显形按钮；`document.fonts.ready` 后重测防字体加载误差；resize 监听经模块级 `catBarResize` 持引用先 remove 再 add（防 VT 换页重复注册泄漏）
+- **激活传播**：激活分类被收进面板时「更多」按钮同步 `.is-active`；面板交互与 nav 子菜单同模式（点击 toggle `.open-more` + aria-expanded，document 点击外部关闭）
+- **i18n**：zh-CN `more: "更多"` / en `more: "More"`
+
+**验证**：`pnpm --filter site build` 回归通过（62 页）；dev 重启（删 `site/.astro`）后 curl 断言全过——`bar-more`/`bar-more-toggle`/`bar-more-panel` DOM 存在、panel 9 个 `bar-more-link` 与 bar-scroll 9 个 pill 集合一致且 `data-cat`/href 对应（分类实际 9 个）、SSR DOM 无 `has-more`、`aria-expanded="false"` 初始、theme-override 页 17 个 token span 均带 `--shiki-light/-dark` 变量且 CSS 双规则注入。注意：新加的全局 shiki CSS 规则经 dev 内联会污染「页含 --shiki 字样」类断言（无代码块的 hello-world 也命中），token 断言须匹配 `<span style="...--shiki-light...">` 属性级格式
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

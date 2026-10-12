@@ -5,6 +5,9 @@
  * 挂 BaseLayout（无 posts 上下文），组件内自行聚合分类；
  * 仅取分类名与数量，不做 hydrate（那是为了 excerpt/words 等字段）。
  * 激活态在构建期由 Astro.url.pathname 判断（SSG 每页 pathname 可用），零客户端 JS。
+ * 溢出折叠（§4.18）：滚动区与「更多」面板均 SSR 全量渲染（pill 带 data-cat 关联），
+ * 客户端测量溢出——放不下的 pill 隐藏、对应面板项显示并亮出「更多」按钮；
+ * 无 JS 时「更多」不渲染，回落为整条横向滚动，完美降级。
  */
 import { getCollection } from "astro:content";
 import config from "virtual:theme/config";
@@ -41,12 +44,49 @@ const isCategory = (name: string) =>
 				{cats.map(([name, list]) => (
 					<a
 						class:list={["category-pill", { "is-active": isCategory(name) }]}
+						data-cat={name}
 						href={`/categories/${encodeURIComponent(name)}/`}
 					>
 						{name}
 						<span class="pill-count">{list.length}</span>
 					</a>
 				))}
+			</div>
+			{/* 溢出折叠（§4.18）：默认 display:none，JS 判定溢出后经 .has-more 显示 */}
+			<span class="bar-divider bar-more-divider" aria-hidden="true" />
+			<div class="bar-more">
+				<button
+					type="button"
+					class="category-pill bar-more-toggle"
+					aria-expanded="false"
+					aria-haspopup="true"
+				>
+					{t("more")}
+					<svg
+						class="bar-more-caret"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="1.75"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						aria-hidden="true"
+					>
+						<path d="m6 9 6 6 6-6" />
+					</svg>
+				</button>
+				<div class="bar-more-panel">
+					{cats.map(([name, list]) => (
+						<a
+							class:list={["bar-more-link", { "is-active": isCategory(name) }]}
+							data-cat={name}
+							href={`/categories/${encodeURIComponent(name)}/`}
+						>
+							{name}
+							<span class="pill-count">{list.length}</span>
+						</a>
+					))}
+				</div>
 			</div>
 		</nav>
 	)

@@ -63,6 +63,7 @@ const zhCN = {
 	archive: "归档",
 	home: "首页",
 	categoryNav: "分类导航",
+	more: "更多",
 	totalPosts: "共 {n} 篇文章",
 	postsInYear: "{n} 篇",
 	yearUnit: "{n} 年",
