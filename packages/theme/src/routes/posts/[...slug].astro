@@ -85,7 +85,6 @@ const jsonLd = {
     <div class="read-progress" id="readProgress" aria-hidden="true"></div>
     <div class="post-main">
   <header class="post-header reveal">
-    {d.category && <a class="chip" href={`/categories/${encodeURIComponent(d.category)}/`}>{d.category}</a>}
     <h1 class="post-title-lg" data-pagefind-body data-pagefind-weight="10" data-pagefind-meta="title">{d.title}</h1>
     {/* meta 区图标化（§4.14，参考 orchid-blog PostMeta）：flex-wrap 自动换行适配窄屏 */}
     <div class="post-meta meta-icons">
@@ -97,6 +96,24 @@ const jsonLd = {
         <span class="meta-item">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
           <time datetime={d.updated.toISOString()}>{formatDate(d.updated)}</time>
+        </span>
+      )}
+      {/* 分类/标签内联（§4.22，对齐 orchid-blog PostMeta）：跟随日期，不再分列标题上下 */}
+      {d.category && (
+        <span class="meta-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+          <a href={`/categories/${encodeURIComponent(d.category)}/`}>{d.category}</a>
+        </span>
+      )}
+      {d.tags.length > 0 && (
+        <span class="meta-item meta-tags-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/></svg>
+          {d.tags.map((tag, i) => (
+            <>
+              {i > 0 && <span class="tag-sep" aria-hidden="true">/</span>}
+              <a href={`/tags/${encodeURIComponent(tag)}/`}>{tag}</a>
+            </>
+          ))}
         </span>
       )}
       {words ? (
@@ -132,14 +149,6 @@ const jsonLd = {
         </span>
       )}
     </div>
-    {/* 标签行（§4.14）：分类 chip 在标题上方，标签 chips 置于 meta 行下方 */}
-    {d.tags.length > 0 && (
-      <div class="post-tags post-header-tags">
-        {d.tags.map((tag) => (
-          <a class="chip" href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>
-        ))}
-      </div>
-    )}
   </header>
   {
     d.image && (

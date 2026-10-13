@@ -1,7 +1,6 @@
 ---
 import { ClientRouter } from "astro:transitions";
 import Analytics from "virtual:theme/components/Analytics.astro";
-import CategoryBar from "./CategoryBar.astro";
 import Footer from "virtual:theme/components/Footer.astro";
 import Header from "virtual:theme/components/Header.astro";
 import config from "virtual:theme/config";
@@ -65,8 +64,6 @@ const { h, s, l } = hexToHsl(config.accentColor);
     <Header />
     <main id="main" class="site-main">
       <div class="shell">
-        <!-- 分类导航栏（§4.15）：categoryBar.enabled 开关，全站生效 -->
-        <CategoryBar />
         <slot />
       </div>
     </main>

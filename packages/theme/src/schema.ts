@@ -64,7 +64,7 @@ export const themeConfigSchema = z.object({
 			enabled: z.boolean().default(true),
 		})
 		.default({ enabled: true }),
-	/** 分类导航栏（§4.15）：BaseLayout 全站顶部横条，关闭则不渲染 */
+	/** 分类导航栏（§4.15→§4.21）：仅首页 post-list 顶部渲染（与置顶/近期文章同列宽），关闭则不渲染 */
 	categoryBar: z
 		.object({
 			enabled: z.boolean().default(false),

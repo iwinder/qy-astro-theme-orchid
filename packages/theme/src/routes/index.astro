@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import CategoryBar from "virtual:theme/components/CategoryBar.astro";
 import Pagination from "virtual:theme/components/Pagination.astro";
 import PostCard from "virtual:theme/components/PostCard.astro";
 import Sidebar from "virtual:theme/components/Sidebar.astro";
@@ -35,6 +36,8 @@ const [featuredPosts, pagePosts] = await Promise.all([
   }
   <div class="home-layout">
     <div class="post-list">
+      {/* 分类导航栏（§4.15→§4.21）：仅首页、与置顶/近期文章同列宽；「更多」固定跳分类页 */}
+      <CategoryBar />
       {featuredPosts.map((post) => <PostCard post={post} featured />)}
       <h2 class="section-title reveal">{t('recentPosts')}</h2>
       {

@@ -641,6 +641,26 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.19-4.20）**：`pnpm --filter site build` 回归通过（62 页）；dev 重启后 curl 断言全过——首页 meta keywords = 站点配置、hello-world 文章页 keywords = 「随笔」（该文 tags，覆盖生效）、header `<a class="site-title"><img class="nav-logo" src="/favicon.svg" alt="清言集">清言集</a>` 结构正确。再次踩 dev 坑：Astro dev 给元素加 `data-astro-source-*` 尾属性，DOM 断言正则不能假定 `href="/"` 是开标签末尾
 
+### 4.21 分类栏首页化 +「更多」固定链接（✅ 2026-10-13 完成）
+
+用户反馈两点：① 分类导航横跨全页宽度不合适，应在「置顶/近期文章」上面那一块（首页列宽内）；② 「更多」应始终显示且方便进入分类页面——即回到 orchid-blog 原版「更多 = 分类总览页入口」的语义。**§4.18 的折叠下拉方案整体废弃**：
+
+- **CategoryBar.astro**：删 `bar-more-toggle` 按钮与下拉面板结构，「更多」改为固定 `<a class="category-pill bar-more" href="/categories/">` + 箭头 svg，始终渲染、零客户端依赖；头注释同步 §4.21 行为（仅首页、横向滚动、全量分类见「更多」页）
+- **BaseLayout.astro**：移除 `import CategoryBar` 与 `.shell` 内渲染——分类栏不再全站全宽
+- **index.astro**：`home-layout > post-list` 顶部插入 `<CategoryBar />`，与置顶/近期文章同列宽（仅首页可见）
+- **溢出处理**：从折叠下拉改回横向滚动 + 右缘渐隐——`.bar-scroll` 天然可滚，`.is-scrollable` 时 `mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent)` 提示可滑（只作用于滚动区，不影响「更多」）
+- **app.ts**：删 toggle 委托分支与「点击外部关闭」整段；`initCategoryBar` 简化为 `scrollWidth > clientWidth + 1` 检测（`+1` 容差防亚像素抖动），toggle `.is-scrollable`；resize 监听存模块级引用防 VT 换页重复注册泄漏；`document.fonts.ready` 后重测（字体加载改变量宽）
+- **schema.ts**：`categoryBar` 注释同步「仅首页 post-list 顶部渲染」
+
+### 4.22 文章 meta 内联（✅ 2026-10-13 完成）
+
+用户反馈：分类/关键字不应「一个在上一个在下」，要像 orchid-blog PostMeta 一样跟在日期后面。对齐 orchid-blog 单行 flex-wrap 结构（置顶 → 日期 → 更新 → 分类 → 标签 → 其余）：
+
+- **posts/[...slug].astro** 三处：① 删标题上方分类 chip；② meta 行 updated 之后插入分类项（书图标 + 文字链接）与标签项（tag 图标 + 文字链接，多标签用 `tag-sep`（`/`）分隔，非逐个 chip）；③ 删 meta 行下方 `post-header-tags` 标签行
+- **global.css**：删 `.post-header-tags`；新增 `.post-meta .meta-item a`（`color:inherit` + hover 变 accent 色 + `white-space:nowrap`）、`.tag-sep`（muted 弱化）、`.meta-tags-item`（组内 `flex-wrap` + `row-gap:2px`，标签多时组内换行、整组仍作为一个 meta 项参与整行换行）
+
+**验证（§4.21-4.22）**：build 回归通过（62 页）；dev 重启（杀 4321 + 删 `.astro`）后 curl 断言 17 项全过——首页 bar 在 `post-list` 内且不在 shell 直下、「更多」为 `<a href="/categories/">` 非 button、SSR 无 `is-scrollable`（JS 运行时才加）、归档/分类页无 bar、文章页 post-header 内无 chip、无 `post-header-tags`、meta 行顺序 日期→分类「开始」→标签「随笔」正确。断言方法论沉淀：dev 尾属性须先整体剥离（`data-astro-source-*` + `<style>` 块）再断言；懒惰正则会跨项匹配导致位置比较失真，顺序断言用 `find()` 位置索引
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

@@ -707,27 +707,6 @@ doc.addEventListener("click", (e) => {
 		return;
 	}
 
-	/* 分类栏「更多」toggle（§4.18） */
-	if (target.closest(".bar-more-toggle")) {
-		const wrap = target.closest<HTMLElement>(".bar-more");
-		if (wrap) {
-			const open = wrap.classList.toggle("open-more");
-			target
-				.closest(".bar-more-toggle")!
-				.setAttribute("aria-expanded", open ? "true" : "false");
-		}
-		return;
-	}
-	/* 点击面板外部关闭已展开的「更多」下拉 */
-	doc.querySelectorAll<HTMLElement>(".bar-more.open-more").forEach((wrap) => {
-		if (!wrap.contains(target)) {
-			wrap.classList.remove("open-more");
-			wrap
-				.querySelector(".bar-more-toggle")
-				?.setAttribute("aria-expanded", "false");
-		}
-	});
-
 	/* back-top */
 	if (target.closest("#backTop")) {
 		window.scrollTo({ top: 0, behavior: "smooth" });
@@ -851,42 +830,20 @@ function initLqip() {
 	});
 }
 
-/* ---------- 分类栏溢出折叠（§4.18）：测量 .bar-scroll，放不下的 pill 收进「更多」面板 ---------- */
+/* ---------- 分类栏溢出渐隐（§4.21）：scrollWidth 溢出 → .is-scrollable 显右缘渐隐 ---------- */
 // 模块级保存 resize handler 引用：VT 换页重复 initPage 时先移除旧监听防泄漏
 const catBarResize: { fn?: () => void } = {};
 function initCategoryBar() {
 	const bar = doc.querySelector<HTMLElement>(".category-bar");
 	if (!bar) return;
 	const scroll = bar.querySelector<HTMLElement>(".bar-scroll");
-	const more = bar.querySelector<HTMLElement>(".bar-more");
-	if (!scroll || !more) return;
-	const pills = [...scroll.querySelectorAll<HTMLElement>(".category-pill")];
-	const links = [...more.querySelectorAll<HTMLElement>(".bar-more-link")];
-	if (pills.length === 0) return;
-	const linkByCat = new Map(links.map((l) => [l.dataset.cat ?? "", l]));
-	const toggle = more.querySelector<HTMLElement>(".bar-more-toggle");
+	if (!scroll) return;
 
 	const measure = () => {
-		// 重置后重测：滚动区全显、面板全隐（is-redundant），再按可用宽度收溢出项
-		pills.forEach((p) => p.classList.remove("is-overflow"));
-		links.forEach((l) => l.classList.add("is-redundant"));
-		const limit = scroll.clientWidth;
-		const left = scroll.getBoundingClientRect().left;
-		let hasMore = false;
-		for (const p of pills) {
-			if (p.getBoundingClientRect().right - left > limit + 1) {
-				hasMore = true;
-				p.classList.add("is-overflow");
-				linkByCat.get(p.dataset.cat ?? "")?.classList.remove("is-redundant");
-			}
-		}
-		bar.classList.toggle("has-more", hasMore);
-		// 激活分类被收进面板时，「更多」按钮同步高亮
-		toggle?.classList.toggle(
-			"is-active",
-			Boolean(
-				more.querySelector(".bar-more-link.is-active:not(.is-redundant)"),
-			),
+		// +1 容差防亚像素抖动；溢出时 CSS 右缘渐隐提示可横向滑动
+		bar.classList.toggle(
+			"is-scrollable",
+			scroll.scrollWidth > scroll.clientWidth + 1,
 		);
 	};
 	measure();

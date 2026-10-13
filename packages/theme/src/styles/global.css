@@ -898,82 +898,23 @@ html.dark .post-card:hover .post-title a {
 	background: var(--border);
 }
 
-/* 溢出折叠「更多」（§4.18）：滚动区与面板 SSR 全量渲染，JS 测量后——
-   溢出 pill 加 .is-overflow 隐藏、未溢出面板项加 .is-redundant 隐藏、
-   有溢出时 .category-bar.has-more 显示按钮与分割线；无 JS 回落横向滚动 */
-.bar-more-divider,
+/* 溢出横向滚动 + 右缘渐隐（§4.21，替代 §4.18 折叠下拉）：
+   app.ts 检测 scrollWidth 溢出后给 .category-bar 加 .is-scrollable，
+   mask 只作用于滚动区，让最后一个 pill 右缘淡出提示可滑；「更多」固定显示 */
 .bar-more {
-	display: none;
-}
-.category-bar.has-more .bar-more-divider {
-	display: block;
-}
-.category-bar.has-more .bar-more {
-	position: relative;
-	display: block;
 	flex: none;
 }
-.bar-more-toggle {
-	cursor: pointer;
-	border: 0;
-	background: none;
-	font: inherit;
-}
-.bar-more-toggle.is-active {
-	color: var(--accent-ink);
-	background: var(--accent-soft);
-}
-.bar-more-caret {
+.bar-more-arrow {
 	width: 14px;
 	height: 14px;
-	transition: transform 0.15s;
 }
-.bar-more.open-more .bar-more-caret {
-	transform: rotate(180deg);
-}
-.bar-more-panel {
-	position: absolute;
-	top: calc(100% + 8px);
-	right: 0;
-	z-index: 60;
-	display: none;
-	flex-direction: column;
-	min-width: 148px;
-	max-height: 320px;
-	overflow-y: auto;
-	padding: 6px;
-	border: 1px solid var(--border);
-	border-radius: var(--radius);
-	background: var(--card-bg);
-	box-shadow: var(--shadow);
-}
-.bar-more.open-more .bar-more-panel {
-	display: flex;
-}
-.bar-more-link {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	gap: 12px;
-	padding: 7px 10px;
-	border-radius: 8px;
-	font-size: 13.5px;
-	color: var(--ink-2);
-	white-space: nowrap;
-}
-.bar-more-link:hover {
-	background: var(--bg-soft);
-	color: var(--ink);
-}
-.bar-more-link.is-active {
-	color: var(--accent-ink);
-	background: var(--accent-soft);
-}
-.bar-more-link.is-redundant {
-	display: none;
-}
-.category-pill.is-overflow {
-	display: none;
+.category-bar.is-scrollable .bar-scroll {
+	-webkit-mask-image: linear-gradient(
+		to right,
+		#000 calc(100% - 36px),
+		transparent
+	);
+	mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent);
 }
 
 /* sidebar */
@@ -1401,8 +1342,24 @@ a.page-item:hover {
 	flex-shrink: 0;
 	opacity: 0.85;
 }
-.post-header-tags {
-	margin-top: 14px;
+/* 分类/标签内联链接（§4.22，对齐 orchid-blog）：文字链接 + 「/」分隔 */
+.post-meta .meta-item a {
+	color: inherit;
+	text-decoration: none;
+	white-space: nowrap;
+	transition: color 0.15s;
+}
+.post-meta .meta-item a:hover {
+	color: var(--accent-ink);
+}
+.post-meta .tag-sep {
+	color: var(--muted);
+	opacity: 0.6;
+}
+/* 标签较多时组内换行（行间收紧），整组仍作为一项参与 meta 行换行 */
+.post-meta .meta-tags-item {
+	flex-wrap: wrap;
+	row-gap: 2px;
 }
 .article-cover {
 	position: relative;
