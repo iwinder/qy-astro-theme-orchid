@@ -31,7 +31,8 @@ export const siteConfig = {
 		enabled: true,
 	},
 	// 默认深浅模式（访客未手动切换时的初值）：light / dark / system
-	colorMode: "system",
+	// as const 防止 TS 把 "system" 拓宽为 string（ThemeConfig["colorMode"] 是字面量联合）
+	colorMode: "system" as const,
 	// 页脚自定义 HTML（备案号等合规信息），留空不渲染；
 	// 示例：'<a href="https://beian.miit.gov.cn/" target="_blank">某ICP备xxxx号</a>'
 	footer: {
