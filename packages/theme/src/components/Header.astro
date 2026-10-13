@@ -2,7 +2,7 @@
 import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
 
-const { title, nav } = config;
+const { title, nav, logo } = config;
 
 /** 外链统一属性（§4.16）：新窗口 + noopener */
 function externalAttrs(external?: boolean) {
@@ -29,7 +29,11 @@ const presetHues = [0, 30, 60, 100, 140, 170, 210, 250, 290, 330];
 
 <header class="site-header">
   <div class="shell header-inner">
-    <a class="site-title" href="/">{title}</a>
+    {/* Logo（§4.20）：配置非空时标题左侧渲染，与文字同行 */}
+    <a class="site-title" href="/">
+      {logo && <img class="nav-logo" src={logo} alt={config.title} />}
+      {title}
+    </a>
     <nav class="site-nav" id="siteNav" aria-label={t('mainNav')}>
       {
         nav.map((item) => {

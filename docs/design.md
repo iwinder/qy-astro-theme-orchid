@@ -622,6 +622,25 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证**：`pnpm --filter site build` 回归通过（62 页）；dev 重启（删 `site/.astro`）后 curl 断言全过——`bar-more`/`bar-more-toggle`/`bar-more-panel` DOM 存在、panel 9 个 `bar-more-link` 与 bar-scroll 9 个 pill 集合一致且 `data-cat`/href 对应（分类实际 9 个）、SSR DOM 无 `has-more`、`aria-expanded="false"` 初始、theme-override 页 17 个 token span 均带 `--shiki-light/-dark` 变量且 CSS 双规则注入。注意：新加的全局 shiki CSS 规则经 dev 内联会污染「页含 --shiki 字样」类断言（无代码块的 hello-world 也命中），token 断言须匹配 `<span style="...--shiki-light...">` 属性级格式
 
+### 4.19 站点级 SEO keywords（✅ 2026-10-12 完成）
+
+配置缺失盘点（对照 orchid-blog 全部 22 个配置文件与 theme schema）后确认补齐的第一项（其余缺失项：favicon 配置化/归档折叠/导航样式开关/pageWidth 等按简约定位或约定路径替代不补，字体系统与 postList meta 细化维持 P1）：
+
+- **schema**：顶层 `keywords: string[]`（default `[]`）——非文章页注入 `<meta name="keywords">`，留空不输出
+- **BaseLayout**：Props 加 `keywords?: string[]`（默认 `config.keywords`），`keywords.length > 0` 才输出 meta；文章页传 `keywords={d.tags}` 覆盖（JSON-LD keywords 原本就是 tags，meta 现在与其对齐）
+- **site 演示**：siteConfig `keywords: ["技术", "生活", "博客", "Astro"]` + index.ts 组装
+
+### 4.20 导航栏 Logo（✅ 2026-10-12 完成）
+
+同盘点确认补齐的第二项（orchid-blog `navbar.logo` 支持 icon/本地图/网络图三类，主题保持简约只收图片 URL）：
+
+- **schema**：顶层 `logo: string`（default `""`，public 路径或外链），留空只渲染文字标题（向后兼容）
+- **Header.astro**：`.site-title` 内 `{logo && <img class="nav-logo" src alt={config.title} />}` 前置于标题文字，alt 复用站点名
+- **global.css**：`.site-title` 改 `inline-flex + align-items:center + gap:8px`（不同高度图片垂直居中）；`.nav-logo` 高 26px / 宽 auto / 圆角 5px / `flex:none`
+- **site 演示**：`logo: "/favicon.svg"`
+
+**验证（§4.19-4.20）**：`pnpm --filter site build` 回归通过（62 页）；dev 重启后 curl 断言全过——首页 meta keywords = 站点配置、hello-world 文章页 keywords = 「随笔」（该文 tags，覆盖生效）、header `<a class="site-title"><img class="nav-logo" src="/favicon.svg" alt="清言集">清言集</a>` 结构正确。再次踩 dev 坑：Astro dev 给元素加 `data-astro-source-*` 尾属性，DOM 断言正则不能假定 `href="/"` 是开标签末尾
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

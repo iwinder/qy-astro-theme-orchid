@@ -9,6 +9,13 @@ export const themeConfigSchema = z.object({
 	title: z.string(),
 	/** 站点描述（首页与 meta description 默认值） */
 	description: z.string().default(""),
+	/**
+	 * 站点级 SEO keywords（§4.19）：注入非文章页 <meta name="keywords">；
+	 * 文章页由 frontmatter tags 覆盖。留空则不输出该 meta。
+	 */
+	keywords: z.array(z.string()).default([]),
+	/** 导航栏 Logo（§4.20）：标题左侧图片 URL（public 路径或外链），留空只渲染文字标题 */
+	logo: z.string().default(""),
 	/** 作者名 */
 	author: z.string().default(""),
 	/**

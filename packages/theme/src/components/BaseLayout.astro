@@ -12,13 +12,15 @@ import "@windcoder/astro-theme-orchid/styles/global.css";
 interface Props {
 	title?: string;
 	description?: string;
+	/** meta keywords（§4.19）：默认站点级配置，文章页传 frontmatter tags 覆盖 */
+	keywords?: string[];
 	/** body[data-page]，驱动导航高亮（home/archive/tags/post...） */
 	page?: string;
 	/** OG 分享图路径（b9.4，文章页传 /og/<slug>.png）；绝对链接依赖站点 site 配置 */
 	ogImage?: string;
 }
 
-const { title, description = config.description, page, ogImage } = Astro.props;
+const { title, description = config.description, keywords = config.keywords, page, ogImage } = Astro.props;
 const pageTitle = title ? `${title} · ${config.title}` : config.title;
 const { h, s, l } = hexToHsl(config.accentColor);
 ---
@@ -31,6 +33,8 @@ const { h, s, l } = hexToHsl(config.accentColor);
     <meta name="generator" content={Astro.generator} />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    {/* keywords（§4.19）：非空才输出；文章页以 tags 覆盖站点级配置 */}
+    {keywords.length > 0 && <meta name="keywords" content={keywords.join(", ")} />}
     <meta name="author" content={config.author} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     {/* SEO 头部补全（§4.12）：canonical 防重复内容；RSS 供阅读器发现；theme-color 与 global.css :root 同步 */}

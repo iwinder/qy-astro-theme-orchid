@@ -4,6 +4,10 @@ export const siteConfig = {
 	siteUrl: "https://blog.example.com",
 	title: "清言集",
 	description: "写点技术，也写点生活。一个清新简约的博客。",
+	// 站点级 SEO keywords（§4.19）：非文章页 meta keywords；文章页由 tags 覆盖
+	keywords: ["技术", "生活", "博客", "Astro"],
+	// 导航栏 Logo（§4.20）：标题左侧图片（public 路径或外链），置空只渲染文字标题
+	logo: "/favicon.svg",
 	author: "windcoder",
 	accentColor: "#4a9d8f",
 	// 首页 hero：quote 支持 <em> 强调（强调色渲染），留空则整个 hero 不渲染

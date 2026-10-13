@@ -196,6 +196,16 @@ html.dark a:hover {
 	letter-spacing: 0.06em;
 	color: var(--ink);
 	white-space: nowrap;
+	/* Logo（§4.20）：随标题行内对齐，flex 居中保证不同高度图片垂直居中 */
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+.nav-logo {
+	width: auto;
+	height: 26px;
+	border-radius: 5px;
+	flex: none;
 }
 .site-title:hover {
 	color: var(--accent-deep);

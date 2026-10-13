@@ -77,7 +77,7 @@ const jsonLd = {
 };
 ---
 
-<BaseLayout title={d.title} description={d.description} page="post" ogImage={config.og.enabled ? `/og/${post.id}.png` : undefined}>
+<BaseLayout title={d.title} description={d.description} keywords={d.tags} page="post" ogImage={config.og.enabled ? `/og/${post.id}.png` : undefined}>
   {/* 左右两栏布局（对齐参考模板）：标题/封面/正文/许可/上下篇/支持卡/推荐/评论全部收进正文列，
       侧栏（或 TOC）独占右列；≤767px 退化为单列堆叠 */}
   <div class="post-layout">

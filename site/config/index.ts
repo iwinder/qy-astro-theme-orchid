@@ -28,6 +28,8 @@ export const themeConfig = {
 	footerText: siteConfig.footerText,
 	pages: siteConfig.pages,
 	categoryBar: siteConfig.categoryBar,
+	keywords: siteConfig.keywords,
+	logo: siteConfig.logo,
 	colorMode: siteConfig.colorMode,
 	footer: siteConfig.footer,
 	codeTheme: siteConfig.codeTheme,
