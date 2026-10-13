@@ -11,16 +11,17 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 	onPost: true,
 	widgets: [
 		// 个人资料卡（§4.15）：内容见 profileConfig.ts
-		{ type: "profile" },
-		{ type: "announcement" },
-		{ type: "categories" },
-		{ type: "tags" },
-		{ type: "friends" },
-		{ type: "calendar" },
+		// 每个 widget 的 enabled（默认 true）：置 false 后该组件在所有页面（列表页+文章页）都不渲染
+		{ type: "profile", enabled: true },
+		{ type: "announcement", enabled: true },
+		{ type: "categories", enabled: true },
+		{ type: "tags", enabled: true },
+		{ type: "friends", enabled: true },
+		{ type: "calendar", enabled: true },
 		// toc 仅文章页侧栏渲染（列表页无目录可展示）
-		{ type: "toc", postOnly: true },
-		{ type: "siteInfo" },
-		{ type: "advertisement" },
+		{ type: "toc", postOnly: true, enabled: true },
+		{ type: "siteInfo", enabled: true },
+		{ type: "advertisement", enabled: true },
 	],
 	friends: { count: 3, random: false },
 };

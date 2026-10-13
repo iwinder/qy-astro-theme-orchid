@@ -661,6 +661,30 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.21-4.22）**：build 回归通过（62 页）；dev 重启（杀 4321 + 删 `.astro`）后 curl 断言 17 项全过——首页 bar 在 `post-list` 内且不在 shell 直下、「更多」为 `<a href="/categories/">` 非 button、SSR 无 `is-scrollable`（JS 运行时才加）、归档/分类页无 bar、文章页 post-header 内无 chip、无 `post-header-tags`、meta 行顺序 日期→分类「开始」→标签「随笔」正确。断言方法论沉淀：dev 尾属性须先整体剥离（`data-astro-source-*` + `<style>` 块）再断言；懒惰正则会跨项匹配导致位置比较失真，顺序断言用 `find()` 位置索引
 
+### 4.23 分类栏文章页可见（✅ 2026-10-13 完成）
+
+用户反馈分类导航在文章页面也要能看到。对齐 §4.21 位置语义（不全宽、与正文同列宽），而非恢复 BaseLayout 全站横条：
+
+- **posts/[...slug].astro**：`.post-main` 顶部（post-header 之前）插入 `<CategoryBar />` + 补 import——与首页 post-list 顶部位置对等；文章页激活态由组件内 `Astro.url.pathname` 构建期判断自动命中当前分类 pill；加密文章同样渲染（纯导航无泄漏风险）
+- **schema.ts**：`categoryBar` 注释同步「首页 post-list 与文章页 post-main 顶部渲染……关闭则全站不渲染」；CategoryBar.astro 零改动（`config.categoryBar.enabled` 判断内置）
+- 范围保持：归档/分类/标签等列表页仍不渲染 bar（用户仅要求文章页）
+
+### 4.24 首页移动端横向溢出修复（✅ 2026-10-13 完成）
+
+用户反馈首页移动端等小窗口未自适应，分类导航栏与文章列表过长导致横向滚动。**根因：grid 隐式下限**——`.home-layout` 单列断点（≤1024px）写裸 `grid-template-columns: 1fr`，`1fr` 等价 `minmax(auto, 1fr)`，轨道下限是被容内容 min-content：分类栏 pill（`white-space:nowrap`、`flex:none`）与文章卡内容把轨道撑到视口宽之外 → 整页横向滚动（双列断点早已是 `minmax(0,1fr) 280px`，故桌面无此问题）。
+
+- **global.css**：`.home-layout` 单列改 `grid-template-columns: minmax(0, 1fr)` + 注释。修复链闭环：轨道下限归零后，bar 内 `.bar-scroll`（`flex:1; min-width:0; overflow-x:auto`）收缩为内部横向滚动，`.post-card`（`min-width:0 + overflow:hidden`）正常截断
+- **同类项排查**（均已有防护，无需改）：`.post-layout` 单列已是 `minmax(0,1fr)` + `.post-main` 有 `min-width:0`；`.post-meta`/`.post-tags` 均 `flex-wrap`；`.related-title/desc` 的 nowrap 配 `overflow:hidden + text-overflow`；`.pagination` 项数少无 nowrap
+- 浏览器实测尝试：Exec 沙箱内 browser 工具静默失败（无输出无异常），回退 CSS 静态审计 + min-content 机制推演定位根因，dev 断言验证修复落盘
+
+### 4.25 侧边栏组件开关显式化（✅ 2026-10-13 完成）
+
+用户要求侧边栏每个组件像 orchid-blog 一样有启用开关、关闭后任何页面不展示。**能力确认已存在**（§4.15 起）：schema `sidebar.widgets[]` 每项 `enabled`（默认 `true`）/`showOnPost`（默认 `true`）/`postOnly`（默认 `false`）三开关，Sidebar.astro 过滤 `w.enabled && (isPost ? w.showOnPost : !w.postOnly)`——`enabled: false` 即列表页+文章页全站不渲染。本节仅做配置显式化：
+
+- **site/config/sidebarConfig.ts**：9 个 widget 全部显式写出 `enabled: true` + 逐项注释说明「置 false 后该组件在所有页面都不渲染」，向使用者直观暴露开关能力
+
+**验证（§4.23-4.25）**：build 回归通过（62 页）；dev 重启后 curl 断言 12 项全过——首页 bar 在 post-list 内 + sidebar profile 卡（`side-card … profile-card`）在、hello-world 文章页 bar 在 post-main 内且在 post-header 之前 + 「更多」链接在、加密文章页 bar 在、归档页无 bar、源码 `.home-layout` 单列为 `minmax(0,1fr)`。断言修正两处：profile 卡实际 class 是 `profile-card` 非 `widget-profile`；`post-header` 需按 `<header class="post-header` 前缀匹配（带 reveal 后缀）
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

@@ -679,7 +679,8 @@ html.dark .btn:hover {
 
 .home-layout {
 	display: grid;
-	grid-template-columns: 1fr;
+	/* minmax(0,1fr)（§4.24）：单列下限归零，防分类栏/文章卡等宽内容撑破轨道产生横向滚动 */
+	grid-template-columns: minmax(0, 1fr);
 	gap: 32px;
 	align-items: start;
 }

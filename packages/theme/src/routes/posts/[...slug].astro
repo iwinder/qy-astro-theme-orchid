@@ -3,6 +3,8 @@ import { getCollection, render } from "astro:content";
 // KaTeX 样式：文章页独占加载（构建期渲染无客户端 JS，仅此一份 CSS）
 import "katex/dist/katex.min.css";
 import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+// 分类导航栏（§4.23）：文章页主列顶部渲染（对齐首页 post-list 顶部位置，同列宽不全宽）
+import CategoryBar from "virtual:theme/components/CategoryBar.astro";
 import Comment from "virtual:theme/components/Comment.astro";
 import EncryptedContent from "virtual:theme/components/EncryptedContent.astro";
 import License from "virtual:theme/components/License.astro";
@@ -84,6 +86,8 @@ const jsonLd = {
     {/* 阅读进度条（§4.12）：仅文章页渲染，app.ts 滚动驱动 scaleX */}
     <div class="read-progress" id="readProgress" aria-hidden="true"></div>
     <div class="post-main">
+    {/* 分类导航栏（§4.23）：主列顶部，与首页 post-list 顶部位置对等；enabled 关闭时组件自不渲染 */}
+    <CategoryBar />
   <header class="post-header reveal">
     <h1 class="post-title-lg" data-pagefind-body data-pagefind-weight="10" data-pagefind-meta="title">{d.title}</h1>
     {/* meta 区图标化（§4.14，参考 orchid-blog PostMeta）：flex-wrap 自动换行适配窄屏 */}
