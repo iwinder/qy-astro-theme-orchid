@@ -707,6 +707,18 @@ doc.addEventListener("click", (e) => {
 		return;
 	}
 
+	/* 归档按年折叠（§4.30）：点击年份头切换该年时间线显隐 */
+	if (target.closest(".archive-year")) {
+		const btn = target.closest(".archive-year") as HTMLElement;
+		const timeline = btn.closest(".timeline");
+		if (timeline) {
+			// toggle 返回 true = 加了 fold 类 = 已收起
+			const collapsed = timeline.classList.toggle("fold");
+			btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+		}
+		return;
+	}
+
 	/* back-top */
 	if (target.closest("#backTop")) {
 		window.scrollTo({ top: 0, behavior: "smooth" });

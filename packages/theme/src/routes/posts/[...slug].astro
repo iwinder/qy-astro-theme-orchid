@@ -24,21 +24,69 @@ export async function getStaticPaths() {
 		import.meta.env.PROD ? !data.draft : true,
 	);
 	const sorted = getSortedPosts(all);
+
+	// 专题索引（§4.31）：series → 组内按 seriesOrder 升序（未配置排最后），同序按发布时间升序
+	const seriesGroups = new Map<string, typeof sorted>();
+	for (const post of sorted) {
+		const name = post.data.series;
+		if (!name) continue;
+		const list = seriesGroups.get(name);
+		if (list) list.push(post);
+		else seriesGroups.set(name, [post]);
+	}
+	const seriesSorted = new Map<string, typeof sorted>();
+	for (const [name, list] of seriesGroups) {
+		seriesSorted.set(
+			name,
+			[...list].sort((a, b) => {
+				const oa = a.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
+				const ob = b.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
+				if (oa !== ob) return oa - ob;
+				return a.data.published.getTime() - b.data.published.getTime();
+			}),
+		);
+	}
+
 	// sorted 内 idx+1 为更早一篇（prev），idx-1 为更新一篇（next）
-	return sorted.map((post, idx) => ({
-		params: { slug: post.id },
-		props: {
-			post,
-			prev: sorted[idx + 1] ?? null,
-			next: sorted[idx - 1] ?? null,
-			related: getRelatedPosts(sorted, post, config.relatedPosts.count),
-			// 文章页侧栏（P2）的聚合数据源
-			posts: sorted,
-		},
-	}));
+	return sorted.map((post, idx) => {
+		// 专题导航（§4.31）：当前篇在专题内的位置 + 完整目录
+		let seriesInfo: {
+			name: string;
+			total: number;
+			cur: number;
+			items: { title: string; id: string; cur: boolean }[];
+		} | null = null;
+		const sName = post.data.series;
+		if (sName) {
+			const list = seriesSorted.get(sName)!;
+			const sIdx = list.findIndex((p) => p.id === post.id);
+			seriesInfo = {
+				name: sName,
+				total: list.length,
+				cur: sIdx + 1,
+				items: list.map((p, i) => ({
+					title: p.data.title,
+					id: p.id,
+					cur: i === sIdx,
+				})),
+			};
+		}
+		return {
+			params: { slug: post.id },
+			props: {
+				post,
+				prev: sorted[idx + 1] ?? null,
+				next: sorted[idx - 1] ?? null,
+				related: getRelatedPosts(sorted, post, config.relatedPosts.count),
+				// 文章页侧栏（P2）的聚合数据源
+				posts: sorted,
+				seriesInfo,
+			},
+		};
+	});
 }
 
-const { post, prev, next, related, posts } = Astro.props;
+const { post, prev, next, related, posts, seriesInfo } = Astro.props;
 const d = post.data;
 const { Content, headings, remarkPluginFrontmatter } = await render(post);
 const { words, minutes } = remarkPluginFrontmatter as {
@@ -160,6 +208,40 @@ const jsonLd = {
         <div class="qy-lqip" style={getLqipStyle(d.image)} aria-hidden="true"></div>
         <img src={d.image} alt={d.title} loading="eager" data-lqip />
       </figure>
+    )
+  }
+  {/* 专题导航卡（§4.31）：正文之前出专题目录，当前篇高亮不可点 */}
+  {
+    seriesInfo && (
+      <nav class="series-nav card reveal" aria-label={t('seriesCatalog')}>
+        <div class="series-nav-head">
+          <span class="series-nav-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>
+            {seriesInfo.name}
+          </span>
+          <span class="series-nav-progress">
+            <a href={`/series/${encodeURIComponent(seriesInfo.name)}/`}>{t('seriesCatalog')}</a>
+            <span class="series-nav-count">{t('seriesProgress', { cur: seriesInfo.cur, total: seriesInfo.total })}</span>
+          </span>
+        </div>
+        <ol class="series-nav-list">
+          {seriesInfo.items.map((item, i) => (
+            <li class:list={["series-nav-item", { cur: item.cur }]}>
+              {item.cur ? (
+                <span class="series-nav-row">
+                  <span class="series-nav-idx">{i + 1}</span>
+                  <span class="series-nav-label">{item.title}</span>
+                </span>
+              ) : (
+                <a class="series-nav-row" href={`/posts/${item.id}/`}>
+                  <span class="series-nav-idx">{i + 1}</span>
+                  <span class="series-nav-label">{item.title}</span>
+                </a>
+              )}
+            </li>
+          ))}
+        </ol>
+      </nav>
     )
   }
     {/* data-pagefind-body（M3b-b6）：限定 Pagefind 只索引标题与正文（h1 在 article 外，双 body 标记） */}

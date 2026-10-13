@@ -695,6 +695,35 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.26）**：dev 重启后 curl 断言全过——`<html lang="zh-CN">`、nav 含「文章」下拉（归档/分类/标签）、文章页 `og:image` 指向 `/og/hello-world.png`；`pnpm --filter site build` 通过（og 路由生成 7 张分享图、0 error）
 
+### 4.27 导航父项 chevron 标识（✅ 2026-10-14 完成）
+
+对齐 orchid-blog：有子菜单的父项文字后加下拉标识。**Header.astro** 两个父项渲染分支（`<a class="nav-link">` 与 `<button class="nav-link nav-sub-toggle">`）label 后内联 chevron-down SVG（14px，`.nav-caret`）；**踩坑**：frontmatter 定义 JSX 元素常量（`const caret = (<svg…/>)`）触发 PARSE_ERROR——Astro frontmatter 不是 JSX 运行时，改为模板分支内单行内联。**global.css**：`.has-sub > .nav-link` inline-flex 对齐 + 860px 断点 `justify-content: flex-start`；桌面 hover 与移动端 `.open-sub` 展开（§4.16 既有交互，桌面 hover / 移动点击均复用同一 DOM）时 `.nav-caret` 旋转 180°。移动端 burger 折叠菜单内的父项共用同一 DOM 自然带图标。
+
+### 4.28 搜索可用性验证 + 未实现项分批（✅ 2026-10-14 完成）
+
+**结论：导航搜索已实现且可用**（§M3b-b6）：Header 浮层 UI + app.ts 防抖/高亮/键盘导航完整，pagefind 构建期索引 62 页 8009 词；dev 下无索引仅是设计内降级（`searchUnavailable` 提示文案），非缺陷，无需修改。
+
+**「没实现的都实现」分批**：经 12 项逐一调查（机制/依赖/复杂度），本批先做 4 个零外部依赖轻量项（见 §4.30），其余列入下批清单：随机封面（第三方 API，orchid-blog 无随机跳转 API，只有 slug hash 确定性随机图）、音乐播放器（自研 meting/local 双模式，建议 local 先行）、Live2D 看板娘（l2d-widget npm 包）、bangumi 番组页（bgm.tv，建议 dynamic 先行）、pageWidth 全量变量化（主题硬编码 1120/900/760px 待收敛 `--page-width`）、postList 网格/切换（与主题 cover/compact 概念重叠需先决策）、背景壁纸（参考站自述屎山，建议只裁 banner 单模式）、代码块折叠徽章（expressive-code 插件与主题 Shiki 管线架构冲突，需选型决策）。
+
+### 4.30 轻量四项：favicon / timezone / 归档折叠 / 樱花特效（✅ 2026-10-14 完成）
+
+- **favicon 配置**：schema `favicon[]`（src/type/sizes/theme，theme="light"/"dark" 经 `media="(prefers-color-scheme: …)"` 切换双图标）；BaseLayout 非空 map 渲染、空数组回退默认 `/favicon.svg`
+- **timezone 配置**：schema `timezone`（IANA 名）；utils.ts `formatDate` 加 `timeZone: config.timezone || undefined`，9 个调用点零改动；utils.ts 已核实仅被构建期引用（app.ts 不 import），虚拟模块引入安全
+- **归档按年折叠**（对齐参考站 foldArticle）：schema `archive.fold`；archive.astro fold 开启时年份头渲染为 `button.archive-year`（含 `.year-caret` chevron，aria-expanded），`collapsed = fold && years.length > 1 && i > 0`（最新一年默认展开）；app.ts document 级委托（照 nav-sub-toggle 模式：`classList.toggle("fold")` 返回 true=已收起 → aria-expanded "false"）；CSS：button 原生样式重置 + `.timeline.fold` 收起时间线/旋转 caret
+- **樱花特效**：schema `sakura.enabled/density(1-200)`；新建 components/SakuraEffect.astro——**程序化贝塞尔泪滴花瓣（零贴图资产）**，3 档粉调，摆动下落+旋转；**VT 兼容关键**：`<script>`（bundled）+ `astro:page-load` 监听重初始化（body swap 后 canvas 重建），模块级 raf 单例 + cleanup 清旧动画循环与监听；prefers-reduced-motion 停用、visibilitychange 页签隐藏暂停；密度经 `data-density` 属性传递（define:vars 仅 is:inline 可用）
+
+### 4.31 专题（series）功能（✅ 2026-10-14 完成）
+
+方案：**frontmatter 声明式**，零新内容类型。schema `definePostSchema` 加 `series`（专题名）/`seriesOrder`（组内序，缺省排最后）；`PostLike.data` 同步两字段；`pages.series` 开关（默认 true）控制 `/series` 与 `/series/[name]` 路由注入（index.ts，关闭则完全不生成）。
+
+- **/series/ 聚合页**：series 非空分组，卡片=名称+篇数+组内最新更新，按最新发布倒序；空态 `seriesEmpty` 文案
+- **/series/[name]/ 详情页**：getStaticPaths 分组，组内 `seriesOrder` 升序（tie-break published 升序）；面包屑回聚合页 + 序号圆标列表
+- **文章页专题导航卡**：getStaticPaths 计算 seriesInfo（当前篇位置 cur/total + 完整目录 items），渲染于封面图之后正文之前——当前篇高亮不可点、其余链接跳转，目录限高 280px 滚动，头部有专题页链接与进度 `{cur} / {total}`
+- **i18n**：zh-CN 7 键（series/seriesTotal/seriesPostsCount/seriesUpdated/seriesEmpty/seriesProgress/seriesCatalog），en.ts 类型强制同步
+- **demo**：3 篇文章（theme-override/hello-world/features-demo）加 `series: 主题使用指南` + seriesOrder 1/2/3；nav「文章」下拉加「专题」入口；siteConfig 开 `archive.fold` 与 `sakura`（density 24）演示 §4.30——**踩坑**：site/config/index.ts 组装层需显式透传新键（`archive: siteConfig.archive, sakura: siteConfig.sakura`），否则走 schema 默认关闭
+
+**验证（§4.27-4.31）**：`pnpm --filter site build` 通过（pagefind 62 页）；dist 断言全过——nav-caret ×2（文章/更多）+ 移动端共用 DOM；`/series/`（1 卡片）与 `/series/主题使用指南/`（3 项）生成；archive 8 个年份组，2026 aria-expanded="true" 无 fold、2013-2025 七组 `timeline reveal fold` + aria-expanded="false"；hello-world 文章页 series-nav 3 项其中 1 项 cur；index.html 含 sakura-canvas + 内联樱花脚本（astro:page-load 监听在）；favicon 未配置走默认。§4.30/4.31 改 site/config 后 dev 需重启（构建期快照，§4.26 口径）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

@@ -206,6 +206,8 @@ export const themeConfigSchema = z.object({
 			guestbook: z.boolean().default(true),
 			sponsor: z.boolean().default(true),
 			gallery: z.boolean().default(true),
+			/** 专题（§4.31）：frontmatter series 聚合页 /series/ 与 /series/[name]/ */
+			series: z.boolean().default(true),
 		})
 		.default({
 			about: true,
@@ -213,6 +215,7 @@ export const themeConfigSchema = z.object({
 			guestbook: true,
 			sponsor: true,
 			gallery: true,
+			series: true,
 		}),
 	/**
 	 * 画廊/相册（M3b-b8）。相册数据纯配置驱动，照片两个来源：
@@ -753,6 +756,45 @@ export const themeConfigSchema = z.object({
 			method: z.enum(["base64", "rot13"]).default("base64"),
 		})
 		.default({ enabled: false, method: "base64" }),
+	/**
+	 * favicon 图标列表（§4.30）：数组非空时替换默认 /favicon.svg；
+	 * theme 指定 "light"/"dark" 时按系统深浅色经 media 切换（可配双图标）。
+	 */
+	favicon: z
+		.array(
+			z.object({
+				src: z.string(),
+				type: z.string().optional(),
+				sizes: z.string().optional(),
+				/** "light"/"dark"：按 prefers-color-scheme 生效 */
+				theme: z.enum(["light", "dark"]).optional(),
+			}),
+		)
+		.default([]),
+	/**
+	 * 构建期日期时区（IANA 名，如 "Asia/Shanghai"，§4.30）：
+	 * formatDate 等输出与构建机时区解耦。留空跟随构建环境。
+	 */
+	timezone: z.string().optional(),
+	/**
+	 * 归档页按年折叠（§4.30 对齐参考站 foldArticle）：开启时最新一年默认展开，其余折叠。
+	 */
+	archive: z
+		.object({
+			fold: z.boolean().default(false),
+		})
+		.default({ fold: false }),
+	/**
+	 * 樱花飘落特效（§4.30）：全站 canvas 粒子（程序化花瓣，零贴图资产），
+	 * prefers-reduced-motion 自动停用，页签隐藏暂停。
+	 */
+	sakura: z
+		.object({
+			enabled: z.boolean().default(false),
+			/** 同屏花瓣数 */
+			density: z.number().int().min(1).max(200).default(24),
+		})
+		.default({ enabled: false, density: 24 }),
 });
 
 export type ThemeConfig = z.input<typeof themeConfigSchema>;
@@ -797,6 +839,10 @@ export function definePostSchema(extensions: z.ZodRawShape = {}) {
 			comment: z.boolean().default(true),
 			/** 列表卡片形态按篇覆盖：cover 图卡 / compact 紧凑行 / text 纯文字 */
 			cardStyle: z.enum(["cover", "compact", "text"]).optional(),
+			/** 专题名（§4.31）：同专题文章聚合到 /series/<name>/，文章页出专题导航 */
+			series: z.string().optional(),
+			/** 专题内顺序（小在前）；未配置则按发布时间升序 */
+			seriesOrder: z.number().optional(),
 		})
 		.extend(extensions);
 }

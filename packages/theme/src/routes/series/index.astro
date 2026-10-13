@@ -1,0 +1,64 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import { t } from "../../i18n/index.js";
+import { formatDate, type PostLike } from "../../utils.js";
+import { hydratePosts } from "../_hydrate.js";
+
+// 专题聚合页（§4.31）：frontmatter series 非空即成组，按组内最新发布倒序
+const all = await getCollection("posts", ({ data }) =>
+	import.meta.env.PROD ? !data.draft : true,
+);
+const posts = await hydratePosts(all);
+
+interface SeriesGroup {
+	name: string;
+	list: PostLike[];
+	latest: Date;
+}
+
+const groups = new Map<string, PostLike[]>();
+for (const post of posts) {
+	const name = post.data.series;
+	if (!name) continue;
+	const list = groups.get(name);
+	if (list) list.push(post);
+	else groups.set(name, [post]);
+}
+
+const seriesList: SeriesGroup[] = [...groups.entries()]
+	.map(([name, list]) => ({
+		name,
+		list,
+		latest: list.reduce(
+			(max, p) => (p.data.published > max ? p.data.published : max),
+			list[0]!.data.published,
+		),
+	}))
+	.sort((a, b) => b.latest.getTime() - a.latest.getTime());
+---
+
+<BaseLayout title={t('series')} page="series">
+  <header class="archive-head reveal">
+    <h1 class="page-title">{t('series')}</h1>
+    <p class="page-sub">{t('seriesTotal', { n: seriesList.length })}</p>
+  </header>
+  {
+    seriesList.length === 0 ? (
+      <p class="series-empty card reveal">{t('seriesEmpty')}</p>
+    ) : (
+      <div class="series-grid">
+        {seriesList.map((s) => (
+          <a class="series-card card reveal" href={`/series/${encodeURIComponent(s.name)}/`}>
+            <h2 class="series-name">{s.name}</h2>
+            <p class="series-meta">
+              <span>{t('seriesPostsCount', { n: s.list.length })}</span>
+              <span>·</span>
+              <span>{t('seriesUpdated', { date: formatDate(s.latest) })}</span>
+            </p>
+          </a>
+        ))}
+      </div>
+    )
+  }
+</BaseLayout>

@@ -120,6 +120,14 @@ const en: Record<UiKey, string> = {
 	lastModifiedPrefix: "Last updated on ",
 	lastModifiedDaysAgo: ", {days} days ago",
 	lastModifiedOutdated: "Some content may be outdated.",
+	series: "Series",
+	seriesTotal: "{n} series in total",
+	seriesPostsCount: "{n} posts",
+	seriesUpdated: "Updated on {date}",
+	seriesEmpty:
+		"No series yet. Add a series field to a post's frontmatter to create one.",
+	seriesProgress: "{cur} / {total}",
+	seriesCatalog: "Series catalog",
 };
 
 export default en;

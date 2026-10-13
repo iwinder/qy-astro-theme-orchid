@@ -42,4 +42,13 @@ export const siteConfig = {
 		light: "github-light",
 		dark: "github-dark",
 	},
+	// 归档按年折叠（§4.30）：开启后年份头可点击，最新一年默认展开
+	archive: {
+		fold: true,
+	},
+	// 樱花飘落特效（§4.30）：演示开启；density 为同屏花瓣数（1-200）
+	sakura: {
+		enabled: true,
+		density: 24,
+	},
 };

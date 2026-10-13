@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
 import { formatDate, type PostLike } from "../utils.js";
 import { hydratePosts } from "./_hydrate.js";
@@ -26,6 +27,10 @@ const yearLabel =
 	years.length <= 1
 		? t("yearUnit", { n: years[0] ?? "" })
 		: `${Math.max(...years)} – ${Math.min(...years)}`;
+
+// 归档按年折叠（§4.30 对齐参考站 foldArticle）：开启时年份头变按钮可点，
+// 最新一年默认展开，其余折叠
+const fold = config.archive.fold;
 ---
 
 <BaseLayout title={t('archive')} page="archive">
@@ -34,28 +39,43 @@ const yearLabel =
     <p class="page-sub">{t('totalPosts', { n: posts.length })} · {yearLabel}</p>
   </header>
   {
-    years.map((year) => (
-      <div class="timeline reveal">
-        <div class="archive-year">
-          <span class="y">{year}</span>
-          <span class="c">{t('postsInYear', { n: groups.get(year)!.length })}</span>
-        </div>
-        <div class="timeline-items">
-          {groups.get(year)!.map((post) => (
-            <div class="timeline-item">
-              <a href={`/posts/${post.id}/`}>
-                <span class="t-date">{formatDate(post.data.published).slice(5)}</span>
-                <span class="t-title">{post.data.title}</span>
-                <span class="t-meta">
-                  {post.data.category ?? ''}
-                  {post.data.category && post.data.words ? ' · ' : ''}
-                  {post.data.words ? t('wordsCount', { n: post.data.words }) : ''}
-                </span>
-              </a>
+    years.map((year, i) => {
+      const collapsed = fold && years.length > 1 && i > 0;
+      return (
+        <div class:list={["timeline", "reveal", { fold: collapsed }]}>
+          {fold ? (
+            <button
+              type="button"
+              class="archive-year"
+              aria-expanded={collapsed ? "false" : "true"}
+            >
+              <svg class="year-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
+              <span class="y">{year}</span>
+              <span class="c">{t('postsInYear', { n: groups.get(year)!.length })}</span>
+            </button>
+          ) : (
+            <div class="archive-year">
+              <span class="y">{year}</span>
+              <span class="c">{t('postsInYear', { n: groups.get(year)!.length })}</span>
             </div>
-          ))}
+          )}
+          <div class="timeline-items">
+            {groups.get(year)!.map((post) => (
+              <div class="timeline-item">
+                <a href={`/posts/${post.id}/`}>
+                  <span class="t-date">{formatDate(post.data.published).slice(5)}</span>
+                  <span class="t-title">{post.data.title}</span>
+                  <span class="t-meta">
+                    {post.data.category ?? ''}
+                    {post.data.category && post.data.words ? ' · ' : ''}
+                    {post.data.words ? t('wordsCount', { n: post.data.words }) : ''}
+                  </span>
+                </a>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-    ))
+      );
+    })
   }
 </BaseLayout>

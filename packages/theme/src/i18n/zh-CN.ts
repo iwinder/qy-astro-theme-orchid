@@ -138,6 +138,14 @@ const zhCN = {
 	lastModifiedPrefix: "最后更新于 ",
 	lastModifiedDaysAgo: "，距今已过 {days} 天",
 	lastModifiedOutdated: "部分内容可能已过时，请注意信息时效。",
+	/* 专题（§4.31）：frontmatter series 聚合页与文章页专题导航 */
+	series: "专题",
+	seriesTotal: "共 {n} 个专题",
+	seriesPostsCount: "{n} 篇",
+	seriesUpdated: "更新于 {date}",
+	seriesEmpty: "还没有专题，在文章 frontmatter 中填写 series 字段即可创建。",
+	seriesProgress: "{cur} / {total}",
+	seriesCatalog: "专题目录",
 } as const;
 
 export type UiKey = keyof typeof zhCN;

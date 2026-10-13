@@ -242,6 +242,22 @@ html.dark .site-title:hover {
 	cursor: pointer;
 	font: inherit;
 }
+/* 父项 chevron（§4.27）：label 后下拉标识，桌面 hover / 移动端展开时旋转 */
+.has-sub > .nav-link {
+	display: inline-flex;
+	align-items: center;
+}
+.nav-caret {
+	flex: none;
+	width: 14px;
+	height: 14px;
+	margin-inline-start: 4px;
+	transition: transform 0.15s;
+}
+.nav-item.has-sub:hover .nav-caret,
+.nav-item.open-sub .nav-caret {
+	transform: rotate(180deg);
+}
 .nav-sub {
 	position: absolute;
 	top: calc(100% + 6px);
@@ -292,6 +308,7 @@ html.dark .site-title:hover {
 	.nav-sub-toggle {
 		width: 100%;
 		text-align: left;
+		justify-content: flex-start;
 	}
 	.nav-sub {
 		position: static;
@@ -2002,6 +2019,225 @@ html.dark .timeline-item a:hover .t-title {
 	margin-left: 10px;
 	font-size: 12.5px;
 	color: var(--muted);
+}
+
+/* 归档按年折叠（§4.30）：年份头为按钮时重置原生样式，fold 收起该年时间线 */
+button.archive-year {
+	background: none;
+	border: 0;
+	padding: 0;
+	font: inherit;
+	color: inherit;
+	cursor: pointer;
+	text-align: left;
+}
+button.archive-year .year-caret {
+	width: 16px;
+	height: 16px;
+	align-self: center;
+	color: var(--muted);
+	transition: transform 0.15s;
+}
+.timeline.fold button.archive-year .year-caret {
+	transform: rotate(-90deg);
+}
+.timeline.fold .timeline-items {
+	display: none;
+}
+
+/* ---------- 7.1 专题（§4.31） ---------- */
+.series-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+	gap: 16px;
+	margin-bottom: 32px;
+}
+.series-card {
+	display: block;
+	padding: 20px 22px;
+}
+.series-card:hover {
+	border-color: var(--accent-soft);
+}
+.series-name {
+	margin: 0 0 8px;
+	font-size: 17px;
+	font-weight: 700;
+	color: var(--ink);
+}
+.series-card:hover .series-name {
+	color: var(--accent-deep);
+}
+.series-meta {
+	margin: 0;
+	display: flex;
+	gap: 8px;
+	font-size: 13px;
+	color: var(--muted);
+}
+.series-empty {
+	padding: 26px 30px;
+	color: var(--muted);
+	text-align: center;
+}
+.series-crumb a {
+	color: var(--accent);
+}
+.series-crumb a:hover {
+	text-decoration: underline;
+}
+.series-list {
+	list-style: none;
+	margin: 0 auto;
+	padding: 0;
+	max-width: 760px;
+	display: grid;
+	gap: 10px;
+}
+.series-link {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	padding: 14px 18px;
+}
+.series-idx {
+	flex: none;
+	width: 26px;
+	height: 26px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	background: var(--accent-soft);
+	color: var(--accent-deep);
+	font-size: 13px;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+.series-title {
+	flex: 1;
+	min-width: 0;
+	font-weight: 600;
+	color: var(--ink);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.series-link:hover .series-title {
+	color: var(--accent-deep);
+}
+.series-date {
+	flex: none;
+	font-size: 13px;
+	color: var(--muted);
+	font-variant-numeric: tabular-nums;
+}
+/* 文章页专题导航卡（§4.31）：目录超 6 项限高滚动 */
+.series-nav {
+	margin: 0 0 28px;
+	padding: 16px 20px;
+}
+.series-nav-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+	margin-bottom: 10px;
+}
+.series-nav-title {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 15.5px;
+	font-weight: 700;
+	color: var(--ink);
+}
+.series-nav-title svg {
+	width: 16px;
+	height: 16px;
+	color: var(--accent);
+}
+.series-nav-progress {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	font-size: 13px;
+}
+.series-nav-progress a {
+	color: var(--accent);
+}
+.series-nav-progress a:hover {
+	text-decoration: underline;
+}
+.series-nav-count {
+	color: var(--muted);
+	font-variant-numeric: tabular-nums;
+}
+.series-nav-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	max-height: 280px;
+	overflow-y: auto;
+	display: grid;
+	gap: 2px;
+}
+.series-nav-item {
+	position: relative;
+	padding-left: 14px;
+}
+.series-nav-item::before {
+	content: "";
+	position: absolute;
+	left: 2px;
+	top: 50%;
+	transform: translateY(-50%);
+	width: 5px;
+	height: 5px;
+	border-radius: 50%;
+	background: var(--border);
+}
+.series-nav-item.cur::before {
+	background: var(--accent);
+}
+.series-nav-row {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	padding: 4px 0;
+	font-size: 14px;
+	color: var(--ink-2);
+}
+a.series-nav-row:hover {
+	color: var(--accent-deep);
+}
+.series-nav-idx {
+	flex: none;
+	min-width: 18px;
+	text-align: right;
+	color: var(--muted);
+	font-size: 12.5px;
+	font-variant-numeric: tabular-nums;
+}
+.series-nav-label {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.series-nav-item.cur .series-nav-row {
+	font-weight: 600;
+	color: var(--accent-deep);
+}
+html.dark .series-nav-item.cur .series-nav-row {
+	color: var(--accent);
+}
+@media (max-width: 560px) {
+	.series-date,
+	.series-nav-count {
+		display: none;
+	}
 }
 
 /* ---------- 8. 标签页 ---------- */

@@ -63,6 +63,9 @@ export const themeConfig = {
 	latex,
 	diagram,
 	emailProtection,
+	// 归档按年折叠 / 樱花特效（§4.30）：siteConfig 中配置
+	archive: siteConfig.archive,
+	sakura: siteConfig.sakura,
 } satisfies ThemeConfig;
 
 // 再导出各模块配置，需要单项时可直接从本文件导入

@@ -1,0 +1,152 @@
+---
+/**
+ * 樱花飘落特效（§4.30）：全站 canvas 粒子层，程序化贝塞尔花瓣（零贴图资产）。
+ * - prefers-reduced-motion 自动停用
+ * - 页签隐藏暂停、可见时恢复
+ * - VT swap 后 body 重建，经 astro:page-load 重新初始化（模块级单例清理旧动画）
+ */
+interface Props {
+	/** 同屏花瓣数（schema sakura.density） */
+	density?: number;
+}
+
+const { density = 24 } = Astro.props;
+---
+
+<canvas id="sakura-canvas" data-density={density} aria-hidden="true"></canvas>
+
+<style>
+	#sakura-canvas {
+		position: fixed;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
+		z-index: 90;
+	}
+</style>
+
+<script>
+	let raf = 0;
+	let cleanup: (() => void) | null = null;
+
+	function startSakura() {
+		// 清理旧实例（VT swap 前的动画循环与监听）
+		cleanup?.();
+
+		const canvas = document.getElementById(
+			"sakura-canvas",
+		) as HTMLCanvasElement | null;
+		if (!canvas) return;
+		if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+		const ctx = canvas.getContext("2d");
+		if (!ctx) return;
+
+		const count = Number(canvas.dataset.density) || 24;
+		const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+		let w = 0;
+		let h = 0;
+		const resize = () => {
+			w = window.innerWidth;
+			h = window.innerHeight;
+			canvas.width = w * dpr;
+			canvas.height = h * dpr;
+			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		};
+		resize();
+		window.addEventListener("resize", resize);
+
+		// 3 档粉调色板（对齐参考站观感）
+		const colors = ["#ffd7e2", "#ffc0d0", "#fdaec5"];
+
+		interface Petal {
+			x: number;
+			y: number;
+			size: number;
+			speedY: number;
+			swayAmp: number;
+			swayFreq: number;
+			phase: number;
+			rot: number;
+			rotSpeed: number;
+			color: string;
+			opacity: number;
+		}
+
+		const spawn = (randomY = false): Petal => {
+			const i = Math.floor(Math.random() * colors.length);
+			return {
+				x: Math.random() * w,
+				y: randomY ? Math.random() * h : -20,
+				size: 6 + Math.random() * 8,
+				speedY: 0.6 + Math.random() * 1.2,
+				swayAmp: 20 + Math.random() * 40,
+				swayFreq: 0.005 + Math.random() * 0.01,
+				phase: Math.random() * Math.PI * 2,
+				rot: Math.random() * Math.PI * 2,
+				rotSpeed: (Math.random() - 0.5) * 0.03,
+				color: colors[i] ?? colors[0]!,
+				opacity: 0.5 + Math.random() * 0.4,
+			};
+		};
+
+		const petals: Petal[] = Array.from({ length: count }, () => spawn(true));
+
+		// 程序化花瓣：两段贝塞尔拼出泪滴形
+		const drawPetal = (p: Petal) => {
+			const s = p.size;
+			ctx.save();
+			ctx.translate(p.x, p.y);
+			ctx.rotate(p.rot);
+			ctx.globalAlpha = p.opacity;
+			ctx.fillStyle = p.color;
+			ctx.beginPath();
+			ctx.moveTo(0, -s);
+			ctx.bezierCurveTo(s * 0.9, -s * 0.6, s * 0.7, s * 0.6, 0, s);
+			ctx.bezierCurveTo(-s * 0.7, s * 0.6, -s * 0.9, -s * 0.6, 0, -s);
+			ctx.fill();
+			ctx.restore();
+		};
+
+		let paused = false;
+		let frame = 0;
+		const tick = () => {
+			if (paused) return;
+			frame++;
+			ctx.clearRect(0, 0, w, h);
+			for (const p of petals) {
+				p.y += p.speedY;
+				p.x += Math.sin(frame * p.swayFreq + p.phase) * (p.swayAmp / 60);
+				p.rot += p.rotSpeed;
+				if (p.y > h + 30) Object.assign(p, spawn());
+				drawPetal(p);
+			}
+			raf = requestAnimationFrame(tick);
+		};
+
+		const onVisibility = () => {
+			if (document.hidden) {
+				paused = true;
+				cancelAnimationFrame(raf);
+			} else if (paused) {
+				paused = false;
+				raf = requestAnimationFrame(tick);
+			}
+		};
+		document.addEventListener("visibilitychange", onVisibility);
+
+		raf = requestAnimationFrame(tick);
+
+		cleanup = () => {
+			cancelAnimationFrame(raf);
+			window.removeEventListener("resize", resize);
+			document.removeEventListener("visibilitychange", onVisibility);
+			cleanup = null;
+		};
+	}
+
+	// ClientRouter 下 astro:page-load 首载与每次导航都会触发
+	document.addEventListener("astro:page-load", startSakura);
+</script>

@@ -1,0 +1,63 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import { t } from "../../i18n/index.js";
+import { formatDate, type PostLike } from "../../utils.js";
+import { hydratePosts } from "../_hydrate.js";
+
+// 专题详情页（§4.31）：组内 seriesOrder 升序（未配置排最后），同序按发布时间升序
+export async function getStaticPaths() {
+	const all = await getCollection("posts", ({ data }) =>
+		import.meta.env.PROD ? !data.draft : true,
+	);
+	const posts = await hydratePosts(all);
+
+	const groups = new Map<string, PostLike[]>();
+	for (const post of posts) {
+		const name = post.data.series;
+		if (!name) continue;
+		const list = groups.get(name);
+		if (list) list.push(post);
+		else groups.set(name, [post]);
+	}
+
+	return [...groups.entries()].map(([name, list]) => {
+		const sorted = [...list].sort((a, b) => {
+			const oa = a.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
+			const ob = b.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
+			if (oa !== ob) return oa - ob;
+			return a.data.published.getTime() - b.data.published.getTime();
+		});
+		return { params: { name }, props: { name, posts: sorted } };
+	});
+}
+
+const { name, posts } = Astro.props as { name: string; posts: PostLike[] };
+const latest = posts.reduce(
+	(max, p) => (p.data.published > max ? p.data.published : max),
+	posts[0]!.data.published,
+);
+---
+
+<BaseLayout title={name} page="series">
+  <header class="archive-head reveal">
+    <p class="page-sub series-crumb"><a href="/series/">{t('series')}</a></p>
+    <h1 class="page-title">{name}</h1>
+    <p class="page-sub">
+      {t('totalPosts', { n: posts.length })} · {t('seriesUpdated', { date: formatDate(latest) })}
+    </p>
+  </header>
+  <ol class="series-list">
+    {
+      posts.map((post, i) => (
+        <li class="series-item reveal">
+          <a class="series-link card" href={`/posts/${post.id}/`}>
+            <span class="series-idx">{i + 1}</span>
+            <span class="series-title">{post.data.title}</span>
+            <span class="series-date">{formatDate(post.data.published)}</span>
+          </a>
+        </li>
+      ))
+    }
+  </ol>
+</BaseLayout>

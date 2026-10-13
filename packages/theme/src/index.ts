@@ -180,6 +180,11 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 					routes.push(["/gallery", "gallery/index.astro"]);
 					routes.push(["/gallery/[album]", "gallery/[album].astro"]);
 				}
+				// 专题（§4.31）：frontmatter series 聚合页与专题详情页
+				if (config.pages.series) {
+					routes.push(["/series", "series/index.astro"]);
+					routes.push(["/series/[name]", "series/[name].astro"]);
+				}
 				// 相关/随机文章推荐（P1-12）：随机栏数据源
 				if (config.relatedPosts.enabled) {
 					routes.push(["/api/allPostMeta.json", "api/allPostMeta.json.ts"]);

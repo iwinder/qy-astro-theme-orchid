@@ -45,10 +45,13 @@ const presetHues = [0, 30, 60, 100, 140, 170, 210, 250, 290, 330];
                 {item.href ? (
                   <a class="nav-link" data-nav={key ?? undefined} href={item.href} {...externalAttrs(item.external)}>
                     {item.label}
+                    {/* 父项下拉 chevron（§4.27）：对齐 orchid-blog 标识，子菜单展开时旋转 */}
+                    <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
                   </a>
                 ) : (
                   <button class="nav-link nav-sub-toggle" type="button" aria-expanded="false">
                     {item.label}
+                    <svg class="nav-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg>
                   </button>
                 )}
                 <div class="nav-sub">

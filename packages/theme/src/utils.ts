@@ -1,9 +1,15 @@
-/** 格式化为 YYYY-MM-DD（跟随本地时区，避免 toISOString 的 UTC 偏移） */
+import config from "virtual:theme/config";
+
+/**
+ * 格式化为 YYYY-MM-DD（§4.30：配置 timezone 时经 Intl timeZone 指定，与构建机时区解耦；
+ * 未配置跟随本地时区，避免 toISOString 的 UTC 偏移）
+ */
 export function formatDate(date: Date): string {
 	return new Intl.DateTimeFormat("en-CA", {
 		year: "numeric",
 		month: "2-digit",
 		day: "2-digit",
+		timeZone: config.timezone || undefined,
 	}).format(date);
 }
 
@@ -31,6 +37,10 @@ export interface PostLike {
 		words?: number;
 		minutes?: number;
 		cardStyle?: "cover" | "compact" | "text";
+		/** 专题名（§4.31）：同专题文章聚合到 /series/<name>/ */
+		series?: string;
+		/** 专题内顺序（小在前）；未配置则按发布时间升序 */
+		seriesOrder?: number;
 	};
 }
 

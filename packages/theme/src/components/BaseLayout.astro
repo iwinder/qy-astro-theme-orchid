@@ -3,6 +3,7 @@ import { ClientRouter } from "astro:transitions";
 import Analytics from "virtual:theme/components/Analytics.astro";
 import Footer from "virtual:theme/components/Footer.astro";
 import Header from "virtual:theme/components/Header.astro";
+import SakuraEffect from "virtual:theme/components/SakuraEffect.astro";
 import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
 import { hexToHsl } from "../utils.js";
@@ -35,7 +36,18 @@ const { h, s, l } = hexToHsl(config.accentColor);
     {/* keywords（§4.19）：非空才输出；文章页以 tags 覆盖站点级配置 */}
     {keywords.length > 0 && <meta name="keywords" content={keywords.join(", ")} />}
     <meta name="author" content={config.author} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {/* favicon（§4.30）：配置非空时按列表输出，theme 指定 light/dark 经 media 按系统深浅切换 */}
+    {config.favicon.length > 0
+      ? config.favicon.map((f) => (
+          <link
+            rel="icon"
+            href={f.src}
+            type={f.type}
+            sizes={f.sizes}
+            media={f.theme ? `(prefers-color-scheme: ${f.theme})` : undefined}
+          />
+        ))
+      : <link rel="icon" href="/favicon.svg" type="image/svg+xml" />}
     {/* SEO 头部补全（§4.12）：canonical 防重复内容；RSS 供阅读器发现；theme-color 与 global.css :root 同步 */}
     {Astro.site && <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site).href} />}
     <link rel="alternate" type="application/rss+xml" title={config.title} href={Astro.site ? new URL("rss.xml", Astro.site).href : "/rss.xml"} />
@@ -70,6 +82,8 @@ const { h, s, l } = hexToHsl(config.accentColor);
     <Footer />
     <!-- 站点统计（P1-16）：ID 全空零输出，挂 body 尾与 orchid-blog 口径一致 -->
     <Analytics />
+    <!-- 樱花飘落特效（§4.30）：sakura.enabled 开启才渲染 -->
+    {config.sakura.enabled && <SakuraEffect density={config.sakura.density} />}
     <button class="back-top" id="backTop" type="button" aria-label={t('backToTop')} hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
     </button>
