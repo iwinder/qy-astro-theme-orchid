@@ -6,9 +6,14 @@ import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 // - 无 children 时必须提供 href
 export const navBarConfig: ThemeConfig["nav"] = [
 	{ label: "首页", href: "/" },
-	{ label: "归档", href: "/archive/" },
-	{ label: "标签", href: "/tags/" },
-	{ label: "画廊", href: "/gallery/" },
+	{ label:"文章",
+		children:[
+			{ label: "归档", href: "/archive/" },
+			{ label: "分类", href: "/categories/" },
+			{ label: "标签", href: "/tags/" },
+		]
+	},
+	{ label: "画廊", href: "/gallery/", external: true },
 	{
 		label: "更多",
 		children: [

@@ -685,6 +685,16 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.23-4.25）**：build 回归通过（62 页）；dev 重启后 curl 断言 12 项全过——首页 bar 在 post-list 内 + sidebar profile 卡（`side-card … profile-card`）在、hello-world 文章页 bar 在 post-main 内且在 post-header 之前 + 「更多」链接在、加密文章页 bar 在、归档页无 bar、源码 `.home-layout` 单列为 `minmax(0,1fr)`。断言修正两处：profile 卡实际 class 是 `profile-card` 非 `widget-profile`；`post-header` 需按 `<header class="post-header` 前缀匹配（带 reveal 后缀）
 
+### 4.26 演示站配置补齐 + 配置热更行为说明（✅ 2026-10-13 完成）
+
+两起：① 用户调整 navBarConfig（首页 →「文章」下拉归档/分类/标签、画廊、更多下拉）后 dev 未生效——根因是 `virtual:theme/config` 为**构建期快照**（themeConfigPlugin 在 astro.config 加载期 `JSON.stringify(config)`，虚拟模块与 site/config/*.ts 无模块图依赖），改配置必须重启 dev，已在 site/config/index.ts 头注释写明；② 全面比对 orchid-blog 配置面查漏。
+
+- **index.ts 组装补齐 6 个 schema 已支持的顶层键**（此前全部走 schema 默认值、未显式暴露）：`lang`（zh-CN）、`huePanel`、`relatedPosts`（5+5）、`og`（**改显式 true**，默认 false）、`sharePoster`、`outdated`（threshold 30）
+- **og 开启暴露缺失依赖**：satori/sharp 是主题包 peerDependencies，site 需自装（og 关闭时无感）——`pnpm --filter site add sharp satori` 补齐，build 生成 `/og/<slug>.png` 全量分享图
+- **对齐结论**（与 orchid-blog/src/config 逐文件比对）：核心骨架（导航/侧栏/评论/统计/公告/友链/相册/打赏/许可/图表）已对齐；承接映射成立（expressiveCode→Shiki codeTheme、footerConfig→footer.customHtml、mermaid/plantuml→diagram、coverImage→postList.fallbackCover 口）；壁纸/樱花特效/音乐播放器/看板娘/字体子集化/导航搜索/番组页等属主题未实现的能力边界，非配置缺失；giscus mapping 等 demo 未启用 provider 的细化项留待接入真实服务时配置
+
+**验证（§4.26）**：dev 重启后 curl 断言全过——`<html lang="zh-CN">`、nav 含「文章」下拉（归档/分类/标签）、文章页 `og:image` 指向 `/og/hello-world.png`；`pnpm --filter site build` 通过（og 路由生成 7 张分享图、0 error）
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

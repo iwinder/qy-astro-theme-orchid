@@ -18,7 +18,11 @@ import { siteConfig } from "./siteConfig";
 import { sponsorConfig } from "./sponsorConfig";
 
 // 组装主题完整入参（键与 @windcoder/astro-theme-orchid 的 ThemeConfig 一一对应）
+// 注意：本目录任意配置变更不会触发 dev 热更新（config 构建期为虚拟模块快照），
+// 修改后需重启 dev server 才能生效。
 export const themeConfig = {
+	// 站点语言（<html lang>）
+	lang: "zh-CN",
 	title: siteConfig.title,
 	description: siteConfig.description,
 	author: siteConfig.author,
@@ -33,6 +37,16 @@ export const themeConfig = {
 	colorMode: siteConfig.colorMode,
 	footer: siteConfig.footer,
 	codeTheme: siteConfig.codeTheme,
+	// 导航栏 hue 调色面板（b5）：关闭后导航栏不出现调色按钮
+	huePanel: { enabled: true },
+	// 文章页相关/随机推荐栏（默认 5+5 篇）
+	relatedPosts: { enabled: true, count: 5, randomCount: 5 },
+	// OG 分享图（构建期生成 1200x630，meta 注入开关）
+	og: { enabled: true },
+	// 文章页「生成分享海报」按钮（纯客户端 canvas）
+	sharePoster: { enabled: true },
+	// 过时提醒卡：距最后更新超过 30 天显示
+	outdated: { enabled: true, threshold: 30 },
 	nav: navBarConfig,
 	sidebar: sidebarConfig,
 	profile: profileConfig,
