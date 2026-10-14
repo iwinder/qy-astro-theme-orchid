@@ -26,6 +26,7 @@ const { cover, retries } = resolveCover(
 const classes = [
 	"post-card",
 	featured ? "featured" : "",
+	cover ? "has-cover" : "no-cover",
 	style === "cover" ? "" : "compact",
 	style !== "cover" && !cover ? "text-only" : "",
 ]
@@ -75,4 +76,12 @@ const excerpt = d.excerpt || d.description;
       )
     }
   </div>
+  {
+    /* 无封面卡（§4.34 迭代）：右侧进入按钮竖条，为正文右侧留白，避免文字铺满/挤压 */
+    !cover && (
+      <a class="post-enter" href={href} aria-label={d.title}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      </a>
+    )
+  }
 </article>

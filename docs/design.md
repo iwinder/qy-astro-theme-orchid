@@ -738,7 +738,14 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 对齐参考站 localStorage 方案：schema `postList.allowSwitch` + `postList.gridColumnWidth`（220-600，默认 320）。index.astro / page/[page].astro 容器 `<div class="post-list" id="postList" data-allow-switch data-grid-col>`，标题包 `.list-head`（标题左、`#layoutSwitch` 方按钮右，ic-list/ic-grid 两个 SVG 显隐切换）。**防闪烁双保险**：BaseLayout `is:inline` boot 脚本（首帧前读 localStorage `qy-postList==='grid'` 给 #postList 加 grid-mode + 设 `--col-w`；VT 换页不重执行）+ app.ts `initPostListLayout()`（initPage 链内，VT 换页后接管）；click 委托内切 grid-mode + 写 localStorage。**CSS 布局要点**：`.post-list.grid-mode` = grid `repeat(auto-fill, minmax(var(--col-w),1fr))`；容器内非卡片条目（CategoryBar/标题/分页）`> :not(.post-card)` `grid-column: 1/-1` 占满整行；featured 卡（桌面 7fr/6fr 横排）与 compact 卡（128px+1fr）在网格内覆盖回纵向 flex column；<399px 强制单列。
 
-**迭代（同日）：列表形态横排化 + aria 状态**。初始实现下 cover 风格的「列表」本质是单列网格（卡片结构与网格形态完全相同，仅列数之差），切换观感不明显。修复：≥641px 时 `.post-list:not(.grid-mode) .post-card:not(.featured):not(.compact)` 改横排行卡 `grid-template-columns: minmax(220px, 38%) 1fr`（封面左 16:9→`aspect-ratio:auto`+min-height 200px、正文右垂直居中 padding 20/26/22），与 featured 卡同一设计语言、与网格竖排卡拉开结构差异；text-only 恒带 compact 类自然被排除，<641px 保持竖排堆叠。`#layoutSwitch` 补 `aria-pressed` 三处同步（index/page SSR 初值 "false" → boot 脚本首帧 "true" → app.ts 切换委托/initPostListLayout 按实际模式写入），网格=`true`/列表=`false`。
+**迭代 1（同日）：aria 状态**。`#layoutSwitch` 补 `aria-pressed` 三处同步（index/page SSR 初值 "false" → boot 脚本首帧 "true" → app.ts 切换委托/initPostListLayout 按实际模式写入），网格=`true`/列表=`false`。
+
+**迭代 2（同日）：全面对齐参考站 PostCard 设计语言**。用户截图三连反馈（卡片上下无间隔 / 无封面文字全挤左侧 / 封面紧贴卡片边）。系统研读原版 PostCard.astro 后重构，弃用迭代 1 的「封面居左 grid 两列」方案（且该方案误命中无封面卡，把文字压进 38% 左列）：
+- **间距**：`.post-list` 两形态统一容器 gap 节奏——列表态改 `display:flex;flex-direction:column;gap:20px`，删除 `.post-card + .post-card` 相邻 margin（flex/grid 下 margin 不折叠会与 gap 叠加），`.post-list > * { margin-block:0 }` 归零子项自带垂直 margin（CategoryBar 24 / Pagination 32 等），网格态本就是 grid gap 20。
+- **封面内缩右浮（桌面列表 ≥641px）**：对齐原版 `post-card-image`（absolute `top/right/bottom-4`、宽 30%、rounded-xl）——普通 cover 卡 `.post-cover` 绝对定位 `top/right/bottom:16px; width:30%; border-radius:12px`，不再贴卡片边；`.post-body` flex 纵向垂直居中、`min-height:196px`、padding `28px calc(30% + 32px) 28px 32px`（右留封面位+16px 图文间隙）。选择器带 `.has-cover`，**无封面卡不命中**，文字不会再被压到左列。网格态/移动端保持封面顶部全宽贴边（同原版 grid/移动形态）；featured 大图卡维持 7fr/6fr 独立设计。
+- **无封面进入按钮**：PostCard 类名补 `has-cover`/`no-cover`；无封面时渲染 `.post-enter`（52px 宽竖条，absolute `top/right/bottom:12px`，accent-soft 底 + chevron，hover 加深 + active 缩放，对齐原版 post-card-enter-btn）；body 右留白 80px（≤640px 72px），compact/text-only 紧凑行不挂竖条。
+- **踩坑：override 包裹层压垮网格**。demo 的 `site/src/overrides/components/PostCard.astro` 把默认卡包在 `<div class="relative">` 里，导致 `> :not(.post-card)` 整行跨越规则把每个包裹层跨满，网格长期被压成单列（此前「切换不明显」的另一隐藏根因）。修复改用 `:has()` 感知：非卡整行规则加 `:not(:has(.post-card))`；包裹层本身 `display:flex` + 内层卡 `flex:1;min-width:0` 保持单元内填满与等高；`:has(.post-card.featured)` 包裹层独占整行。
+- **验证**：1400px iframe 实测列表态——封面 278px（30%）右浮、上/下/右内缩 17px（含边框）、圆角 12px；无封面文字右缘 847 < 竖条左缘 863；卡间距 20。网格态——2 列 ×454px、featured 跨满 928、行内等高 468/468。375px 移动封面顶部贴边竖排、竖条与文字不重叠。
 
 ### 4.35 背景壁纸（banner 单模式）（✅ 2026-10-14 完成）
 

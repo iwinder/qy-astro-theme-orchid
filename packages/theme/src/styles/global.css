@@ -739,6 +739,7 @@ html.dark .btn:hover {
 .post-card {
 	display: grid;
 	grid-template-columns: 1fr;
+	position: relative;
 	overflow: hidden;
 	background: var(--surface);
 	border: 1px solid var(--border);
@@ -753,9 +754,6 @@ html.dark .btn:hover {
 	box-shadow: var(--shadow-md);
 	transform: translateY(-2px);
 	border-color: var(--border-2);
-}
-.post-card + .post-card {
-	margin-top: 20px;
 }
 .post-cover {
 	position: relative;
@@ -773,6 +771,11 @@ html.dark .btn:hover {
 }
 .post-body {
 	padding: 22px 24px 24px;
+}
+/* 无封面卡：为右侧 .post-enter 竖条（52px + 右偏 12px + 间隙）预留 80px（§4.34 迭代，
+   对齐参考站 no-cover content calc(100%-52px-12px) 留白；compact/text-only 行不预留） */
+.post-card.no-cover:not(.compact) .post-body {
+	padding-right: 80px;
 }
 .post-title {
 	font-family: var(--font-display);
@@ -833,6 +836,42 @@ html.dark .post-card:hover .post-title a {
 	color: #fff;
 	font-size: 12px;
 	letter-spacing: 0.1em;
+}
+/* 无封面卡右侧进入按钮竖条（对齐参考站 post-card-enter-btn）：
+   上/下/右各内缩 12px、宽 52px，浅 accent 底 + chevron */
+.post-enter {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	bottom: 12px;
+	z-index: 2;
+	width: 52px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 12px;
+	background: var(--accent-soft);
+	color: var(--accent-deep);
+	transition:
+		background 0.2s,
+		transform 0.15s;
+}
+.post-enter:hover {
+	background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+}
+.post-enter:active {
+	transform: scale(0.95);
+}
+.post-enter svg {
+	width: 26px;
+	height: 26px;
+}
+html.dark .post-enter {
+	color: var(--accent);
+}
+/* compact 紧凑行不挂竖条（其封面/文本行本身已横排） */
+.post-card.compact .post-enter {
+	display: none;
 }
 @media (min-width: 641px) {
 	.post-card.featured {
@@ -932,12 +971,35 @@ html.dark .layout-switch:hover {
 	gap: 20px;
 	align-items: stretch;
 }
-/* 非卡片条目（分类栏/标题/分页/空态）占满整行 */
-.post-list.grid-mode > :not(.post-card) {
+/* 非卡片条目（分类栏/标题/分页/空态）占满整行；
+   :has(.post-card) 例外——兼容站点 override 把卡片包在 div.relative 里（demo 即如此），
+   包裹层应作为普通网格单元参与排列，否则会整行跨越把网格压成单列 */
+.post-list.grid-mode > :not(.post-card):not(:has(.post-card)) {
 	grid-column: 1 / -1;
 }
-.post-list.grid-mode .post-card + .post-card {
-	margin-top: 0;
+/* 卡片包裹层（override 场景）：自身拉伸为弹性盒，让内部卡片填满单元并等高 */
+.post-list.grid-mode > :has(.post-card) {
+	display: flex;
+	min-width: 0;
+}
+.post-list.grid-mode > :has(.post-card) > .post-card {
+	flex: 1;
+	min-width: 0;
+}
+/* featured（无论直接 article 还是 override 包裹层）始终独占整行 */
+.post-list.grid-mode > :has(.post-card.featured) {
+	grid-column: 1 / -1;
+}
+/* 列表形态：flex 纵向 gap 统一间距（对齐参考站 flex-col gap-4），
+   不依赖相邻 margin，杜绝 margin 折叠/与 gap 叠加；子项自带垂直 margin 归零 */
+.post-list:not(.grid-mode) {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+}
+/* 两种形态统一由容器 gap 控制节奏，子项自带垂直 margin 归零（grid/flex 下 margin 不折叠会叠加） */
+.post-list > * {
+	margin-block: 0;
 }
 /* 网格内全部卡片恢复纵向、封面在上（覆盖 featured 横排与 compact 紧凑行） */
 .post-list.grid-mode .post-card {
@@ -969,23 +1031,33 @@ html.dark .layout-switch:hover {
 		grid-template-columns: 1fr;
 	}
 }
-/* 列表形态（非网格）cover 卡桌面横排：封面居左、正文居右，与网格竖排卡拉开结构差异
-   （否则列表只是「单列网格」，切换前后仅列数不同，观感无差别） */
+/* 列表形态（非网格）普通 cover 卡桌面：封面右浮为内缩圆角块，正文居左铺满，
+   与网格形态（封面在上全宽贴边）拉开结构差异。对齐参考站 post-card-image：
+   absolute top/right/bottom 16px + 宽 30% + 独立圆角，封面不贴卡片边；
+   无封面卡（.no-cover）不命中本规则，文字不会被挤到左列 */
 @media (min-width: 641px) {
-	.post-list:not(.grid-mode) .post-card:not(.featured):not(.compact) {
-		grid-template-columns: minmax(220px, 38%) 1fr;
-	}
 	.post-list:not(.grid-mode)
-		.post-card:not(.featured):not(.compact)
+		.post-card:not(.featured):not(.compact).has-cover
 		.post-cover {
+		position: absolute;
+		top: 16px;
+		right: 16px;
+		bottom: 16px;
+		left: auto;
+		width: 30%;
 		aspect-ratio: auto;
-		min-height: 200px;
+		min-height: 0;
+		border-radius: 12px;
 	}
 	.post-list:not(.grid-mode)
-		.post-card:not(.featured):not(.compact)
+		.post-card:not(.featured):not(.compact).has-cover
 		.post-body {
-		padding: 20px 26px 22px;
-		align-self: center;
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		min-height: 196px;
+		/* 右留：封面 30% + 右偏 16px + 图文间隙 16px */
+		padding: 28px calc(30% + 32px) 28px 32px;
 	}
 }
 
@@ -3359,6 +3431,9 @@ html.dark .friend-card:hover .friend-name {
 	}
 	.post-body {
 		padding: 18px 18px 20px;
+	}
+	.post-card.no-cover:not(.compact) .post-body {
+		padding-right: 72px;
 	}
 	.side-card {
 		padding: 16px 18px;
