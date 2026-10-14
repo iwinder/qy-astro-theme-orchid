@@ -77,7 +77,9 @@ const models = modelList.map((m) => ({
 </div>
 
 <script>
-	import { createWidget } from "l2d-widget";
+	// 模块级初始化标志：动态导入等待期间防 resize/重复调度重入（dataset guard 仅成功后置位）
+	let initStarted = false;
+	let currentModelIndex = 0;
 
 	// l2d-widget 气泡行内 white-space:nowrap 不换行；库用行内样式 CSS 盖不动，JS 修正
 	function patchTipBubble(el: HTMLElement) {
@@ -88,24 +90,29 @@ const models = modelList.map((m) => ({
 	}
 
 	const tipObserver = new MutationObserver((mutations) => {
+		const container = document.getElementById("l2d-widget-container");
 		for (const m of mutations) {
 			for (const node of m.addedNodes) {
-				if (node instanceof HTMLElement) {
-					patchTipBubble(node);
-					node.querySelectorAll<HTMLElement>("*").forEach(patchTipBubble);
-				}
+				// 只处理挂件容器内的新增节点：VT 换页全页重建 body 时不做全页遍历
+				if (!(node instanceof HTMLElement) || !container?.contains(node)) continue;
+				patchTipBubble(node);
+				node.querySelectorAll<HTMLElement>("*").forEach(patchTipBubble);
 			}
 		}
 	});
 	tipObserver.observe(document.body, { childList: true, subtree: true });
 
-	function initWidget() {
+	async function initWidget() {
 		const container = document.getElementById("l2d-widget-container");
-		if (!container || container.dataset.l2dInit === "1") return;
+		if (!container || container.dataset.l2dInit === "1" || initStarted) return;
+		initStarted = true;
 
 		try {
 			const models = JSON.parse(container.dataset.models || "[]");
-			if (!models.length) return;
+			if (!models.length) {
+				initStarted = false;
+				return;
+			}
 
 			// 移动端首访不置 guard：跨过断点转桌面端时由 resize 补初始化
 			const responsive = JSON.parse(container.dataset.responsive || "{}");
@@ -114,9 +121,9 @@ const models = modelList.map((m) => ({
 				window.innerWidth <= (responsive.mobileBreakpoint || 768)
 			) {
 				container.style.display = "none";
+				initStarted = false;
 				return;
 			}
-			container.dataset.l2dInit = "1";
 
 			const options: any = {
 				model: models.length === 1 ? models[0] : models,
@@ -180,13 +187,29 @@ const models = modelList.map((m) => ({
 				}
 			}
 
+			// 动态导入：~845KB Cubism/WebGL 引擎拆独立 chunk，首屏不解析不阻塞
+			const { createWidget } = await import("l2d-widget");
+			// await 期间 VT 换页可能移除了旧容器：不在 DOM 则放弃，待新容器重新初始化
+			if (!container.isConnected) {
+				initStarted = false;
+				return;
+			}
+
+			// 库无视传入 container、硬挂 document.body：VT 换页重建 body 时 canvas 根被连根
+			// 拔走，Cubism rAF 继续向脱离 DOM 的 canvas 绘制 → 每次导航泄漏一个 WebGL 上下文。
+			// 挂载前后 diff body 子节点，把库新增根节点迁入 persist 容器：换页不死、上下文只建一次
+			const before = new Set(document.body.children);
 			createWidget(options);
+			// guard 成功后才置位：失败/异常路径全部解锁，允许重试
+			container.dataset.l2dInit = "1";
+			for (const el of [...document.body.children]) {
+				if (!before.has(el)) container.appendChild(el);
+			}
 		} catch (err) {
 			console.error("[live2d] 初始化失败：", err);
+			initStarted = false;
 		}
 	}
-
-	let currentModelIndex = 0;
 
 	// 响应式：跨过断点隐藏/显示，显示时若尚未初始化则补拉起
 	function handleResponsive() {
@@ -199,10 +222,19 @@ const models = modelList.map((m) => ({
 		if (!hidden && container.dataset.l2dInit !== "1") initWidget();
 	}
 
+	// 空闲时再初始化：不与首屏渲染/VT 换页抢主线程（不支持时降级 setTimeout）
+	function scheduleInit() {
+		if (typeof window.requestIdleCallback === "function") {
+			window.requestIdleCallback(() => initWidget(), { timeout: 2000 });
+		} else {
+			setTimeout(initWidget, 200);
+		}
+	}
+
 	if (document.readyState === "loading") {
-		document.addEventListener("DOMContentLoaded", initWidget, { once: true });
+		document.addEventListener("DOMContentLoaded", scheduleInit, { once: true });
 	} else {
-		initWidget();
+		scheduleInit();
 	}
 	window.addEventListener("resize", handleResponsive);
 </script>

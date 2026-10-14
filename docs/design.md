@@ -779,7 +779,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 基于 `l2d-widget`（theme 直接依赖 ^0.1.0）的悬浮看板娘：schema 顶层 `live2d { enabled(false); model(单对象或数组 {path, volume(0), scale(1), x(0), y(0)}); position(bottom-left, 可 right); size(280，100-600 或 {width,height}); primaryColor(""); transitionDuration?/transitionType?(slide|fade); menus?{items[{icon,label,action,url?}], align(right)}; tips?{enable(true), welcomeMessage/messages([]), duration(3000), interval(6000), offset{x,y}, typing?}; responsive{hideOnMobile(true), mobileBreakpoint(768)}; zIndex(240) }`；BaseLayout `enabled && model` 双条件挂载于 music 与 back-top 之间。
 
 - **Live2DWidget.astro 单组件**（沿用 MusicPlayer §4.36 模式）：根节点 `transition:persist="live2d-widget"` + `dataset.l2dInit === "1"` guard 单次初始化；全部配置经 `data-*` JSON 传入（models/position/size/primary-color/transition-*/menus/tips/responsive）；SSR 直出菜单文案 `t()`，无 data-labels
-- **裸导入可行**：组件 `<script>` 里 `import { createWidget } from "l2d-widget"`——overridesPlugin 把 virtual id 解析为 theme 包内真实路径，Vite 按相对位置解析出 theme 的直接依赖，无需额外 alias
+- **引擎动态导入**：`createWidget` 经 `await import("l2d-widget")` 按需加载（overridesPlugin 把 virtual id 解析为 theme 包内真实路径，无需 alias）——~660KB minified Cubism/WebGL 引擎拆成独立 chunk，首屏只加载 ~2.8KB 组件脚本，requestIdleCallback（降级 setTimeout）空闲后再拉引擎初始化
 - **菜单 action 映射**：内置 home（`window.location.href = "/"`）/ scrollToTop / sleep（`widget.sleep()`）/ switchModel（模块级 `currentModelIndex` 循环 + `widget.switchModel`）；`action:"link"` 走 `window.open(url, "_blank", "noopener")`；未配 menus 时默认三键 + 多模型自动追加「切换模型」
 - **tips**：挂 `options.model.tips`（库约定）；`enable:false` 显式传 false 关闭，空对象不覆盖库默认；库气泡行内 `white-space:nowrap` CSS 盖不动，MutationObserver 补丁改 normal + 190px
 - **响应式**：`hideOnMobile` 时**断点检查在置 guard 之前**——移动端首访不加载模型（省流量）也不置 guard，跨过断点转桌面端由 resize 监听补拉起（优于参考实现：参考实现先置 guard 导致移动端首访后转桌面端永久空白）
@@ -787,12 +787,13 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - **⚠️ 客户端 JS 不含 virtual config**：SSR data-* 传参架构下 dist/_astro 里 grep 不到 live2d 配置键属正常，断言只看 HTML 的容器与 data-* 属性
 - **⚠️ 磁盘满（ENOSPC）抢修链**：`/Volumes/zhitai` 100% 满导致两次 build 中断；`rm` 被 shim 成 `trash`（同卷移废纸也要空间，报 dskFulErr），真删除须 `/bin/rm -rf`；`pnpm store prune` 删 321MB/419 包只释放到 73Mi——APFS 硬链接被 node_modules 引用锁住，收益有限；dev daemon 用 `lsof -nP -iTCP:4321 -sTCP:LISTEN` 找 PID kill（`astro dev stop` 因 astro 不在 PATH 不可用）
 - **⚠️ home action 硬编码 `"/"`**：base 路径部署（非根域名）下「回到主页」会跳错地址，需 base 部署时改用 site 前缀（留待真实需求出现再处理）
+- **⚠️ 库硬挂 body × VT 换页 = WebGL 上下文泄漏（本节第二个大坑，2026-10-14 修复）**：l2d-widget 无视传入 container，内部 `document.body.appendChild(f)` 硬挂 UI 根节点；Astro ClientRouter 换页重建 body 时 canvas 根被连根拔走，但 Cubism rAF 循环继续向已脱离 DOM 的 canvas 绘制——**每次站内导航泄漏一个 WebGL 上下文 + 模型内存**，且挂件换页后消失（旧实现 guard 先置位使 initWidget 永不重跑）。修复：initWidget 内 createWidget 前后 diff `document.body.children`，库新增节点 `appendChild` 迁入 persist 容器——换页不死、上下文只建一次；配套 = guard（dataset.l2dInit）成功后才置位（失败/移动端/catch 全解锁可重试）+ 模块级 initStarted 防动态导入期间重入 + await 后查 `container.isConnected` 防换页竞态 + MutationObserver 加 `container.contains(node)` 过滤（换页全页重建 body 不再全页遍历）
 - **x/y → offset 映射**：库 API 用 `offset: [x, y]` 数组，schema 对用户暴露 x/y 两数，SSR map 时转换
 - **层级约定**：live2d zIndex 默认 240 < back-top 250 < music 255——看板娘放按钮层之下防互挡；demo 用 bottom-right 避开 music 的 left 位置
 - **i18n**：zh-CN 4 键（l2dHome/l2dScrollTop/l2dSleep/l2dSwitchModel），en.ts 类型强制同步
 - **demo**：siteConfig.live2d——外链 `https://model.hacxy.cn/cat-black/model.json` 单模型 + bottom-right + tips（欢迎语 2 条 / 随机语 2 条 / 3s×6s）
 
-**验证（§4.38）**：修复组装层漏键后 `pnpm --filter site build` 通过；dist 断言全过——index 页 `id="l2d-widget-container"` ×1、`cat-black/model.json` 外链在内、`data-position="bottom-right"`、默认菜单文案（回到主页/回到顶部/休息一下；单模型无「换个模型」属预期）、`z-index:240`；script chunk 含 createWidget/switchModel。改 site/config 需重启 dev（§4.26 口径）。
+**验证（§4.38）**：修复组装层漏键后 `pnpm --filter site build` 通过；dist 断言全过——index 页 `id="l2d-widget-container"` ×1、`cat-black/model.json` 外链在内、`data-position="bottom-right"`、默认菜单文案（回到主页/回到顶部/休息一下；单模型无「换个模型」属预期）、`z-index:240`。泄漏修复后复验：组件脚本 chunk ~2.8KB、引擎独立 chunk ~660KB（按需加载）；浏览器实测（TRAE 视口 658px，临时把 mobileBreakpoint 降到 600 过移动端分支）两次 VT 换页（/ → 文章页 → /）后 `#l2d-widget-container canvas` 恒存活 `isConnected=true`、l2d canvas 总数恒为 1、persist 容器始终为 body 直接子元素。改 site/config 需重启 dev（§4.26 口径）。
 
 ## 5. 里程碑路线
 
