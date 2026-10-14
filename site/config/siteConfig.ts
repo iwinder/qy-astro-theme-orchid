@@ -84,4 +84,17 @@ export const siteConfig = {
 			{ name: "夜航星", artist: "SoundHelix", url: "/music/c.mp3" },
 		],
 	},
+	// Live2D 看板娘（§4.38）：外链模型演示（public 路径亦可）；
+	// 右下角避开左下音乐播放器；菜单不配置即用默认三键
+	live2d: {
+		enabled: true,
+		model: { path: "https://model.hacxy.cn/cat-black/model.json" },
+		position: "bottom-right" as const,
+		tips: {
+			welcomeMessage: ["欢迎来到清言集～", "今天也辛苦啦"],
+			messages: ["去喝杯水，休息一下吧", "喜欢这篇文章的话留个言吧～"],
+			duration: 3000,
+			interval: 6000,
+		},
+	},
 };

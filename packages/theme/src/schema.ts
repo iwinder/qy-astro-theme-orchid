@@ -1,6 +1,23 @@
 import { z } from "astro/zod";
 
 /**
+ * Live2D 看板娘（§4.38）单模型。提取为模块级 const：union 单/数组两分支复用。
+ * 注意 z.output 中 volume/scale/x/y 因 default 恒为 number。
+ */
+const live2dModelSchema = z.object({
+	/** model.json 地址（public 路径或外链） */
+	path: z.string(),
+	/** 模型动作音量 0-1（默认 0 静音） */
+	volume: z.number().min(0).max(1).default(0),
+	/** 缩放 */
+	scale: z.number().default(1),
+	/** 水平偏移 -2~2（传给库的 offset[0]） */
+	x: z.number().min(-2).max(2).default(0),
+	/** 垂直偏移 -2~2（传给库的 offset[1]） */
+	y: z.number().min(-2).max(2).default(0),
+});
+
+/**
  * 主题配置 schema（astro.config.ts 中 defineTheme({...}) 的入参）
  * 后续新增配置项一律给 default，保证老站点升级后无需改动配置
  */
@@ -902,6 +919,99 @@ export const themeConfigSchema = z.object({
 			playMode: "list",
 			showLyrics: true,
 			playlist: [],
+		}),
+	/**
+	 * Live2D 看板娘（§4.38）：l2d-widget 悬浮模型 + 菜单 + 气泡说话。
+	 * 根节点 transition:persist 跨页常驻；enabled 且配置了 model 才渲染。
+	 * zIndex 默认 240（低于返回顶部 250 / 音乐悬浮球 255，避免角落按钮被挡）。
+	 */
+	live2d: z
+		.object({
+			enabled: z.boolean().default(false),
+			/** 模型：单对象或数组（数组时可经菜单 action=switchModel 轮换） */
+			model: z
+				.union([live2dModelSchema, z.array(live2dModelSchema).min(1)])
+				.optional(),
+			/** 悬浮位置 */
+			position: z.enum(["bottom-left", "bottom-right"]).default("bottom-left"),
+			/** 画布尺寸（px）：单一数字（正方形边长）或 {width,height} */
+			size: z
+				.union([
+					z.number().int().min(100).max(600),
+					z.object({
+						width: z.number().int().min(100).max(600),
+						height: z.number().int().min(100).max(600),
+					}),
+				])
+				.default(280),
+			/** 菜单/气泡等 UI 主题色（CSS 颜色或 CSS 变量），留空用库默认 */
+			primaryColor: z.string().default(""),
+			/** 入场/退场动画时长（ms） */
+			transitionDuration: z.number().int().min(0).optional(),
+			/** 入场/退场动画类型 */
+			transitionType: z.enum(["slide", "fade"]).optional(),
+			/** 悬浮菜单（覆盖默认三键：主页/回顶部/休眠）；action 内置
+			 *  home/scrollToTop/sleep/switchModel，或 "link" + url 跳外链 */
+			menus: z
+				.object({
+					items: z
+						.array(
+							z.object({
+								/** 图标（iconify 名称，如 mdi:home） */
+								icon: z.string().default(""),
+								label: z.string(),
+								action: z.string(),
+								/** action=link 时的跳转地址 */
+								url: z.string().optional(),
+							}),
+						)
+						.default([]),
+					align: z.enum(["left", "right"]).default("right"),
+				})
+				.optional(),
+			/** 气泡说话：欢迎语与循环提示；整体不配置用库默认，enable:false 显式关闭 */
+			tips: z
+				.object({
+					enable: z.boolean().default(true),
+					welcomeMessage: z.array(z.string()).default([]),
+					messages: z.array(z.string()).default([]),
+					/** 单条气泡显示时长（ms） */
+					duration: z.number().int().min(500).default(3000),
+					/** 轮换间隔（ms） */
+					interval: z.number().int().min(500).default(6000),
+					/** 气泡相对模型的像素偏移 */
+					offset: z
+						.object({ x: z.number().default(0), y: z.number().default(0) })
+						.default({ x: 0, y: 0 }),
+					/** 打字机效果参数（透传库） */
+					typing: z
+						.object({
+							param: z.string().optional(),
+							speed: z.number().int().optional(),
+							minValue: z.number().int().optional(),
+							maxValue: z.number().int().optional(),
+						})
+						.optional(),
+				})
+				.optional(),
+			/** 移动端按断点隐藏（隐藏态不加载模型，转桌面端自动拉起） */
+			responsive: z
+				.object({
+					hideOnMobile: z.boolean().default(true),
+					mobileBreakpoint: z.number().int().min(320).default(768),
+				})
+				.default({ hideOnMobile: true, mobileBreakpoint: 768 }),
+			/** 容器层级 */
+			zIndex: z.number().int().min(1).default(240),
+		})
+		// Zod v4 default 不二次 parse，必须写显式完整字面量
+		.default({
+			enabled: false,
+			position: "bottom-left",
+			size: 280,
+			primaryColor: "",
+			responsive: { hideOnMobile: true, mobileBreakpoint: 768 },
+			zIndex: 240,
 		}),
 });
 

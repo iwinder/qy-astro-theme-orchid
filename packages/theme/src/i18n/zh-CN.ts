@@ -166,6 +166,10 @@ const zhCN = {
 	musicEmpty: "播放列表为空",
 	musicSeek: "播放进度",
 	musicVolume: "音量",
+	l2dHome: "回到主页",
+	l2dScrollTop: "回到顶部",
+	l2dSleep: "休息一下",
+	l2dSwitchModel: "换个模型",
 	codeFoldExpand: "展开代码",
 	codeFoldCollapse: "收起代码",
 } as const;

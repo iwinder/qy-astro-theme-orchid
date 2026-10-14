@@ -3,6 +3,7 @@ import { ClientRouter } from "astro:transitions";
 import Analytics from "virtual:theme/components/Analytics.astro";
 import Footer from "virtual:theme/components/Footer.astro";
 import Header from "virtual:theme/components/Header.astro";
+import Live2DWidget from "virtual:theme/components/Live2DWidget.astro";
 import MusicPlayer from "virtual:theme/components/MusicPlayer.astro";
 import SakuraEffect from "virtual:theme/components/SakuraEffect.astro";
 import config from "virtual:theme/config";
@@ -114,6 +115,8 @@ const showWallpaper =
     {config.music.enabled && config.music.playlist.length > 0 && (
       <MusicPlayer music={config.music} />
     )}
+    <!-- Live2D 看板娘（§4.38）：live2d.enabled 且配置了 model 才渲染 -->
+    {config.live2d.enabled && config.live2d.model && <Live2DWidget live2d={config.live2d} />}
     <button class="back-top" id="backTop" type="button" aria-label={t('backToTop')} hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
     </button>

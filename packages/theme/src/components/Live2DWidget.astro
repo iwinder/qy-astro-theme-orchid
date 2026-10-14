@@ -1,0 +1,208 @@
+---
+/**
+ * Live2D 看板娘（§4.38）：l2d-widget 悬浮模型 + 菜单 + 气泡说话。
+ * - 根节点 transition:persist：VT 换页模型 DOM 保留，不重载不闪断，脚本单次初始化
+ * - 菜单 action 映射：home / scrollToTop / sleep / switchModel / link(url)
+ * - tips 挂到 options.model.tips；库内气泡行内 nowrap 由 MutationObserver 修正
+ * - 移动端按断点隐藏：隐藏态不加载模型（省流量），跨过断点自动补拉起
+ */
+interface Props {
+	live2d: {
+		model?:
+			| { path: string; volume: number; scale: number; x: number; y: number }
+			| Array<{ path: string; volume: number; scale: number; x: number; y: number }>;
+		position: "bottom-left" | "bottom-right";
+		size: number | { width: number; height: number };
+		primaryColor: string;
+		transitionDuration?: number;
+		transitionType?: "slide" | "fade";
+		menus?: {
+			items: Array<{ icon: string; label: string; action: string; url?: string }>;
+			align: "left" | "right";
+		};
+		tips?: {
+			enable: boolean;
+			welcomeMessage: string[];
+			messages: string[];
+			duration: number;
+			interval: number;
+			offset: { x: number; y: number };
+		};
+		responsive: { hideOnMobile: boolean; mobileBreakpoint: number };
+		zIndex: number;
+	};
+}
+
+const { live2d } = Astro.props;
+import { t } from "../i18n/index.js";
+
+const modelList = Array.isArray(live2d.model) ? live2d.model : live2d.model ? [live2d.model] : [];
+
+// 未配置菜单时的默认三键（多模型自动追加「切换模型」）；自定义 menus 覆盖默认
+const menus = live2d.menus ?? {
+	items: [
+		{ icon: "mdi:home", label: t("l2dHome"), action: "home" },
+		{ icon: "mdi:arrow-up", label: t("l2dScrollTop"), action: "scrollToTop" },
+		{ icon: "mdi:bed", label: t("l2dSleep"), action: "sleep" },
+		...(modelList.length > 1
+			? [{ icon: "mdi:swap-horizontal", label: t("l2dSwitchModel"), action: "switchModel" }]
+			: []),
+	],
+	align: "right" as const,
+};
+
+// x/y 转库的 offset: [x, y]；volume/scale 恒有值（schema default）
+const models = modelList.map((m) => ({
+	path: m.path,
+	volume: m.volume,
+	scale: m.scale,
+	offset: [m.x, m.y] as [number, number],
+}));
+---
+
+<div
+	id="l2d-widget-container"
+	transition:persist="live2d-widget"
+	style={`position:fixed;z-index:${live2d.zIndex};`}
+	data-models={JSON.stringify(models)}
+	data-position={live2d.position}
+	data-size={JSON.stringify(live2d.size)}
+	data-primary-color={live2d.primaryColor}
+	data-transition-duration={live2d.transitionDuration !== undefined ? String(live2d.transitionDuration) : ""}
+	data-transition-type={live2d.transitionType ?? ""}
+	data-menus={JSON.stringify(menus)}
+	data-tips={JSON.stringify(live2d.tips ?? null)}
+	data-responsive={JSON.stringify(live2d.responsive)}
+>
+</div>
+
+<script>
+	import { createWidget } from "l2d-widget";
+
+	// l2d-widget 气泡行内 white-space:nowrap 不换行；库用行内样式 CSS 盖不动，JS 修正
+	function patchTipBubble(el: HTMLElement) {
+		if (el.style.whiteSpace === "nowrap") {
+			el.style.whiteSpace = "normal";
+			el.style.width = "190px";
+		}
+	}
+
+	const tipObserver = new MutationObserver((mutations) => {
+		for (const m of mutations) {
+			for (const node of m.addedNodes) {
+				if (node instanceof HTMLElement) {
+					patchTipBubble(node);
+					node.querySelectorAll<HTMLElement>("*").forEach(patchTipBubble);
+				}
+			}
+		}
+	});
+	tipObserver.observe(document.body, { childList: true, subtree: true });
+
+	function initWidget() {
+		const container = document.getElementById("l2d-widget-container");
+		if (!container || container.dataset.l2dInit === "1") return;
+
+		try {
+			const models = JSON.parse(container.dataset.models || "[]");
+			if (!models.length) return;
+
+			// 移动端首访不置 guard：跨过断点转桌面端时由 resize 补初始化
+			const responsive = JSON.parse(container.dataset.responsive || "{}");
+			if (
+				responsive.hideOnMobile &&
+				window.innerWidth <= (responsive.mobileBreakpoint || 768)
+			) {
+				container.style.display = "none";
+				return;
+			}
+			container.dataset.l2dInit = "1";
+
+			const options: any = {
+				model: models.length === 1 ? models[0] : models,
+				position: container.dataset.position || "bottom-left",
+				size: JSON.parse(container.dataset.size || "280"),
+			};
+			const primaryColor = container.dataset.primaryColor;
+			if (primaryColor) options.primaryColor = primaryColor;
+			const transitionDuration = container.dataset.transitionDuration;
+			if (transitionDuration) options.transitionDuration = Number.parseInt(transitionDuration, 10);
+			const transitionType = container.dataset.transitionType;
+			if (transitionType) options.transitionType = transitionType;
+
+			// 菜单 action 字符串映射为函数（l2d-widget 会把 widget 实例传给 onClick）
+			const menuActions: Record<string, (widget: any) => void> = {
+				home: () => (window.location.href = "/"),
+				scrollToTop: () => window.scrollTo({ top: 0, behavior: "smooth" }),
+				sleep: (widget) => widget.sleep(),
+				switchModel: (widget) => {
+					// 循环切换：容器 data-models 为准（persist 后 dataset 仍在）
+					const all = JSON.parse(container.dataset.models || "[]");
+					currentModelIndex = (currentModelIndex + 1) % all.length;
+					widget.switchModel(currentModelIndex);
+				},
+			};
+			const menus = JSON.parse(container.dataset.menus || "{}");
+			if (menus.items?.length) {
+				options.menus = {
+					items: menus.items.map((item: any) => ({
+						icon: item.icon,
+						label: item.label,
+						onClick:
+							item.action === "link" && item.url
+								? () => window.open(item.url, "_blank", "noopener")
+								: menuActions[item.action] || (() => {}),
+					})),
+					...(menus.align && { align: menus.align }),
+				};
+			}
+
+			// tips 挂到 model.tips：enable:false 显式关闭；空对象不覆盖库默认
+			const tips = JSON.parse(container.dataset.tips || "null");
+			if (tips) {
+				const tipsConfig =
+					tips.enable === false
+						? false
+						: {
+								...(tips.welcomeMessage?.length && { welcomeMessage: tips.welcomeMessage }),
+								...(tips.messages?.length && { messages: tips.messages }),
+								...(tips.duration !== undefined && { duration: tips.duration }),
+								...(tips.interval !== undefined && { interval: tips.interval }),
+								...(tips.offset && { offset: tips.offset }),
+								...(tips.typing && { typing: tips.typing }),
+							};
+				if (tipsConfig === false || Object.keys(tipsConfig).length > 0) {
+					if (Array.isArray(options.model)) {
+						options.model.forEach((m: any) => (m.tips = tipsConfig));
+					} else {
+						options.model.tips = tipsConfig;
+					}
+				}
+			}
+
+			createWidget(options);
+		} catch (err) {
+			console.error("[live2d] 初始化失败：", err);
+		}
+	}
+
+	let currentModelIndex = 0;
+
+	// 响应式：跨过断点隐藏/显示，显示时若尚未初始化则补拉起
+	function handleResponsive() {
+		const container = document.getElementById("l2d-widget-container");
+		if (!container) return;
+		const responsive = JSON.parse(container.dataset.responsive || "{}");
+		if (!responsive.hideOnMobile) return;
+		const hidden = window.innerWidth <= (responsive.mobileBreakpoint || 768);
+		container.style.display = hidden ? "none" : "";
+		if (!hidden && container.dataset.l2dInit !== "1") initWidget();
+	}
+
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", initWidget, { once: true });
+	} else {
+		initWidget();
+	}
+	window.addEventListener("resize", handleResponsive);
+</script>

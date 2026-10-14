@@ -147,6 +147,10 @@ const en: Record<UiKey, string> = {
 	musicEmpty: "Playlist is empty",
 	musicSeek: "Playback progress",
 	musicVolume: "Volume",
+	l2dHome: "Home",
+	l2dScrollTop: "Back to top",
+	l2dSleep: "Take a nap",
+	l2dSwitchModel: "Switch model",
 	codeFoldExpand: "Expand code",
 	codeFoldCollapse: "Collapse code",
 };

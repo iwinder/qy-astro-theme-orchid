@@ -66,10 +66,11 @@ export const themeConfig = {
 	// 归档按年折叠 / 樱花特效（§4.30）：siteConfig 中配置
 	archive: siteConfig.archive,
 	sakura: siteConfig.sakura,
-	// 页宽变量（§4.32）/ 背景壁纸（§4.35）/ 音乐播放器（§4.36）：siteConfig 中配置
+	// 页宽变量（§4.32）/ 背景壁纸（§4.35）/ 音乐播放器（§4.36）/ Live2D 看板娘（§4.38）：siteConfig 中配置
 	pageWidth: siteConfig.pageWidth,
 	wallpaper: siteConfig.wallpaper,
 	music: siteConfig.music,
+	live2d: siteConfig.live2d,
 } satisfies ThemeConfig;
 
 // 再导出各模块配置，需要单项时可直接从本文件导入
