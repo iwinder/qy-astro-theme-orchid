@@ -816,7 +816,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - **叠加层样式（global.css）**：`.wallpaper-hero` absolute inset-0 flex 居中，`padding-top: var(--header-h)` 补偿 banner 负 margin 滑入 Header 底下造成的视觉偏移；quote 白色 + 文字阴影，`<em>` 用 `color-mix(in srgb, var(--accent) 45%, #fff)` 提亮（accent-ink 在黑蒙层上偏暗）；sub 用 rgba(255,255,255,.88)
 - **README**：`hero.enabled` / `wallpaper.enabled` 两行入配置表，hero.quote 行补充叠加形态说明
 
-**验证（§4.39）**：`pnpm --filter site build` 通过；dist 断言——首页 list-head 在首张置顶卡之前（置顶在列表内）、index 与 /page/2/ 卡片数一致、banner 内含 `wallpaper-hero` 叠加层与 hero-quote、独立 `.hero` 区块在 banner 存在时不再出现；浏览器实测首页 hero 白字叠加在 banner 图上居中、翻页后列表高度不再缺块。
+**验证（§4.39）**：`pnpm --filter site build` 通过；dist 断言全过——首页 banner 内含 `wallpaper-hero` + hero 文案、无独立 `section.hero`、list-head 位于首张置顶卡之前、首页含 featured 置顶卡；/page/2/ 与首页卡片数一致（6 vs 6）、无 featured 卡、banner 与 hero 叠加照旧渲染（`/page/N/` 也传 `page="home"`，与旧行为一致）。dev server curl 验证 list-head 先于 featured 卡。hero 叠加的视觉效果需用户重启 dev（配置快照仍是旧值，banner 未渲染）后确认。
 
 ## 5. 里程碑路线
 
