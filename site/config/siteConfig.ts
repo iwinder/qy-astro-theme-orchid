@@ -42,6 +42,13 @@ export const siteConfig = {
 	codeTheme: {
 		light: "github-light",
 		dark: "github-dark",
+		// 代码块折叠（§4.37）：行数超过 threshold 折叠为 previewLines 行预览
+		fold: {
+			enabled: true,
+			threshold: 15,
+			previewLines: 8,
+			defaultCollapsed: true,
+		},
 	},
 	// 归档按年折叠（§4.30）：开启后年份头可点击，最新一年默认展开
 	archive: {

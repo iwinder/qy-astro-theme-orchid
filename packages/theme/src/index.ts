@@ -100,8 +100,11 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 					rehypeFigure,
 					rehypeFirstImage,
 					rehypeAnchor,
-					// 复制按钮文案跟随站点语言（node 侧无 virtual 模块，显式传 config.lang）
-					[rehypeCodeBlock, { uiLang: config.lang }],
+					// 复制/折叠按钮文案跟随站点语言（node 侧无 virtual 模块，显式传 config.lang）
+					[
+						rehypeCodeBlock,
+						{ uiLang: config.lang, fold: config.codeTheme.fold },
+					],
 				];
 				if (config.latex.enabled) {
 					remarkPlugins.push(remarkMath);

@@ -232,13 +232,40 @@ export const themeConfigSchema = z.object({
 	 * 切换后以 localStorage('qy-mode') 为准。
 	 */
 	colorMode: z.enum(["light", "dark", "system"]).default("system"),
-	/** 代码高亮双主题（§4.17）：值为 Shiki 内置主题名，light/dark 跟随站点深浅模式切换 */
+	/**
+	 * 代码高亮双主题（§4.17）：值为 Shiki 内置主题名，light/dark 跟随站点深浅模式切换。
+	 * fold（§4.37）：代码块折叠——行数超过 threshold 折叠为 previewLines 行预览。
+	 * 注意 default 必须写显式完整字面量：Zod v4 的 .default(x) 在输入缺失时直接取 x、
+	 * 不做二次 parse，内层字段默认值不会补齐。
+	 */
 	codeTheme: z
 		.object({
 			light: z.string().default("github-light"),
 			dark: z.string().default("github-dark"),
+			fold: z
+				.object({
+					enabled: z.boolean().default(false),
+					threshold: z.number().int().min(1).default(15),
+					previewLines: z.number().int().min(1).default(8),
+					defaultCollapsed: z.boolean().default(true),
+				})
+				.default({
+					enabled: false,
+					threshold: 15,
+					previewLines: 8,
+					defaultCollapsed: true,
+				}),
 		})
-		.default({}),
+		.default({
+			light: "github-light",
+			dark: "github-dark",
+			fold: {
+				enabled: false,
+				threshold: 15,
+				previewLines: 8,
+				defaultCollapsed: true,
+			},
+		}),
 	/** 独立页开关：关闭后主题不注入对应路由（路由完全不生成） */
 	pages: z
 		.object({

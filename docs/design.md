@@ -758,6 +758,22 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.36）**：`pnpm --filter site build` 通过（pagefind 62 页）；dist 断言全过——index/archive/about 页各 1 处 `id="musicPlayer"` + `astro-transition-persist="music-player"` + `data-playlist`（晨光序曲等三曲 JSON）+ `data-labels`（15 键中文文案）；dist/music/ 5 个资源文件齐。dev 重启后 curl 断言：首页播放器节点在、`/music/a.mp3` 200、`/music/a.lrc` 内容可取。改 site/config 需重启 dev（§4.26 口径）。
 
+### 4.37 代码块折叠（✅ 2026-10-14 完成）
+
+对齐参考站 expressive-code-collapsible 口径：行数 > 阈值（默认 15）可折叠、预览 8 行、默认折叠、头部按钮展开/收起。schema `codeTheme.fold { enabled(true); threshold(15); previewLines(8); defaultCollapsed(true) }`，index.ts 经 `fold: config.codeTheme.fold` 透传给 rehypeCodeBlock（schema 默认值兜底，插件侧全部可选）。hello-world 文末 demo：16 行 ts 自检清单（触发折叠）+ 1 行短块对照。
+
+- **rehypeCodeBlock 扩展**：`countCodeLines` 先数后代 `span.line`（高亮后形态），无高亮时拼接 text 子节点按 `\n` split 去尾空串兜底（math 等未高亮块）；foldable 时 head 加 `fold-btn`（复用 copy-btn 配色，className `["copy-btn","fold-btn"]`，带 aria-expanded，文案取 `codeFoldExpand/codeFoldCollapse` 按 defaultCollapsed 预置）；wrapper 追加 `code-foldable` 类，defaultCollapsed 再加 `folded`；pre 上写 `style: --preview-n:<previewLines>`
+- **CSS（global.css）**：`.code-foldable pre` 设 `overflow:hidden`；`.folded pre` `max-height: calc(var(--preview-n, 8) * 22.95px + 28px)`（22.95 = 13.5px 字号 × 1.7 行高；28px = pre 上下 padding）；`.folded::after` 底部渐隐遮罩（light #f6f8fa / dark #101314 跟 pre 背景一致）
+- **app.ts**：委托中 `.fold-btn` 分支必须在 `.copy-btn` 分支之前（fold-btn 同时命中 copy-btn 类选择器，否则会被复制逻辑截胡）；toggle `.folded` 并同步 aria-expanded 与按钮文案（labels JSON / UI_FALLBACK 双兜底）
+- **i18n**：zh-CN 键源 `codeFoldExpand: 展开代码 / codeFoldCollapse: 收起代码`，en.ts 同步，BaseLayout `#qy-ui-labels` JSON 注入
+- **排除折叠**：`math / mermaid / plantuml` 三类不折叠（后续插件会整体替换节点，折叠壳无意义）
+- **⚠️ shiki 执行顺序（本节最大踩坑，旧注释已纠正）**：当前 Astro 版本下 **shiki 高亮先于用户 rehype 插件运行**——普通代码块到达 codeBlock 时已是高亮产物，且 shiki 用 HTML 属性名直接写 hast properties：`class` 是**字符串**而非 `className` 数组（`Array.isArray(properties.className)` 永远落空），语言在 `pre` 的 `data-language` 上（高亮后 code 的 `language-x` 类被移除）；math 块不经 shiki，仍是 remark-rehype 原始形态（`className` 数组）。新增 `getClassList` 兼容两种形态，lang 识别优先 `pre[data-language]` 退回 `language-x` 类——顺手修复了既有语言标签 bug（此前全部 fallback 显示 "code"）
+- **⚠️ content layer 渲染缓存**：改 theme 渲染管线（rehype 插件）后 build 断言结果不变时，先 `rm -rf site/node_modules/.astro` 再重建——Markdown → HTML 产物缓存在此，插件改动不会触发失效（§4.37 排障时浪费一轮）
+- **⚠️ Zod v4 `.default()` 陷阱**：输入字段缺失时直接取默认值、**不会**对默认值二次 parse 校验——fold 子对象与外层 `codeTheme` 的 default 都必须写显式完整字面量，不能 `.default(partialRef)`
+- **调试手段**：Astro build 渲染期吞 console.log，插件内可用 `appendFileSync` 写 /tmp 文件取证（已清理）
+
+**验证（§4.37）**：`pnpm --filter site build` 通过（清缓存后）；dist 断言全过——hello-world 页 `code-foldable=1 / fold-btn=1 / folded=1 / --preview-n:8=1`，`展开代码` ×2（按钮 + labels JSON 属预期）；全站 7 个 code-block 包装分布正确（theme-override 1 / hello-world 2 / features-demo 4）；CSS/JS 产物均含折叠样式与逻辑；语言标签修复回归——hello-world lang `['ts','ts']`、全站 lang-code 残留 0；katex 无回归（features-demo katex 85 处、language-math 残留 0、math 块不加复制按钮）。dev 重启后 curl 冒烟通过。改 siteConfig 需重启 dev（§4.26 口径）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

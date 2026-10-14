@@ -166,6 +166,8 @@ const zhCN = {
 	musicEmpty: "播放列表为空",
 	musicSeek: "播放进度",
 	musicVolume: "音量",
+	codeFoldExpand: "展开代码",
+	codeFoldCollapse: "收起代码",
 } as const;
 
 export type UiKey = keyof typeof zhCN;

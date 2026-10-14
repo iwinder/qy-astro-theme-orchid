@@ -1656,6 +1656,27 @@ html.dark .copy-btn.copied {
 	color: #7ecbb0;
 	border-color: #3d5a50;
 }
+/* 代码块折叠（§4.37）：折叠态限制高度为预览行数，底部渐隐提示
+   max-height 口径 = 行数 × (13.5px × 1.7) + pre 上下 padding 28px，
+   若调整 .prose pre code 字号/行高需同步此 calc */
+.code-block.code-foldable {
+	position: relative;
+}
+.code-block.folded pre {
+	max-height: calc(var(--preview-n, 8) * 22.95px + 28px);
+	overflow: hidden;
+}
+.code-block.folded::after {
+	content: "";
+	position: absolute;
+	inset: auto 0 0 0;
+	height: 64px;
+	background: linear-gradient(to bottom, transparent, #f6f8fa);
+	pointer-events: none;
+}
+html.dark .code-block.folded::after {
+	background: linear-gradient(to bottom, transparent, #101314);
+}
 .prose pre {
 	margin: 0;
 	padding: 14px 16px;

@@ -2,8 +2,12 @@
  * rehype 插件集（M3a，全部零依赖手写 hast 遍历）
  *
  * 挂载顺序（index.ts）：externalLinks → callouts → figure → firstImage → anchor → codeBlock
- * 注意：Astro 的 shiki 高亮在用户 rehype 插件之后运行，因此 codeBlock 只负责
- * 包装 <pre> 外层结构（.code-block/.code-head），pre 内容仍由 shiki 填充。
+ * 注意：Astro 的 shiki 高亮先于用户 rehype 插件运行（普通代码块到达 codeBlock 时
+ * 已是高亮产物：shiki 用 HTML 属性名直接写 properties——class 是字符串而非
+ * className 数组，语言在 pre 的 data-language 上）；math 块不经 shiki，仍是
+ * remark-rehype 原始形态（className 数组）。读取类名务必走 getClassList 兼容两种形态。
+ * codeBlock 负责包装 <pre> 外层结构（.code-block/.code-head）；
+ * 代码块折叠（§4.37）也在此处一并判定（行数统计 + 头部折叠按钮）。
  * remark-math 的块级公式也会产出 <pre><code class="language-math">（后续由
  * rehype-katex 整体替换为 katex 渲染产物），此时不生成复制按钮（无可复制代码）。
  */
@@ -21,6 +25,17 @@ function visit(node: any, fn: (n: any, parent: any | null) => void | "skip") {
 }
 
 const isBlank = (n: any) => n.type === "text" && !n.value.trim();
+
+/**
+ * 读取 hast 节点类名列表（兼容两种形态）：shiki 产出用 HTML 属性名直接写
+ * properties（class 为字符串），remark-rehype 原始节点则是 className 数组。
+ */
+function getClassList(props: any): string[] {
+	const raw = props?.className ?? props?.class;
+	if (Array.isArray(raw)) return raw.map(String);
+	if (typeof raw === "string") return raw.split(/\s+/).filter(Boolean);
+	return [];
+}
 
 /* ---------------------------------------------------------------- 外链 */
 
@@ -269,15 +284,58 @@ export function rehypeAnchor(): Transformer {
 /* -------------------------------------------------------------- 代码块 */
 
 /**
- * <pre><code class="language-x"> →
+ * 统计代码行数（§4.37）：shiki 先于本插件运行，普通代码块已是高亮产物
+ * （span.line，class 为字符串形态）；math 等未高亮块与极端情形（纯文本）
+ * 走 text 按 \n 计数兜底。两种形态都兼容。
+ */
+function countCodeLines(code: any): number {
+	if (!code) return 0;
+	let highlighted = false;
+	let lines = 0;
+	visit(code, (node) => {
+		if (node.type === "element" && node.tagName === "span") {
+			const cls = getClassList(node.properties);
+			if (cls.includes("line")) {
+				highlighted = true;
+				lines++;
+			}
+		}
+	});
+	if (highlighted) return lines;
+	let text = "";
+	for (const c of code.children ?? []) {
+		if (c.type === "text") text += c.value;
+	}
+	const parts = text.split("\n");
+	// 末尾换行产生的空尾串不算一行
+	if (parts.length > 1 && parts[parts.length - 1] === "") parts.pop();
+	return parts.length;
+}
+
+/**
+ * <pre><code> →
  * <div class="code-block"><div class="code-head"><span class="lang">x</span>
  * <button class="copy-btn" type="button">复制</button></div><pre>…</pre></div>
  *
- * pre 本体不动（shiki 在其后运行并填充高亮 HTML）。
- * 两阶段执行：先收集所有 pre，再替换，避免包装后的 div 被重复访问。
+ * shiki 已先完成高亮：语言取 pre 的 data-language（shiki 写入）；math 等
+ * 未高亮块退回 code 的 language-x 类。两阶段执行：先收集所有 pre，
+ * 再替换，避免包装后的 div 被重复访问。
  */
-export function rehypeCodeBlock(opts?: { uiLang?: string }): Transformer {
+export function rehypeCodeBlock(opts?: {
+	uiLang?: string;
+	/** 折叠配置（§4.37），schema 侧带默认值，这里全部可选 */
+	fold?: {
+		enabled?: boolean;
+		threshold?: number;
+		previewLines?: number;
+		defaultCollapsed?: boolean;
+	};
+}): Transformer {
 	const uiLang = opts?.uiLang || "zh-CN";
+	const foldEnabled = !!opts?.fold?.enabled;
+	const foldThreshold = opts?.fold?.threshold ?? 15;
+	const previewLines = opts?.fold?.previewLines ?? 8;
+	const defaultCollapsed = opts?.fold?.defaultCollapsed ?? true;
 	return (tree) => {
 		const targets: Array<{ pre: any; parent: any; index: number }> = [];
 		visit(tree, (node, parent) => {
@@ -289,15 +347,14 @@ export function rehypeCodeBlock(opts?: { uiLang?: string }): Transformer {
 			const code = (pre.children ?? []).find(
 				(c: any) => c.type === "element" && c.tagName === "code",
 			);
-			const cls = Array.isArray(code?.properties?.className)
-				? code.properties.className
-				: [];
-			const langMatch = cls.find((c: string) =>
-				String(c).startsWith("language-"),
-			);
-			const lang = langMatch
-				? String(langMatch).slice("language-".length)
-				: "code";
+			const dataLang =
+				pre.properties?.["data-language"] ?? pre.properties?.dataLanguage;
+			const langMatch =
+				(typeof dataLang === "string" && dataLang) ||
+				getClassList(code?.properties)
+					.find((c) => c.startsWith("language-"))
+					?.slice("language-".length);
+			const lang = langMatch ? String(langMatch) : "code";
 			const head: any = {
 				type: "element",
 				tagName: "div",
@@ -321,12 +378,56 @@ export function rehypeCodeBlock(opts?: { uiLang?: string }): Transformer {
 					children: [{ type: "text", value: resolveLabel(uiLang, "copy") }],
 				});
 			}
+			/* 折叠判定（§4.37）：math/mermaid/plantuml 排除——后续插件会整体替换节点，
+			   折叠结构会被丢弃；行数超过 threshold 才可折叠 */
+			const foldable =
+				foldEnabled &&
+				lang !== "math" &&
+				lang !== "mermaid" &&
+				lang !== "plantuml" &&
+				countCodeLines(code) > foldThreshold;
+			if (foldable) {
+				// 复用 copy-btn 配色，fold-btn 由 app.ts 委托切换
+				head.children.push({
+					type: "element",
+					tagName: "button",
+					properties: {
+						className: ["copy-btn", "fold-btn"],
+						type: "button",
+						"aria-expanded": defaultCollapsed ? "false" : "true",
+					},
+					children: [
+						{
+							type: "text",
+							value: resolveLabel(
+								uiLang,
+								defaultCollapsed ? "codeFoldExpand" : "codeFoldCollapse",
+							),
+						},
+					],
+				});
+			}
 			const wrapper = {
 				type: "element",
 				tagName: "div",
-				properties: { className: ["code-block"] },
+				properties: {
+					className: foldable
+						? [
+								"code-block",
+								"code-foldable",
+								...(defaultCollapsed ? ["folded"] : []),
+							]
+						: ["code-block"],
+				},
 				children: [head, pre],
 			};
+			// 折叠块在 pre 上写预览行数（CSS max-height 按行计算）
+			if (foldable) {
+				pre.properties = {
+					...pre.properties,
+					style: `--preview-n:${previewLines}`,
+				};
+			}
 			parent.children[index] = wrapper;
 		}
 	};

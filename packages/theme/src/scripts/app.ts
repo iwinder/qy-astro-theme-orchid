@@ -39,6 +39,8 @@ const UI_FALLBACK: Record<string, string> = {
 	nextImage: "下一张",
 	copy: "复制",
 	copied: "已复制",
+	codeFoldExpand: "展开代码",
+	codeFoldCollapse: "收起代码",
 };
 let uiLabels: Record<string, string> | null = null;
 function ui(key: string): string {
@@ -786,6 +788,18 @@ doc.addEventListener("click", (e) => {
 		if (img) {
 			e.preventDefault();
 			openLb([{ src: img.src, cap: img.getAttribute("alt") || "" }], 0);
+		}
+		return;
+	}
+
+	/* 代码块折叠切换（§4.37）：须在 copy 分支之前——fold-btn 复用 copy-btn 配色 */
+	const foldBtn = target.closest(".fold-btn");
+	if (foldBtn) {
+		const wrap = foldBtn.closest(".code-block");
+		if (wrap) {
+			const folded = wrap.classList.toggle("folded");
+			foldBtn.setAttribute("aria-expanded", folded ? "false" : "true");
+			foldBtn.textContent = ui(folded ? "codeFoldExpand" : "codeFoldCollapse");
 		}
 		return;
 	}

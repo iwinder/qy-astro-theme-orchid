@@ -147,6 +147,8 @@ const en: Record<UiKey, string> = {
 	musicEmpty: "Playlist is empty",
 	musicSeek: "Playback progress",
 	musicVolume: "Volume",
+	codeFoldExpand: "Expand code",
+	codeFoldCollapse: "Collapse code",
 };
 
 export default en;
