@@ -131,6 +131,22 @@ const en: Record<UiKey, string> = {
 		"No series yet. Add a series field to a post's frontmatter to create one.",
 	seriesProgress: "{cur} / {total}",
 	seriesCatalog: "Series catalog",
+	/* Music player (§4.36) */
+	musicOpen: "Music player",
+	musicClose: "Collapse player",
+	musicPlay: "Play",
+	musicPause: "Pause",
+	musicPrev: "Previous track",
+	musicNext: "Next track",
+	musicModeList: "List loop",
+	musicModeOne: "Repeat one",
+	musicModeRandom: "Shuffle",
+	musicLyrics: "Lyrics",
+	musicPlaylist: "Playlist",
+	musicNoLyrics: "No lyrics",
+	musicEmpty: "Playlist is empty",
+	musicSeek: "Playback progress",
+	musicVolume: "Volume",
 };
 
 export default en;

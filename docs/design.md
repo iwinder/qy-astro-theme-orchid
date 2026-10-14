@@ -742,6 +742,22 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.32-4.35）**：`pnpm --filter site build` 通过；dist 断言全过——index.html 含 `--page-width:1120px`（全站每页 1 处）+ `wallpaper-banner` + `data-allow-switch="true"` + `#layoutSwitch` + 内联 boot 脚本（qy-postList）；首页/分页含 `?v=<hash>` 随机封面 URL；hello-world 文章页 `data-api-retries`（PostCard 与文章 figure 双消费点）。demo：hello-world 加 `image: "api"`（pinned 置顶演示），`randomCover.apis` 用 picsum seed 模板，`/wallpaper/banner-01.jpg` 横幅图已生成；site/config 显式透传 `pageWidth` + `wallpaper`（§4.31 踩坑复用）。dev 需重启生效。
 
+### 4.36 音乐播放器（local 模式）（✅ 2026-10-14 完成）
+
+参考站是 swup + is:inline 全内联 + Manager/View 双组件 + 虚拟滚动（依赖其私有 window.__fireflyMusic API），本主题**不搬**，自研单组件方案：schema 顶层 `music { enabled(false); position(left/right); volume(0-1, 0.7); playMode(list/one/random); showLyrics(true); playlist[{name, artist, url, cover?, lrc?}] }`；BaseLayout `enabled && playlist.length` 双条件挂载于 back-top 前（z-index 255 > back-top 250）。
+
+- **MusicPlayer.astro 单组件**：收起态 `.mp-fab` 悬浮球（首曲封面旋转/唱片图标兜底）+ 展开态 `.mp-panel`（封面/曲名/进度 role=slider + 键盘 ±5s/三态模式按钮 ic-list·ic-one·ic-random/上下曲/播放暂停/音量 range/歌词·列表双抽屉互斥 + `<audio preload=metadata>`）
+- **跨页不断播关键**：根节点 `transition:persist="music-player"`（VT swap 保留 DOM）→ 组件自带 bundled `<script>` 模块单次执行 + 节点级 guard（`dataset.mpInit === "1"`）；**不走** SakuraEffect 的 astro:page-load 重初始化模式（persist 节点不重建），也不依赖 app.ts initPage 链
+- **配置传递**：播放列表经 `data-playlist={JSON.stringify(...)}`、客户端动态文案（模式三态名/播放暂停 aria/无歌词）经 `data-labels` 属性传入 script；SSR 静态 aria 直接 t()
+- **LRC**：一行多时间戳正则 `/\[(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g`（2 位毫秒÷100、3 位÷1000）；`lrc` 字段 `/^(https?:)?\/\/|^\/|\.lrc($|\?)/i` 判 URL 走 fetch，否则按内联文本解析；当前行高亮线性扫描 + scrollTo 居中，用户滚动 3s 内不回吸（wheel/touchstart 时间戳）；歌词行点击 seek
+- **健壮性**：`loadTrack` 捕获 idx 做竞态防护（过期 play 忽略 + AbortError 静默）；NotAllowedError（自动播放被拦截）仅 console.warn 属预期；**failStreak 防死循环只在播放成功回调清零**（若放 loadTrack 开头，error → playNext → loadTrack 链会清零使防护失效）；随机模式下一首 `(idx + 1 + rand(len-1)) % len` 保证不重复
+- **音量记忆**：localStorage `qy-music-vol` 优先于配置初值
+- **⚠️ Astro scoped style 陷阱**：组件 `<style>` 默认 scoped（data-astro-cid 属性选择器），script 运行时 createElement 插入的节点（.mp-lrc-line/.mp-lrc-empty/.mp-track/.mp-track-artist/.mp-eq i）没有该属性，样式永不命中——须用 `<style is:global>`（所有选择器已带 .music-player/.mp- 前缀，无污染风险）
+- **i18n**：zh-CN 15 键（music* 组，键源），en.ts 类型强制同步
+- **demo**：siteConfig.music 三曲各演示一种歌词形态——`/music/a.mp3` + a.lrc 文件 + cover-a.jpg / b.mp3 内联单行歌词 / c.mp3 无歌词；音频为 SoundHelix 公开测试曲经**帧级切片脚本**（/tmp 中间产物，不入库）截取 75s（CBR 192k 各 ~1.8MB，afinfo 验证可解码），封面走 text_to_image 生成
+
+**验证（§4.36）**：`pnpm --filter site build` 通过（pagefind 62 页）；dist 断言全过——index/archive/about 页各 1 处 `id="musicPlayer"` + `astro-transition-persist="music-player"` + `data-playlist`（晨光序曲等三曲 JSON）+ `data-labels`（15 键中文文案）；dist/music/ 5 个资源文件齐。dev 重启后 curl 断言：首页播放器节点在、`/music/a.mp3` 200、`/music/a.lrc` 内容可取。改 site/config 需重启 dev（§4.26 口径）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

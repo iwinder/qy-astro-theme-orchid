@@ -150,6 +150,22 @@ const zhCN = {
 	seriesEmpty: "还没有专题，在文章 frontmatter 中填写 series 字段即可创建。",
 	seriesProgress: "{cur} / {total}",
 	seriesCatalog: "专题目录",
+	/* 音乐播放器（§4.36）：data-labels 经组件 data-labels 属性带入客户端 */
+	musicOpen: "音乐播放器",
+	musicClose: "收起播放器",
+	musicPlay: "播放",
+	musicPause: "暂停",
+	musicPrev: "上一首",
+	musicNext: "下一首",
+	musicModeList: "列表循环",
+	musicModeOne: "单曲循环",
+	musicModeRandom: "随机播放",
+	musicLyrics: "歌词",
+	musicPlaylist: "播放列表",
+	musicNoLyrics: "暂无歌词",
+	musicEmpty: "播放列表为空",
+	musicSeek: "播放进度",
+	musicVolume: "音量",
 } as const;
 
 export type UiKey = keyof typeof zhCN;

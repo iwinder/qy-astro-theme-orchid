@@ -836,6 +836,46 @@ export const themeConfigSchema = z.object({
 			density: z.number().int().min(1).max(200).default(24),
 		})
 		.default({ enabled: false, density: 24 }),
+	/**
+	 * 音乐播放器（§4.36）：local 模式，自研播放内核（audio + LRC 解析），
+	 * 根节点 transition:persist 跨页不断播。meting 在线模式预留后续扩展。
+	 */
+	music: z
+		.object({
+			enabled: z.boolean().default(false),
+			/** 悬浮位置：left 左下 / right 右下 */
+			position: z.enum(["left", "right"]).default("left"),
+			/** 初始音量 0-1（访客调整后记忆于 localStorage） */
+			volume: z.number().min(0).max(1).default(0.7),
+			/** 循环模式：list 列表循环 / one 单曲循环 / random 随机 */
+			playMode: z.enum(["list", "one", "random"]).default("list"),
+			/** 是否显示歌词开关按钮 */
+			showLyrics: z.boolean().default(true),
+			/** 本地播放列表 */
+			playlist: z
+				.array(
+					z.object({
+						/** 曲名 */
+						name: z.string(),
+						artist: z.string().default(""),
+						/** 音频地址（public 路径或外链） */
+						url: z.string(),
+						/** 封面图（可选，缺省渲染唱片图标） */
+						cover: z.string().optional(),
+						/** 歌词：.lrc 文件路径或内联 LRC 文本（可选，缺省无歌词） */
+						lrc: z.string().optional(),
+					}),
+				)
+				.default([]),
+		})
+		.default({
+			enabled: false,
+			position: "left",
+			volume: 0.7,
+			playMode: "list",
+			showLyrics: true,
+			playlist: [],
+		}),
 });
 
 export type ThemeConfig = z.input<typeof themeConfigSchema>;

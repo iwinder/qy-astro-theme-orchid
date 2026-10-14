@@ -3,6 +3,7 @@ import { ClientRouter } from "astro:transitions";
 import Analytics from "virtual:theme/components/Analytics.astro";
 import Footer from "virtual:theme/components/Footer.astro";
 import Header from "virtual:theme/components/Header.astro";
+import MusicPlayer from "virtual:theme/components/MusicPlayer.astro";
 import SakuraEffect from "virtual:theme/components/SakuraEffect.astro";
 import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
@@ -109,6 +110,10 @@ const showWallpaper =
     <Analytics />
     <!-- 樱花飘落特效（§4.30）：sakura.enabled 开启才渲染 -->
     {config.sakura.enabled && <SakuraEffect density={config.sakura.density} />}
+    <!-- 悬浮音乐播放器（§4.36）：music.enabled 且歌单非空才渲染 -->
+    {config.music.enabled && config.music.playlist.length > 0 && (
+      <MusicPlayer music={config.music} />
+    )}
     <button class="back-top" id="backTop" type="button" aria-label={t('backToTop')} hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
     </button>

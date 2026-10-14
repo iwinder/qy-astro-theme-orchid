@@ -62,4 +62,19 @@ export const siteConfig = {
 		position: "center",
 		homeOnly: true,
 	},
+	// 悬浮音乐播放器（§4.36）：local 模式，歌单指向 public/music 静态资源
+	// 歌词三种形态各演示一首：a.lrc 文件 / 曲B 内联字符串 / 曲C 无歌词
+	// as const 防止 TS 把枚举值拓宽为 string（schema 是字面量联合）
+	music: {
+		enabled: true,
+		position: "left" as const,
+		volume: 0.7,
+		playMode: "list" as const,
+		showLyrics: true,
+		playlist: [
+			{ name: "晨光序曲", artist: "SoundHelix", url: "/music/a.mp3", cover: "/music/cover-a.jpg", lrc: "/music/a.lrc" },
+			{ name: "午后随想", artist: "SoundHelix", url: "/music/b.mp3", lrc: "[00:00.00]纯音乐，请静静聆听" },
+			{ name: "夜航星", artist: "SoundHelix", url: "/music/c.mp3" },
+		],
+	},
 };
