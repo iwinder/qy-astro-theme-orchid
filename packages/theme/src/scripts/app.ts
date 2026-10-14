@@ -724,10 +724,12 @@ doc.addEventListener("click", (e) => {
 	/* 列表形态切换（§4.34）：toggle grid-mode + localStorage 记忆，CSS 过渡呈现 */
 	if (target.closest("#layoutSwitch")) {
 		const list = doc.getElementById("postList");
-		if (list && list.dataset.allowSwitch === "true") {
+		const btn = target.closest("#layoutSwitch") as HTMLElement | null;
+		if (list && btn && list.dataset.allowSwitch === "true") {
 			const toGrid = !list.classList.contains("grid-mode");
 			list.classList.toggle("grid-mode", toGrid);
 			list.style.setProperty("--col-w", `${list.dataset.gridCol || "320"}px`);
+			btn.setAttribute("aria-pressed", toGrid ? "true" : "false");
 			try {
 				localStorage.setItem("qy-postList", toGrid ? "grid" : "list");
 			} catch {
@@ -936,6 +938,8 @@ function initPostListLayout() {
 	}
 	list.classList.toggle("grid-mode", mode === "grid");
 	list.style.setProperty("--col-w", `${list.dataset.gridCol || "320"}px`);
+	const btn = doc.getElementById("layoutSwitch");
+	if (btn) btn.setAttribute("aria-pressed", mode === "grid" ? "true" : "false");
 }
 
 /* ---------- 生命周期 ---------- */

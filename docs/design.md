@@ -736,6 +736,8 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 对齐参考站 localStorage 方案：schema `postList.allowSwitch` + `postList.gridColumnWidth`（220-600，默认 320）。index.astro / page/[page].astro 容器 `<div class="post-list" id="postList" data-allow-switch data-grid-col>`，标题包 `.list-head`（标题左、`#layoutSwitch` 方按钮右，ic-list/ic-grid 两个 SVG 显隐切换）。**防闪烁双保险**：BaseLayout `is:inline` boot 脚本（首帧前读 localStorage `qy-postList==='grid'` 给 #postList 加 grid-mode + 设 `--col-w`；VT 换页不重执行）+ app.ts `initPostListLayout()`（initPage 链内，VT 换页后接管）；click 委托内切 grid-mode + 写 localStorage。**CSS 布局要点**：`.post-list.grid-mode` = grid `repeat(auto-fill, minmax(var(--col-w),1fr))`；容器内非卡片条目（CategoryBar/标题/分页）`> :not(.post-card)` `grid-column: 1/-1` 占满整行；featured 卡（桌面 7fr/6fr 横排）与 compact 卡（128px+1fr）在网格内覆盖回纵向 flex column；<399px 强制单列。
 
+**迭代（同日）：列表形态横排化 + aria 状态**。初始实现下 cover 风格的「列表」本质是单列网格（卡片结构与网格形态完全相同，仅列数之差），切换观感不明显。修复：≥641px 时 `.post-list:not(.grid-mode) .post-card:not(.featured):not(.compact)` 改横排行卡 `grid-template-columns: minmax(220px, 38%) 1fr`（封面左 16:9→`aspect-ratio:auto`+min-height 200px、正文右垂直居中 padding 20/26/22），与 featured 卡同一设计语言、与网格竖排卡拉开结构差异；text-only 恒带 compact 类自然被排除，<641px 保持竖排堆叠。`#layoutSwitch` 补 `aria-pressed` 三处同步（index/page SSR 初值 "false" → boot 脚本首帧 "true" → app.ts 切换委托/initPostListLayout 按实际模式写入），网格=`true`/列表=`false`。
+
 ### 4.35 背景壁纸（banner 单模式）（✅ 2026-10-14 完成）
 
 只裁参考站 banner 形态（其全屏壁纸层自述屎山不搬）：schema 顶层 `wallpaper { src: string|string[]; height: 10-90vh(32); dimOpacity: 0-1(0.2); position; homeOnly(true) }`；src 数组在 BaseLayout 构建期随机取一张（零 JS）。渲染于 Header 后 main 前：Header 为 sticky 半透明毛玻璃 → banner `margin-top: calc(-1 * var(--header-h))` 下沉滑入 Header 底下；`.wallpaper-dim` 黑蒙层 rgba 深浅模式同色；img eager + object-fit cover + object-position 可配。`homeOnly` 时仅 `page === "home"` 渲染。

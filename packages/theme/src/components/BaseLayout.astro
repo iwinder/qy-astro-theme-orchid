@@ -104,7 +104,7 @@ const showWallpaper =
     <!-- 列表形态恢复（§4.34）：首帧绘制前应用 localStorage 记忆防闪烁；
          is:inline 在 VT 换页不重执行，跨页返回由 app.ts initPage 接管 -->
     <script is:inline>
-      (function(){try{var m=localStorage.getItem('qy-postList');if(m!=='grid')return;var l=document.getElementById('postList');if(!l||l.dataset.allowSwitch!=='true')return;l.classList.add('grid-mode');l.style.setProperty('--col-w',(l.dataset.gridCol||'320')+'px');}catch(e){}})();
+      (function(){try{var m=localStorage.getItem('qy-postList');if(m!=='grid')return;var l=document.getElementById('postList');if(!l||l.dataset.allowSwitch!=='true')return;l.classList.add('grid-mode');l.style.setProperty('--col-w',(l.dataset.gridCol||'320')+'px');var b=document.getElementById('layoutSwitch');if(b)b.setAttribute('aria-pressed','true');}catch(e){}})();
     </script>
     <Footer />
     <!-- 站点统计（P1-16）：ID 全空零输出，挂 body 尾与 orchid-blog 口径一致 -->

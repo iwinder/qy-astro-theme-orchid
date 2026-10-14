@@ -962,6 +962,25 @@ html.dark .layout-switch:hover {
 		grid-template-columns: 1fr;
 	}
 }
+/* 列表形态（非网格）cover 卡桌面横排：封面居左、正文居右，与网格竖排卡拉开结构差异
+   （否则列表只是「单列网格」，切换前后仅列数不同，观感无差别） */
+@media (min-width: 641px) {
+	.post-list:not(.grid-mode) .post-card:not(.featured):not(.compact) {
+		grid-template-columns: minmax(220px, 38%) 1fr;
+	}
+	.post-list:not(.grid-mode)
+		.post-card:not(.featured):not(.compact)
+		.post-cover {
+		aspect-ratio: auto;
+		min-height: 200px;
+	}
+	.post-list:not(.grid-mode)
+		.post-card:not(.featured):not(.compact)
+		.post-body {
+		padding: 20px 26px 22px;
+		align-self: center;
+	}
+}
 
 /* 分类导航栏（§4.15）：全站顶部横条，pill 横排 + 滚动区隐藏滚动条 */
 .category-bar {
