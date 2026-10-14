@@ -53,11 +53,14 @@ export const themeConfigSchema = z.object({
 	 */
 	pageWidth: z.number().int().min(800).max(1920).default(1600),
 	/**
-	 * 背景壁纸（§4.35，banner 单模式）：src 未配置则不渲染。
+	 * 背景壁纸（§4.35，banner 单模式）：enabled=false 或 src 未配置则不渲染。
 	 * src 为数组时构建期随机选一张（零 JS）；渲染为 Header 下方下沉横幅 + 黑蒙层。
+	 * 首页且 hero 启用时（§4.39），hero 主句/副句叠加显示在 banner 上。
 	 */
 	wallpaper: z
 		.object({
+			/** 总开关：false 时即使配了 src 也不渲染 */
+			enabled: z.boolean().default(true),
 			/** 图源（public 路径或外链）：单图 URL 或多图数组（构建期随机取一） */
 			src: z.union([z.string(), z.array(z.string())]).optional(),
 			/** banner 高度（vh） */
@@ -69,7 +72,7 @@ export const themeConfigSchema = z.object({
 			/** true 仅首页显示，false 全站显示 */
 			homeOnly: z.boolean().default(true),
 		})
-		.default({ height: 32, dimOpacity: 0.2, position: "center", homeOnly: true }),
+		.default({ enabled: true, height: 32, dimOpacity: 0.2, position: "center", homeOnly: true }),
 	/**
 	 * hue 调色面板（M3b-b5）：导航栏调色按钮 + 预设色板 + hue 滑杆。
 	 * 运行时覆写 --accent-h（s/l 保持配置值），持久化 localStorage('qy-hue')。
@@ -80,14 +83,19 @@ export const themeConfigSchema = z.object({
 			enabled: z.boolean().default(true),
 		})
 		.default({ enabled: true }),
-	/** 首页 hero 区（quote 留空则整个 hero 不渲染） */
+	/**
+	 * 首页 hero 区（§4.39）：enabled=false 或 quote 留空则整个 hero 不渲染。
+	 * 首页渲染了 wallpaper banner 时，hero 叠加在 banner 上；否则渲染为列表上方独立区块。
+	 */
 	hero: z
 		.object({
+			/** 总开关：false 时即使配了 quote 也不渲染 */
+			enabled: z.boolean().default(true),
 			/** 主句，<em> 标签内文字会以强调色渲染 */
 			quote: z.string().default(""),
 			sub: z.string().default(""),
 		})
-		.default({ quote: "", sub: "" }),
+		.default({ enabled: true, quote: "", sub: "" }),
 	/** 文章列表 */
 	postList: z
 		.object({

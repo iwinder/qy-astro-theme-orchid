@@ -10,30 +10,20 @@ import { t } from "../i18n/index.js";
 import { getSortedPosts } from "../utils.js";
 import { hydratePosts } from "./_hydrate.js";
 
-// 首页 = 分页第 1 页。置顶文章作为 featured 卡固定在列表最前（不重复进入分页列表）。
+// 首页 = 分页第 1 页。置顶文章留在分页流内（§4.39，对齐 orchid-blog paginate 全量流口径）：
+// 排序置顶在前，占第 1 页 pageSize 名额，各页卡片数一致，翻页不会出现「少一块」。
 const all = await getCollection("posts", ({ data }) =>
 	import.meta.env.PROD ? !data.draft : true,
 );
 const sorted = getSortedPosts(all);
-const featured = sorted.filter((p) => p.data.pinned);
-const rest = sorted.filter((p) => !p.data.pinned);
-const total = Math.max(1, Math.ceil(rest.length / config.postList.pageSize));
+const total = Math.max(1, Math.ceil(sorted.length / config.postList.pageSize));
 
-const [featuredPosts, pagePosts] = await Promise.all([
-	hydratePosts(featured),
-	hydratePosts(rest.slice(0, config.postList.pageSize)),
-]);
+const pagePosts = await hydratePosts(
+	sorted.slice(0, config.postList.pageSize),
+);
 ---
 
 <BaseLayout page="home">
-  {
-    config.hero.quote && (
-      <section class="hero reveal">
-        <h1 class="hero-quote" set:html={config.hero.quote} />
-        {config.hero.sub && <p class="hero-sub">{config.hero.sub}</p>}
-      </section>
-    )
-  }
   <div class="home-layout">
     {/* 文章列表（§4.34）：id/data 属性供 app.ts 恢复与切换网格/列表形态 */}
     <div
@@ -44,7 +34,6 @@ const [featuredPosts, pagePosts] = await Promise.all([
     >
       {/* 分类导航栏（§4.15→§4.21）：仅首页、与置顶/近期文章同列宽；「更多」固定跳分类页 */}
       <CategoryBar />
-      {featuredPosts.map((post) => <PostCard post={post} featured />)}
       <div class="list-head">
         <h2 class="section-title reveal">{t('recentPosts')}</h2>
         {
@@ -65,7 +54,7 @@ const [featuredPosts, pagePosts] = await Promise.all([
       </div>
       {
         pagePosts.length > 0 ? (
-          pagePosts.map((post) => <PostCard post={post} />)
+          pagePosts.map((post) => <PostCard post={post} featured={post.data.pinned} />)
         ) : (
           <p class="empty-note card">{t('emptyPosts')}</p>
         )

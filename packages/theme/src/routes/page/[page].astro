@@ -13,12 +13,13 @@ export async function getStaticPaths() {
 	const all = await getCollection("posts", ({ data }) =>
 		import.meta.env.PROD ? !data.draft : true,
 	);
-	const rest = getSortedPosts(all).filter((p) => !p.data.pinned);
-	const total = Math.max(1, Math.ceil(rest.length / config.postList.pageSize));
+	// 置顶留在分页流内（§4.39）：与首页同一条 sorted 流切片，各页卡片数一致
+	const sorted = getSortedPosts(all);
+	const total = Math.max(1, Math.ceil(sorted.length / config.postList.pageSize));
 	// 第 1 页由 / 承担，这里生成 /page/2/ 起的分页
 	return Array.from({ length: total - 1 }, (_, i) => ({
 		params: { page: String(i + 2) },
-		props: { page: i + 2, total, posts: rest },
+		props: { page: i + 2, total, posts: sorted },
 	}));
 }
 
@@ -32,14 +33,6 @@ const pagePosts = await hydratePosts(
 ---
 
 <BaseLayout title={t('pageN', { n: page })} page="home">
-  {
-    config.hero.quote && (
-      <section class="hero reveal">
-        <h1 class="hero-quote" set:html={config.hero.quote} />
-        {config.hero.sub && <p class="hero-sub">{config.hero.sub}</p>}
-      </section>
-    )
-  }
   <div class="home-layout">
     {/* 文章列表（§4.34）：与首页同一容器约定，供 app.ts 恢复与切换网格/列表形态 */}
     <div
@@ -66,7 +59,7 @@ const pagePosts = await hydratePosts(
           )
         }
       </div>
-      {pagePosts.map((post) => <PostCard post={post} />)}
+      {pagePosts.map((post) => <PostCard post={post} featured={post.data.pinned} />)}
       <Pagination page={page} total={total} basePath="/" />
     </div>
     <Sidebar posts={posts} />

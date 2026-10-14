@@ -25,14 +25,20 @@ interface Props {
 const { title, description = config.description, keywords = config.keywords, page, ogImage } = Astro.props;
 const pageTitle = title ? `${title} · ${config.title}` : config.title;
 const { h, s, l } = hexToHsl(config.accentColor);
-/* 背景壁纸（§4.35）：数组时构建期随机选一张（每页构建各自取，零 JS）；未配置不渲染 */
+/* 背景壁纸（§4.35，banner 单模式）：数组时构建期随机选一张（每页构建各自取，零 JS）；enabled=false 或未配置不渲染 */
 const wallpaperSrc = Array.isArray(config.wallpaper.src)
 	? config.wallpaper.src.length
 		? config.wallpaper.src[Math.floor(Math.random() * config.wallpaper.src.length)]
 		: ""
 	: config.wallpaper.src || "";
 const showWallpaper =
-	Boolean(wallpaperSrc) && (!config.wallpaper.homeOnly || page === "home");
+	config.wallpaper.enabled &&
+	Boolean(wallpaperSrc) &&
+	(!config.wallpaper.homeOnly || page === "home");
+/* 首页 hero（§4.39）：enabled=false 或 quote 留空不渲染；
+   首页且 banner 在渲染时叠加进 banner，否则渲染为列表上方独立区块 */
+const heroEnabled = config.hero.enabled && Boolean(config.hero.quote);
+const heroOnBanner = heroEnabled && showWallpaper && page === "home";
 ---
 
 <!doctype html>
@@ -84,7 +90,7 @@ const showWallpaper =
   <body data-page={page}>
     <a class="skip-link" href="#main">{t('skipToContent')}</a>
     <Header />
-    <!-- 背景壁纸（§4.35，banner 单模式）：Header 之后下沉横幅 + 黑蒙层；src 未配置或 homeOnly 非首页不渲染 -->
+    <!-- 背景壁纸（§4.35，banner 单模式）：Header 之后下沉横幅 + 黑蒙层；enabled=false / src 未配置 / homeOnly 非首页不渲染 -->
     {
       showWallpaper && (
         <div
@@ -93,11 +99,27 @@ const showWallpaper =
         >
           <img src={wallpaperSrc} alt="" aria-hidden="true" loading="eager" />
           <div class="wallpaper-dim" aria-hidden="true" />
+          {/* hero 叠加（§4.39）：首页 hero 启用时主句/副句居中显示在 banner 上 */}
+          {heroOnBanner && (
+            <div class="wallpaper-hero reveal">
+              <h1 class="hero-quote" set:html={config.hero.quote} />
+              {config.hero.sub && <p class="hero-sub">{config.hero.sub}</p>}
+            </div>
+          )}
         </div>
       )
     }
     <main id="main" class="site-main">
       <div class="shell">
+        {/* hero 独立区块形态（§4.39）：无 banner 时的首页 hero，保持原列表上方位置 */}
+        {
+          heroEnabled && page === "home" && !heroOnBanner && (
+            <section class="hero reveal">
+              <h1 class="hero-quote" set:html={config.hero.quote} />
+              {config.hero.sub && <p class="hero-sub">{config.hero.sub}</p>}
+            </section>
+          )
+        }
         <slot />
       </div>
     </main>

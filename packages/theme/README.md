@@ -87,13 +87,15 @@ site/
 | `favicon` | `{src, type?, sizes?, theme?}[]` | `[]` | 数组非空时替换默认 favicon；`theme: "light"/"dark"` 按系统深浅切换 |
 | `footerText` | `string` | `""` | 页脚附加文案 |
 | `footer.customHtml` | `string` | `""` | 页脚自定义 HTML（备案号等），渲染在页脚最底部 |
-| `hero.quote` / `hero.sub` | `string` | `""` | 首页 hero 区主句/副句；quote 支持 `<em>` 强调色，quote 留空整个 hero 不渲染 |
+| `hero.enabled` | `boolean` | `true` | 首页 hero 区总开关；`false` 时即使配了 quote 也不渲染 |
+| `hero.quote` / `hero.sub` | `string` | `""` | 首页 hero 区主句/副句；quote 支持 `<em>` 强调色，quote 留空整个 hero 不渲染。首页渲染了 wallpaper banner 时 hero 叠加显示在 banner 上，否则为列表上方独立区块 |
 
 ### 导航与背景
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
 | `nav` | `{label, href?, external?, children?}[]` | `[]` | 顶部导航。`children` 非空时父项为下拉入口；`external: true` 新窗口打开 |
+| `wallpaper.enabled` | `boolean` | `true` | 背景壁纸总开关；`false` 时即使配了 src 也不渲染 |
 | `wallpaper.src` | `string \| string[]` | — | 背景壁纸（banner 单模式）。数组时构建期随机选一张（零 JS）；不配置不渲染 |
 | `wallpaper.height` | `number` | `32` | banner 高度（10-90 vh） |
 | `wallpaper.dimOpacity` | `number` | `0.2` | 黑蒙层不透明度（0-1） |

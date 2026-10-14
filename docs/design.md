@@ -806,6 +806,18 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.38）**：修复组装层漏键后 `pnpm --filter site build` 通过；dist 断言全过——index 页 `id="l2d-widget-container"` ×1、`cat-black/model.json` 外链在内、`data-position="bottom-right"`、默认菜单文案（回到主页/回到顶部/休息一下；单模型无「换个模型」属预期）、`z-index:240`。泄漏修复后复验：组件脚本 chunk ~2.8KB、引擎独立 chunk ~660KB（按需加载）；浏览器实测（TRAE 视口 658px，临时把 mobileBreakpoint 降到 600 过移动端分支）两次 VT 换页（/ → 文章页 → /）后 `#l2d-widget-container canvas` 恒存活 `isConnected=true`、l2d canvas 总数恒为 1、persist 容器始终为 body 直接子元素。改 site/config 需重启 dev（§4.26 口径）。
 
+### 4.39 置顶并入分页流 + hero 叠加 banner（✅ 2026-10-15 完成）
+
+用户反馈两点：① 置顶卡渲染在「近期文章」列表外（list-head 之上），且不占分页名额——翻到第 2 页整体少一块，每页卡片数不一致；② 有背景图时 hero 主句/副句应叠加在 banner 上，且 banner 与 hero 两块都要可独立启停。
+
+- **置顶并入分页流（对齐 orchid-blog paginate 口径）**：原版 `paginate(allBlogPosts)` 全量流切片，置顶仅在排序中置顶、照常占 pageSize 名额；主题此前 `sorted.filter(!pinned)` 把置顶排除在分页外。修复：index.astro / page/[page].astro 统一改为对 `getSortedPosts(all)` 全量流切片（`total = ceil(sorted.length / pageSize)`），首页 `featured={post.data.pinned}` 在 list-head 之下渲染置顶大卡（featured 样式保留，网格态跨整行规则不受影响）；第 2 页起与首页共用同一条流，各页卡片数一致
+- **hero 上移 BaseLayout**：hero 渲染从 index/page 两个路由收进 BaseLayout（config 驱动、page==="home" 门控，行为不变）——`heroOnBanner = heroEnabled && showWallpaper && page==="home"` 时渲染为 banner 内 `.wallpaper-hero` 叠加层，否则保持 shell 内独立 `.hero` 区块；路由内 hero 标记删除
+- **两块独立启停**：schema 新增 `wallpaper.enabled(true)` 与 `hero.enabled(true)` 总开关（原有 src 未配置 / quote 留空的隐式关闭保留）；两者都是子键，site 组装层整对象透传无需改动（§4.38 漏键坑只针对新增顶层键）；Zod v4 default 显式完整字面量惯例遵守
+- **叠加层样式（global.css）**：`.wallpaper-hero` absolute inset-0 flex 居中，`padding-top: var(--header-h)` 补偿 banner 负 margin 滑入 Header 底下造成的视觉偏移；quote 白色 + 文字阴影，`<em>` 用 `color-mix(in srgb, var(--accent) 45%, #fff)` 提亮（accent-ink 在黑蒙层上偏暗）；sub 用 rgba(255,255,255,.88)
+- **README**：`hero.enabled` / `wallpaper.enabled` 两行入配置表，hero.quote 行补充叠加形态说明
+
+**验证（§4.39）**：`pnpm --filter site build` 通过；dist 断言——首页 list-head 在首张置顶卡之前（置顶在列表内）、index 与 /page/2/ 卡片数一致、banner 内含 `wallpaper-hero` 叠加层与 hero-quote、独立 `.hero` 区块在 banner 存在时不再出现；浏览器实测首页 hero 白字叠加在 banner 图上居中、翻页后列表高度不再缺块。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

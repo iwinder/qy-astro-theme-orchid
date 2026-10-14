@@ -611,6 +611,31 @@ html.dark #modeToggle .i-sun {
 	inset: 0;
 	background: rgba(0, 0, 0, var(--banner-dim, 0.2));
 }
+/* hero 叠加（§4.39）：首页 hero 启用时主句/副句居中压到 banner 上；
+   banner 上缘滑入 Header 底下（负 margin），文字区加 padding-top 补偿做视觉居中 */
+.wallpaper-hero {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: var(--header-h) 24px 0;
+	text-align: center;
+}
+.wallpaper-hero .hero-quote {
+	color: #fff;
+	text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
+}
+/* banner 上强调色需提亮：accent-ink 在黑蒙层上偏暗，混入白色保证可读 */
+.wallpaper-hero .hero-quote em {
+	color: color-mix(in srgb, var(--accent) 45%, #fff);
+}
+.wallpaper-hero .hero-sub {
+	color: rgba(255, 255, 255, 0.88);
+	text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
+}
 
 /* ---------- 4. Main 通用 ---------- */
 .site-main {
