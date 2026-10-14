@@ -41,8 +41,30 @@ const pagePosts = await hydratePosts(
     )
   }
   <div class="home-layout">
-    <div class="post-list">
-      <h2 class="section-title reveal">{t('recentPosts')}</h2>
+    {/* 文章列表（§4.34）：与首页同一容器约定，供 app.ts 恢复与切换网格/列表形态 */}
+    <div
+      class="post-list"
+      id="postList"
+      data-allow-switch={config.postList.allowSwitch ? "true" : undefined}
+      data-grid-col={config.postList.gridColumnWidth}
+    >
+      <div class="list-head">
+        <h2 class="section-title reveal">{t('recentPosts')}</h2>
+        {
+          config.postList.allowSwitch && (
+            <button
+              class="layout-switch"
+              id="layoutSwitch"
+              type="button"
+              aria-label={t('layoutSwitch')}
+              title={t('layoutSwitch')}
+            >
+              <svg class="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+              <svg class="ic-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            </button>
+          )
+        }
+      </div>
       {pagePosts.map((post) => <PostCard post={post} />)}
       <Pagination page={page} total={total} basePath="/" />
     </div>

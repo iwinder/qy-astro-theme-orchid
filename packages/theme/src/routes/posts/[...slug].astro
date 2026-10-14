@@ -17,7 +17,7 @@ import config from "virtual:theme/config";
 import { t } from "../../i18n/index.js";
 import { getLqipStyle } from "../../utils/lqip.js";
 import { getRelatedPosts } from "../../utils/related.js";
-import { formatDate, getSortedPosts } from "../../utils.js";
+import { formatDate, getSortedPosts, resolveCover } from "../../utils.js";
 
 export async function getStaticPaths() {
 	const all = await getCollection("posts", ({ data }) =>
@@ -88,6 +88,14 @@ export async function getStaticPaths() {
 
 const { post, prev, next, related, posts, seriesInfo } = Astro.props;
 const d = post.data;
+/* 封面解析（§4.33）：image:"api" 时取确定性随机图；figure 与分享海报共用同一 URL */
+const { cover: articleCover, retries: coverRetries } = resolveCover(
+	d.image,
+	d.firstImage,
+	config.postList.fallbackCover,
+	config.postList.randomCover.apis,
+	post.id,
+);
 const { Content, headings, remarkPluginFrontmatter } = await render(post);
 const { words, minutes } = remarkPluginFrontmatter as {
 	words?: number;
@@ -203,10 +211,16 @@ const jsonLd = {
     </div>
   </header>
   {
-    d.image && (
+    articleCover && (
       <figure class="article-cover reveal" data-lightbox>
-        <div class="qy-lqip" style={getLqipStyle(d.image)} aria-hidden="true"></div>
-        <img src={d.image} alt={d.title} loading="eager" data-lqip />
+        <div class="qy-lqip" style={getLqipStyle(articleCover)} aria-hidden="true"></div>
+        <img
+          src={articleCover}
+          alt={d.title}
+          loading="eager"
+          data-lqip
+          data-api-retries={coverRetries ? JSON.stringify(coverRetries) : undefined}
+        />
       </figure>
     )
   }
@@ -284,7 +298,7 @@ const jsonLd = {
               data-author={d.author || config.author || config.title}
               data-desc={d.description}
               data-date={d.published.toISOString()}
-              data-cover={d.image ?? ''}
+              data-cover={articleCover ?? ''}
               data-url={url.href}
               data-site={config.title}
             >

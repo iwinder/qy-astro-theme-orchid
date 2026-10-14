@@ -149,7 +149,7 @@ html.dark a:hover {
 }
 
 .shell {
-	max-width: 1120px;
+	max-width: var(--page-width, 1120px);
 	margin-inline: auto;
 	padding-inline: 24px;
 }
@@ -583,6 +583,28 @@ html.dark #modeToggle .i-sun {
 	text-align: center;
 }
 
+/* ---------- 3.5 背景壁纸（§4.35，banner 单模式） ---------- */
+/* Header 为 sticky 且背景半透明 + 毛玻璃：负 margin 让横幅上缘滑入 Header 底下 */
+.wallpaper-banner {
+	position: relative;
+	height: var(--banner-h, 32vh);
+	margin-top: calc(-1 * var(--header-h));
+	overflow: hidden;
+}
+.wallpaper-banner img {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: var(--banner-pos, center);
+}
+/* 黑蒙层：深浅模式同色（orchid-blog 口径），只保证压暗不改变色调 */
+.wallpaper-dim {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, var(--banner-dim, 0.2));
+}
+
 /* ---------- 4. Main 通用 ---------- */
 .site-main {
 	min-height: calc(100vh - var(--header-h) - 200px);
@@ -852,6 +874,93 @@ html.dark .post-card:hover .post-title a {
 }
 .post-card.compact.text-only {
 	grid-template-columns: 1fr;
+}
+
+/* 列表形态切换（§4.34）：grid-mode 类由内联 boot 脚本 / app.ts 切换 */
+.list-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.layout-switch {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	flex: none;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	background: var(--surface);
+	color: var(--ink-2);
+	cursor: pointer;
+	transition:
+		color 0.15s,
+		border-color 0.15s;
+}
+.layout-switch:hover {
+	color: var(--accent-deep);
+	border-color: var(--border-2);
+}
+html.dark .layout-switch:hover {
+	color: var(--accent);
+}
+.layout-switch svg {
+	width: 18px;
+	height: 18px;
+}
+.layout-switch .ic-grid {
+	display: none;
+}
+.post-list.grid-mode .layout-switch .ic-list {
+	display: none;
+}
+.post-list.grid-mode .layout-switch .ic-grid {
+	display: block;
+}
+.post-list.grid-mode {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(var(--col-w, 320px), 1fr));
+	gap: 20px;
+	align-items: stretch;
+}
+/* 非卡片条目（分类栏/标题/分页/空态）占满整行 */
+.post-list.grid-mode > :not(.post-card) {
+	grid-column: 1 / -1;
+}
+.post-list.grid-mode .post-card + .post-card {
+	margin-top: 0;
+}
+/* 网格内全部卡片恢复纵向、封面在上（覆盖 featured 横排与 compact 紧凑行） */
+.post-list.grid-mode .post-card {
+	display: flex;
+	flex-direction: column;
+	grid-template-columns: none;
+}
+.post-list.grid-mode .post-card.featured {
+	grid-column: 1 / -1;
+}
+.post-list.grid-mode .post-card.featured .post-cover {
+	aspect-ratio: 16 / 9;
+	min-height: 0;
+}
+.post-list.grid-mode .post-card.compact .post-cover {
+	aspect-ratio: 16 / 9;
+}
+.post-list.grid-mode .post-card.compact .post-body {
+	padding: 18px 20px 20px;
+	align-self: auto;
+}
+/* 随机封面全源失败（§4.33）：藏 img 露出 LQIP 渐变占位 */
+.post-card .post-cover img.cover-broken {
+	visibility: hidden;
+}
+@media (max-width: 399px) {
+	/* 极窄屏网格最小列宽放不下两列，强制单列 */
+	.post-list.grid-mode {
+		grid-template-columns: 1fr;
+	}
 }
 
 /* 分类导航栏（§4.15）：全站顶部横条，pill 横排 + 滚动区隐藏滚动条 */
@@ -1417,7 +1526,7 @@ a.page-item:hover {
 @media (min-width: 768px) {
 	.post-layout {
 		grid-template-columns: minmax(0, 1fr) 220px;
-		max-width: 1120px;
+		max-width: var(--page-width, 1120px);
 	}
 }
 .prose {

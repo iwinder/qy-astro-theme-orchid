@@ -2,7 +2,7 @@
 import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
 import { getLqipStyle } from "../utils/lqip.js";
-import { formatDate, type PostLike } from "../utils.js";
+import { formatDate, resolveCover, type PostLike } from "../utils.js";
 
 interface Props {
 	post: PostLike;
@@ -15,7 +15,14 @@ const d = post.data;
 
 /* 形态判定：frontmatter.cardStyle 按篇覆盖 > 全局 postList.style；无图可降级为纯文字 */
 const style = d.cardStyle ?? config.postList.style;
-const cover = d.image || d.firstImage || config.postList.fallbackCover;
+/* 封面（§4.33）：image:"api" 时经图源解析出确定性随机图，并携带客户端重试列表 */
+const { cover, retries } = resolveCover(
+	d.image,
+	d.firstImage,
+	config.postList.fallbackCover,
+	config.postList.randomCover.apis,
+	post.id,
+);
 const classes = [
 	"post-card",
 	featured ? "featured" : "",
@@ -36,7 +43,13 @@ const excerpt = d.excerpt || d.description;
         {featured && d.pinned && <span class="pin-badge">{t('pinned')}</span>}
         {/* LQIP 占位渐变（b9.5）：绝对定位盖在 img 上，加载完成后由 app.ts 淡出 */}
         <div class="qy-lqip" style={getLqipStyle(cover)} aria-hidden="true"></div>
-        <img src={cover} alt={d.title} loading="lazy" data-lqip />
+        <img
+          src={cover}
+          alt={d.title}
+          loading="lazy"
+          data-lqip
+          data-api-retries={retries ? JSON.stringify(retries) : undefined}
+        />
       </a>
     )
   }

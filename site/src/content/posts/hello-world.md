@@ -3,6 +3,7 @@ title: 你好，清言集
 description: 新主题的第一篇文章，记录 qy-astro-theme-orchid 的开始。
 published: 2026-10-10
 pinned: true
+image: "api"
 tags:
   - 随笔
 category: 开始

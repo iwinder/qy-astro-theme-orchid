@@ -719,6 +719,22 @@ doc.addEventListener("click", (e) => {
 		return;
 	}
 
+	/* 列表形态切换（§4.34）：toggle grid-mode + localStorage 记忆，CSS 过渡呈现 */
+	if (target.closest("#layoutSwitch")) {
+		const list = doc.getElementById("postList");
+		if (list && list.dataset.allowSwitch === "true") {
+			const toGrid = !list.classList.contains("grid-mode");
+			list.classList.toggle("grid-mode", toGrid);
+			list.style.setProperty("--col-w", `${list.dataset.gridCol || "320"}px`);
+			try {
+				localStorage.setItem("qy-postList", toGrid ? "grid" : "list");
+			} catch {
+				/* ignore */
+			}
+		}
+		return;
+	}
+
 	/* back-top */
 	if (target.closest("#backTop")) {
 		window.scrollTo({ top: 0, behavior: "smooth" });
@@ -788,6 +804,33 @@ doc.addEventListener("click", (e) => {
 		return;
 	}
 });
+
+/* 随机封面加载失败重试（§4.33）：img error 不冒泡，捕获阶段 document 级委托
+   （bundled 一次性执行，VT 换页后仍有效）。按 data-api-retries 顺序换源，
+   全部失败加 cover-broken 藏 img，露出底层 LQIP 渐变占位。 */
+doc.addEventListener(
+	"error",
+	(e) => {
+		const img = e.target as HTMLImageElement | null;
+		if (!img || img.tagName !== "IMG") return;
+		const raw = img.dataset.apiRetries;
+		if (!raw) return;
+		let list: string[] = [];
+		try {
+			list = JSON.parse(raw);
+		} catch {
+			return;
+		}
+		const idx = Number(img.dataset.retryIdx ?? "1");
+		if (idx >= 0 && idx < list.length) {
+			img.dataset.retryIdx = String(idx + 1);
+			img.src = list[idx];
+		} else {
+			img.classList.add("cover-broken");
+		}
+	},
+	true,
+);
 
 /* input 委托（VT 安全）：hue 滑杆 + 搜索输入 */
 doc.addEventListener("input", (e) => {
@@ -866,6 +909,21 @@ function initCategoryBar() {
 	window.addEventListener("resize", measure, { passive: true });
 }
 
+/* ---------- 列表形态恢复（§4.34） ---------- */
+/* VT 换页后内联 boot 脚本不重执行，由这里按 localStorage 恢复 grid-mode */
+function initPostListLayout() {
+	const list = doc.getElementById("postList");
+	if (!list || list.dataset.allowSwitch !== "true") return;
+	let mode = "list";
+	try {
+		mode = localStorage.getItem("qy-postList") || "list";
+	} catch {
+		/* ignore */
+	}
+	list.classList.toggle("grid-mode", mode === "grid");
+	list.style.setProperty("--col-w", `${list.dataset.gridCol || "320"}px`);
+}
+
 /* ---------- 生命周期 ---------- */
 function initPage() {
 	ensureLightbox();
@@ -879,6 +937,7 @@ function initPage() {
 	initEncrypted();
 	initLqip();
 	initCategoryBar();
+	initPostListLayout();
 }
 initPage();
 doc.addEventListener("astro:page-load", initPage);

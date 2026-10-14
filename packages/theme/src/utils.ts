@@ -138,3 +138,53 @@ export function daysSince(since: string): number {
 	if (Number.isNaN(start.getTime())) return 0;
 	return Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000));
 }
+
+/* ---------- 随机封面（§4.33） ---------- */
+
+/**
+ * Java String.hashCode 同款散列：同 slug 跨构建/跨设备稳定，
+ * 作为随机封面的确定性 seed（对齐 orchid-blog getSeedHash）。
+ */
+export function seedHash(str: string): number {
+	let h = 0;
+	for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+	return Math.abs(h);
+}
+
+/** 把 seed 拼进 URL（已有 query 用 &，否则 ?），同 URL 每次构建请求同图 */
+export function appendSeedParam(url: string, hash: number): string {
+	return `${url}${url.includes("?") ? "&" : "?"}v=${hash}`;
+}
+
+/**
+ * 随机封面单条 URL：{slug} 占位符替换为文章 id，再追加 ?v=<hash>。
+ * 同 slug 的/apis[i] 输出恒定 → 列表页与文章页、多次构建之间图片一致。
+ */
+export function randomCoverUrl(template: string, slug: string): string {
+	const withSlug = template.includes("{slug}")
+		? template.replaceAll("{slug}", slug)
+		: template;
+	return appendSeedParam(withSlug, seedHash(slug));
+}
+
+/**
+ * 解析文章封面（§4.33）：frontmatter image 为 "api" 且配置了图源时，
+ * 返回 { cover, retries }——cover 为主图 URL，retries 为客户端
+ * 加载失败时的依次重试列表（图源全量 + fallbackCover 兜底）。
+ * 非 "api" 或未配置图源时原样返回，行为与之前一致。
+ */
+export function resolveCover(
+	image: string | undefined,
+	firstImage: string | undefined,
+	fallbackCover: string | undefined,
+	apis: string[],
+	slug: string,
+): { cover: string | undefined; retries: string[] | undefined } {
+	if (image !== "api" || apis.length === 0) {
+		return { cover: image || firstImage || fallbackCover, retries: undefined };
+	}
+	const cover = randomCoverUrl(apis[0], slug);
+	const retries = [...apis.map((u) => randomCoverUrl(u, slug))];
+	if (fallbackCover) retries.push(fallbackCover);
+	return { cover, retries };
+}

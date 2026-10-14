@@ -724,6 +724,24 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.27-4.31）**：`pnpm --filter site build` 通过（pagefind 62 页）；dist 断言全过——nav-caret ×2（文章/更多）+ 移动端共用 DOM；`/series/`（1 卡片）与 `/series/主题使用指南/`（3 项）生成；archive 8 个年份组，2026 aria-expanded="true" 无 fold、2013-2025 七组 `timeline reveal fold` + aria-expanded="false"；hello-world 文章页 series-nav 3 项其中 1 项 cur；index.html 含 sakura-canvas + 内联樱花脚本（astro:page-load 监听在）；favicon 未配置走默认。§4.30/4.31 改 site/config 后 dev 需重启（构建期快照，§4.26 口径）。
 
+### 4.32 页宽变量化 pageWidth（✅ 2026-10-14 完成）
+
+对齐参考站 `--page-width` 注入方案：schema 顶层 `pageWidth`（int 800-1920，默认 1120）；BaseLayout `<html style>` 注入 `--page-width:{px}`；global.css 两处硬编码收敛为 `var(--page-width, 1120px)`——`.shell`（主壳最大宽）与 `.post-layout` 桌面双列媒体查询。归档/时间线 760px 窄列不受影响（有意保留阅读行宽）。
+
+### 4.33 随机封面图 randomCover（✅ 2026-10-14 完成）
+
+对齐参考站「确定性随机图」机制：**frontmatter 显式 `image: "api"` 触发**（普通留空/外链图不受影响）。schema `postList.randomCover.apis: string[]`（URL 模板支持 `{slug}` 占位符）。utils.ts 四个导出：`seedHash`（Java String.hashCode 位运算，同 slug 每次构建出同一图，刷新不变）、`appendSeedParam`（`?v=<hash>`，避 CDN 缓存）、`randomCoverUrl`（替换占位符 + 拼 seed）、`resolveCover(image, firstImage, fallback, apis, slug)` → `{ cover, retries }`。**重试链**：img error 不冒泡 → app.ts document **捕获阶段**委托（`addEventListener("error", fn, true)`，bundled 一次性执行 VT 换页后持久），依次换 `data-api-retries` 列表，全挂加 `cover-broken` 类（visibility:hidden 露 LQIP 渐变）。消费点两处：PostCard.astro 列表卡 + 文章页封面 figure（分享海报 `data-cover` 同步用 resolveCover 结果，防 `"api"` 字面量进海报）。
+
+### 4.34 postList 网格/列表切换（✅ 2026-10-14 完成）
+
+对齐参考站 localStorage 方案：schema `postList.allowSwitch` + `postList.gridColumnWidth`（220-600，默认 320）。index.astro / page/[page].astro 容器 `<div class="post-list" id="postList" data-allow-switch data-grid-col>`，标题包 `.list-head`（标题左、`#layoutSwitch` 方按钮右，ic-list/ic-grid 两个 SVG 显隐切换）。**防闪烁双保险**：BaseLayout `is:inline` boot 脚本（首帧前读 localStorage `qy-postList==='grid'` 给 #postList 加 grid-mode + 设 `--col-w`；VT 换页不重执行）+ app.ts `initPostListLayout()`（initPage 链内，VT 换页后接管）；click 委托内切 grid-mode + 写 localStorage。**CSS 布局要点**：`.post-list.grid-mode` = grid `repeat(auto-fill, minmax(var(--col-w),1fr))`；容器内非卡片条目（CategoryBar/标题/分页）`> :not(.post-card)` `grid-column: 1/-1` 占满整行；featured 卡（桌面 7fr/6fr 横排）与 compact 卡（128px+1fr）在网格内覆盖回纵向 flex column；<399px 强制单列。
+
+### 4.35 背景壁纸（banner 单模式）（✅ 2026-10-14 完成）
+
+只裁参考站 banner 形态（其全屏壁纸层自述屎山不搬）：schema 顶层 `wallpaper { src: string|string[]; height: 10-90vh(32); dimOpacity: 0-1(0.2); position; homeOnly(true) }`；src 数组在 BaseLayout 构建期随机取一张（零 JS）。渲染于 Header 后 main 前：Header 为 sticky 半透明毛玻璃 → banner `margin-top: calc(-1 * var(--header-h))` 下沉滑入 Header 底下；`.wallpaper-dim` 黑蒙层 rgba 深浅模式同色；img eager + object-fit cover + object-position 可配。`homeOnly` 时仅 `page === "home"` 渲染。
+
+**验证（§4.32-4.35）**：`pnpm --filter site build` 通过；dist 断言全过——index.html 含 `--page-width:1120px`（全站每页 1 处）+ `wallpaper-banner` + `data-allow-switch="true"` + `#layoutSwitch` + 内联 boot 脚本（qy-postList）；首页/分页含 `?v=<hash>` 随机封面 URL；hello-world 文章页 `data-api-retries`（PostCard 与文章 figure 双消费点）。demo：hello-world 加 `image: "api"`（pinned 置顶演示），`randomCover.apis` 用 picsum seed 模板，`/wallpaper/banner-01.jpg` 横幅图已生成；site/config 显式透传 `pageWidth` + `wallpaper`（§4.31 踩坑复用）。dev 需重启生效。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

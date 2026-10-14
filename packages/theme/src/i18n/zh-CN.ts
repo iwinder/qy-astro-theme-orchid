@@ -58,6 +58,10 @@ const zhCN = {
 	dayPostsCount: "{n} 篇",
 	/* 列表 / 聚合页 */
 	recentPosts: "近期文章",
+	/* 列表形态切换（§4.34） */
+	layoutSwitch: "切换列表 / 网格视图",
+	layoutList: "列表视图",
+	layoutGrid: "网格视图",
 	emptyPosts: "还没有文章，去 content/posts 里写一篇吧。",
 	pageN: "第 {n} 页",
 	archive: "归档",

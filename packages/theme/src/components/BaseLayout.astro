@@ -23,10 +23,18 @@ interface Props {
 const { title, description = config.description, keywords = config.keywords, page, ogImage } = Astro.props;
 const pageTitle = title ? `${title} · ${config.title}` : config.title;
 const { h, s, l } = hexToHsl(config.accentColor);
+/* 背景壁纸（§4.35）：数组时构建期随机选一张（每页构建各自取，零 JS）；未配置不渲染 */
+const wallpaperSrc = Array.isArray(config.wallpaper.src)
+	? config.wallpaper.src.length
+		? config.wallpaper.src[Math.floor(Math.random() * config.wallpaper.src.length)]
+		: ""
+	: config.wallpaper.src || "";
+const showWallpaper =
+	Boolean(wallpaperSrc) && (!config.wallpaper.homeOnly || page === "home");
 ---
 
 <!doctype html>
-<html lang={config.lang} style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%`} data-accent-h={h} data-color-mode={config.colorMode}>
+<html lang={config.lang} style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%;--page-width:${config.pageWidth}px`} data-accent-h={h} data-color-mode={config.colorMode}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -74,11 +82,28 @@ const { h, s, l } = hexToHsl(config.accentColor);
   <body data-page={page}>
     <a class="skip-link" href="#main">{t('skipToContent')}</a>
     <Header />
+    <!-- 背景壁纸（§4.35，banner 单模式）：Header 之后下沉横幅 + 黑蒙层；src 未配置或 homeOnly 非首页不渲染 -->
+    {
+      showWallpaper && (
+        <div
+          class="wallpaper-banner"
+          style={`--banner-h:${config.wallpaper.height}vh;--banner-dim:${config.wallpaper.dimOpacity};--banner-pos:${config.wallpaper.position}`}
+        >
+          <img src={wallpaperSrc} alt="" aria-hidden="true" loading="eager" />
+          <div class="wallpaper-dim" aria-hidden="true" />
+        </div>
+      )
+    }
     <main id="main" class="site-main">
       <div class="shell">
         <slot />
       </div>
     </main>
+    <!-- 列表形态恢复（§4.34）：首帧绘制前应用 localStorage 记忆防闪烁；
+         is:inline 在 VT 换页不重执行，跨页返回由 app.ts initPage 接管 -->
+    <script is:inline>
+      (function(){try{var m=localStorage.getItem('qy-postList');if(m!=='grid')return;var l=document.getElementById('postList');if(!l||l.dataset.allowSwitch!=='true')return;l.classList.add('grid-mode');l.style.setProperty('--col-w',(l.dataset.gridCol||'320')+'px');}catch(e){}})();
+    </script>
     <Footer />
     <!-- 站点统计（P1-16）：ID 全空零输出，挂 body 尾与 orchid-blog 口径一致 -->
     <Analytics />

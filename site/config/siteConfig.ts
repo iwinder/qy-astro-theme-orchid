@@ -52,4 +52,14 @@ export const siteConfig = {
 		enabled: true,
 		density: 24,
 	},
+	// 内容区页宽（§4.32）：主壳与文章双列的最大宽度（800-1920 px）
+	pageWidth: 1120,
+	// 背景壁纸（§4.35）：Header 下方下沉横幅；src 可传数组（构建期随机取一张）
+	wallpaper: {
+		src: "/wallpaper/banner-01.jpg",
+		height: 32,
+		dimOpacity: 0.2,
+		position: "center",
+		homeOnly: true,
+	},
 };

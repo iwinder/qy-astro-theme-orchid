@@ -30,6 +30,29 @@ export const themeConfigSchema = z.object({
 	/** 站点语言（<html lang>） */
 	lang: z.string().default("zh-CN"),
 	/**
+	 * 主容器页宽（§4.32，px）：注入 html 的 --page-width 变量，
+	 * 驱动 .shell 主壳与文章页双列布局的 max-width；归档/时间线等窄列不受影响。
+	 */
+	pageWidth: z.number().int().min(800).max(1920).default(1120),
+	/**
+	 * 背景壁纸（§4.35，banner 单模式）：src 未配置则不渲染。
+	 * src 为数组时构建期随机选一张（零 JS）；渲染为 Header 下方下沉横幅 + 黑蒙层。
+	 */
+	wallpaper: z
+		.object({
+			/** 图源（public 路径或外链）：单图 URL 或多图数组（构建期随机取一） */
+			src: z.union([z.string(), z.array(z.string())]).optional(),
+			/** banner 高度（vh） */
+			height: z.number().int().min(10).max(90).default(32),
+			/** 黑蒙层不透明度（0-1），深浅模式同色，保证文字可读 */
+			dimOpacity: z.number().min(0).max(1).default(0.2),
+			/** 图片 object-position（center / center 30% 等） */
+			position: z.string().default("center"),
+			/** true 仅首页显示，false 全站显示 */
+			homeOnly: z.boolean().default(true),
+		})
+		.default({ height: 32, dimOpacity: 0.2, position: "center", homeOnly: true }),
+	/**
 	 * hue 调色面板（M3b-b5）：导航栏调色按钮 + 预设色板 + hue 滑杆。
 	 * 运行时覆写 --accent-h（s/l 保持配置值），持久化 localStorage('qy-hue')。
 	 * 色板预设为代码级常量，不进 schema。
@@ -56,6 +79,24 @@ export const themeConfigSchema = z.object({
 			pageSize: z.number().int().min(1).default(10),
 			/** 无图文章的兜底封面图（可选；不配置则降级为纯文字卡） */
 			fallbackCover: z.string().optional(),
+			/**
+			 * 随机封面图源（§4.33）：apis 非空时，frontmatter 显式 image:"api" 的文章
+			 * 从该列表取封面。URL 支持 {slug} 占位符（替换为文章 id），
+			 * 并自动追加 ?v=<hash>（Java hashCode(slug)），同 slug 每次构建稳定同图。
+			 * 客户端加载失败时按列表顺序依次重试，全部失败显示本地 fallbackCover。
+			 */
+			randomCover: z
+				.object({
+					apis: z.array(z.string()).default([]),
+				})
+				.default({ apis: [] }),
+			/**
+			 * 列表形态切换（§4.34）：true 时首页/分页列表标题旁出现列表/网格切换按钮，
+			 * 用户选择持久化 localStorage('qy-postList')。
+			 */
+			allowSwitch: z.boolean().default(false),
+			/** 网格模式最小列宽（px），实际列数由容器宽自适应 */
+			gridColumnWidth: z.number().int().min(220).max(600).default(320),
 		})
 		.default({ style: "cover", pageSize: 10 }),
 	/** 文章页目录 */
