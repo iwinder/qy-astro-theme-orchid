@@ -1,7 +1,8 @@
 # demo-remote 远程图片演示：每行一个 URL，# 开头为注释行
 # 主题在构建期读取本文件并追加到本地照片之后；接入真实站点时替换为自己的图床地址
-https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=misty%20mountain%20valley%20at%20dawn%2C%20layered%20ridgelines%2C%20soft%20teal%20and%20cream%20tones%2C%20fine%20art%20landscape%20photography&image_size=landscape_4_3
-https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=calm%20alpine%20lake%20reflection%20at%20dusk%2C%20muted%20blue%20and%20lavender%20palette%2C%20minimalist%20landscape%20photography&image_size=landscape_4_3
-https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=winding%20road%20through%20green%20highland%20meadows%2C%20overcast%20soft%20light%2C%20muted%20earth%20tones%2C%20landscape%20photography&image_size=landscape_4_3
-https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=sea%20of%20clouds%20above%20mountain%20peaks%20at%20sunrise%2C%20warm%20golden%20and%20soft%20grey%20tones%2C%20landscape%20photography&image_size=landscape_4_3
-https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=tall%20pine%20forest%20in%20light%20fog%2C%20vertical%20composition%2C%20muted%20green%20and%20grey%20palette%2C%20fine%20art%20photography&image_size=portrait_4_3
+# 下方为 picsum.photos 占位图服务（按 seed 稳定取图），仅作远程外链演示
+https://picsum.photos/seed/misty-valley/800/600
+https://picsum.photos/seed/alpine-lake/800/600
+https://picsum.photos/seed/highland-road/800/600
+https://picsum.photos/seed/sea-of-clouds/800/600
+https://picsum.photos/seed/pine-fog/600/800
