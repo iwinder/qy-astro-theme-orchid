@@ -47,10 +47,11 @@ export const themeConfigSchema = z.object({
 	/** 站点语言（<html lang>） */
 	lang: z.string().default("zh-CN"),
 	/**
-	 * 主容器页宽（§4.32，px）：注入 html 的 --page-width 变量，
-	 * 驱动 .shell 主壳与文章页双列布局的 max-width；归档/时间线等窄列不受影响。
+	 * 主容器页宽（§4.32，px）：注入 html 的 --page-width 变量。
+	 * ≥1280px 屏 .shell 宽度取 min(92vw, 此值)，其下全宽；文章页固定 1120px
+	 * 阅读行宽不跟随；归档/时间线等窄列不受影响。
 	 */
-	pageWidth: z.number().int().min(800).max(1920).default(1120),
+	pageWidth: z.number().int().min(800).max(1920).default(1600),
 	/**
 	 * 背景壁纸（§4.35，banner 单模式）：src 未配置则不渲染。
 	 * src 为数组时构建期随机选一张（零 JS）；渲染为 Header 下方下沉横幅 + 黑蒙层。

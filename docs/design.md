@@ -728,6 +728,8 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 对齐参考站 `--page-width` 注入方案：schema 顶层 `pageWidth`（int 800-1920，默认 1120）；BaseLayout `<html style>` 注入 `--page-width:{px}`；global.css 两处硬编码收敛为 `var(--page-width, 1120px)`——`.shell`（主壳最大宽）与 `.post-layout` 桌面双列媒体查询。归档/时间线 760px 窄列不受影响（有意保留阅读行宽）。
 
+**迭代（同日）：默认 1120→1600 + 92vw 流式，文章页脱离跟随**。用户对比截图反馈 PC 宽屏内容过窄：量化排查参考站（`MainGridLayout` 容器 `xl:w-[92vw] max-w-(--page-width)`，`PAGE_WIDTH=100`rem=1600px，侧栏 `17.5rem`=280px 与本主题一致，gap 16px）确认根因是主壳封顶 1120——1920 屏两侧各留白 400px。修复：① schema 默认值改 **1600**；② `.shell` 默认 `max-width: var(--page-width,1600px)`，新增 `@media(min-width:1280px)` 覆盖为 `min(92vw, var(--page-width,1600px))`（宽屏封顶 1600 居中留 4% 呼吸位、中屏全宽铺满，断点对齐参考站 xl）；③ `.post-layout` 桌面双列改固定 `max-width:1120px`（不再跟随 pageWidth），文章页正文列维持 ~816px 阅读行宽，宽屏下在主壳内居中；④ demo siteConfig `pageWidth:1600`。验证：build 通过；dist 断言注入 `--page-width:1600px` + CSS 含 `min(92vw`；1400/1920/1024 三宽度 iframe 实测 shell=1288/1600/全宽、文章页 post-layout 恒 1120。
+
 ### 4.33 随机封面图 randomCover（✅ 2026-10-14 完成）
 
 对齐参考站「确定性随机图」机制：**frontmatter 显式 `image: "api"` 触发**（普通留空/外链图不受影响）。schema `postList.randomCover.apis: string[]`（URL 模板支持 `{slug}` 占位符）。utils.ts 四个导出：`seedHash`（Java String.hashCode 位运算，同 slug 每次构建出同一图，刷新不变）、`appendSeedParam`（`?v=<hash>`，避 CDN 缓存）、`randomCoverUrl`（替换占位符 + 拼 seed）、`resolveCover(image, firstImage, fallback, apis, slug)` → `{ cover, retries }`。**重试链**：img error 不冒泡 → app.ts document **捕获阶段**委托（`addEventListener("error", fn, true)`，bundled 一次性执行 VT 换页后持久），依次换 `data-api-retries` 列表，全挂加 `cover-broken` 类（visibility:hidden 露 LQIP 渐变）。消费点两处：PostCard.astro 列表卡 + 文章页封面 figure（分享海报 `data-cover` 同步用 resolveCover 结果，防 `"api"` 字面量进海报）。

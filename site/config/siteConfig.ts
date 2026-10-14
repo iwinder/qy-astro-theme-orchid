@@ -59,8 +59,9 @@ export const siteConfig = {
 		enabled: true,
 		density: 24,
 	},
-	// 内容区页宽（§4.32）：主壳与文章双列的最大宽度（800-1920 px）
-	pageWidth: 1120,
+	// 内容区页宽（§4.32）：首页/列表主壳最大宽度（800-1920 px，≥1280 屏按 min(92vw, 此值) 计算）；
+	// 文章页维持 1120px 阅读行宽不跟随铺开
+	pageWidth: 1600,
 	// 背景壁纸（§4.35）：Header 下方下沉横幅；src 可传数组（构建期随机取一张）
 	wallpaper: {
 		src: "/wallpaper/banner-01.jpg",
