@@ -27,7 +27,6 @@ export const themeConfig = {
 	description: siteConfig.description,
 	author: siteConfig.author,
 	accentColor: siteConfig.accentColor,
-	hero: siteConfig.hero,
 	since: siteConfig.since,
 	footerText: siteConfig.footerText,
 	pages: siteConfig.pages,
@@ -66,9 +65,9 @@ export const themeConfig = {
 	// 归档按年折叠 / 樱花特效（§4.30）：siteConfig 中配置
 	archive: siteConfig.archive,
 	sakura: siteConfig.sakura,
-	// 页宽变量（§4.32）/ 背景壁纸（§4.35）/ 音乐播放器（§4.36）/ Live2D 看板娘（§4.38）：siteConfig 中配置
+	// 页宽变量（§4.32）/ 首页 banner（§4.42）/ 音乐播放器（§4.36）/ Live2D 看板娘（§4.38）：siteConfig 中配置
 	pageWidth: siteConfig.pageWidth,
-	wallpaper: siteConfig.wallpaper,
+	banner: siteConfig.banner,
 	music: siteConfig.music,
 	live2d: siteConfig.live2d,
 } satisfies ThemeConfig;

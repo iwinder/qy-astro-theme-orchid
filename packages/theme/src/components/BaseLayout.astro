@@ -25,20 +25,18 @@ interface Props {
 const { title, description = config.description, keywords = config.keywords, page, ogImage } = Astro.props;
 const pageTitle = title ? `${title} · ${config.title}` : config.title;
 const { h, s, l } = hexToHsl(config.accentColor);
-/* 背景壁纸（§4.35，banner 单模式）：数组时构建期随机选一张（每页构建各自取，零 JS）；enabled=false 或未配置不渲染 */
-const wallpaperSrc = Array.isArray(config.wallpaper.src)
-	? config.wallpaper.src.length
-		? config.wallpaper.src[Math.floor(Math.random() * config.wallpaper.src.length)]
+/* 首页 banner（§4.42，hero+壁纸合并单配置）：数组时构建期随机选一张（每页构建各自取，零 JS）；
+   enabled=false 或 src 未配置不渲染图 */
+const bannerSrc = Array.isArray(config.banner.src)
+	? config.banner.src.length
+		? config.banner.src[Math.floor(Math.random() * config.banner.src.length)]
 		: ""
-	: config.wallpaper.src || "";
-const showWallpaper =
-	config.wallpaper.enabled &&
-	Boolean(wallpaperSrc) &&
-	(!config.wallpaper.homeOnly || page === "home");
-/* 首页 hero（§4.39）：enabled=false 或 quote 留空不渲染；
-   首页且 banner 在渲染时叠加进 banner，否则渲染为列表上方独立区块 */
-const heroEnabled = config.hero.enabled && Boolean(config.hero.quote);
-const heroOnBanner = heroEnabled && showWallpaper && page === "home";
+	: config.banner.src || "";
+const showBanner =
+	config.banner.enabled && Boolean(bannerSrc) && (!config.banner.homeOnly || page === "home");
+/* hero 文案（§4.42）：quote 留空不渲染；有 banner 时叠加其上，否则渲染为列表上方独立区块 */
+const heroEnabled = config.banner.enabled && Boolean(config.banner.quote);
+const heroOnBanner = heroEnabled && showBanner && page === "home";
 ---
 
 <!doctype html>
@@ -90,20 +88,20 @@ const heroOnBanner = heroEnabled && showWallpaper && page === "home";
   <body data-page={page}>
     <a class="skip-link" href="#main">{t('skipToContent')}</a>
     <Header />
-    <!-- 背景壁纸（§4.35，banner 单模式）：Header 之后下沉横幅 + 黑蒙层；enabled=false / src 未配置 / homeOnly 非首页不渲染 -->
+    <!-- 首页 banner（§4.42，hero+壁纸合并单配置）：Header 之后下沉横幅 + 黑蒙层；enabled=false / src 未配置 / homeOnly 非首页不渲染 -->
     {
-      showWallpaper && (
+      showBanner && (
         <div
           class="wallpaper-banner"
-          style={`--banner-h:${config.wallpaper.height}vh;--banner-dim:${config.wallpaper.dimOpacity};--banner-pos:${config.wallpaper.position}`}
+          style={`--banner-h:${config.banner.height}vh;--banner-dim:${config.banner.dimOpacity};--banner-pos:${config.banner.position}`}
         >
-          <img src={wallpaperSrc} alt="" aria-hidden="true" loading="eager" />
+          <img src={bannerSrc} alt="" aria-hidden="true" loading="eager" />
           <div class="wallpaper-dim" aria-hidden="true" />
-          {/* hero 叠加（§4.39）：首页 hero 启用时主句/副句居中显示在 banner 上 */}
+          {/* hero 文案叠加（§4.42）：quote 配置时主句/副句居中显示在 banner 上 */}
           {heroOnBanner && (
             <div class="wallpaper-hero reveal">
-              <h1 class="hero-quote" set:html={config.hero.quote} />
-              {config.hero.sub && <p class="hero-sub">{config.hero.sub}</p>}
+              <h1 class="hero-quote" set:html={config.banner.quote} />
+              {config.banner.sub && <p class="hero-sub">{config.banner.sub}</p>}
             </div>
           )}
         </div>
@@ -111,12 +109,12 @@ const heroOnBanner = heroEnabled && showWallpaper && page === "home";
     }
     <main id="main" class="site-main">
       <div class="shell">
-        {/* hero 独立区块形态（§4.39）：无 banner 时的首页 hero，保持原列表上方位置 */}
+        {/* hero 独立区块形态（§4.42）：无 banner 图时的首页 hero 文案，保持原列表上方位置 */}
         {
           heroEnabled && page === "home" && !heroOnBanner && (
             <section class="hero reveal">
-              <h1 class="hero-quote" set:html={config.hero.quote} />
-              {config.hero.sub && <p class="hero-sub">{config.hero.sub}</p>}
+              <h1 class="hero-quote" set:html={config.banner.quote} />
+              {config.banner.sub && <p class="hero-sub">{config.banner.sub}</p>}
             </section>
           )
         }
