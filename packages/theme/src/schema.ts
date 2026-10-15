@@ -445,6 +445,13 @@ export const themeConfigSchema = z.object({
 					random: z.boolean().default(false),
 				})
 				.default({ count: 3, random: false }),
+			/** 日历 widget 参数 */
+			calendar: z
+				.object({
+					/** 日历下方文章列表条目悬停显示全文 title（§4.41）；默认关 */
+					postTooltip: z.boolean().default(false),
+				})
+				.default({ postTooltip: false }),
 		})
 		.default({
 			onPost: false,
@@ -459,6 +466,7 @@ export const themeConfigSchema = z.object({
 				{ type: "advertisement" },
 			],
 			friends: { count: 3, random: false },
+			calendar: { postTooltip: false },
 		}),
 	/** 打赏页（收款码 image 与跳转 link 至少配一个；均为空渲染占位框） */
 	sponsor: z

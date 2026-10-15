@@ -24,4 +24,6 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 		{ type: "advertisement", enabled: true },
 	],
 	friends: { count: 3, random: false },
+	// 日历 widget 参数（§4.41）：postTooltip 开启后日历下方文章列表条目悬停显示全文 title
+	calendar: { postTooltip: false },
 };

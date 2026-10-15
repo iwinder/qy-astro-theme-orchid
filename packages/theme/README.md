@@ -120,6 +120,7 @@ site/
 | `sidebar.onPost` | `boolean` | `false` | 文章详情页是否启用侧栏 |
 | `sidebar.widgets` | `{type, enabled?, showOnPost?, postOnly?}[]` | 公告/分类/标签/友链/日历/TOC/站点信息/广告 | widget 顺序即渲染顺序。类型：`announcement` `categories` `tags` `friends` `calendar` `toc` `siteInfo` `advertisement` `profile`；`showOnPost: false` 仅列表页显示，`postOnly: true` 仅文章页显示 |
 | `sidebar.friends` | `{count, random}` | `{count: 3, random: false}` | 友链 widget 参数（`random: true` 构建期随机取样） |
+| `sidebar.calendar` | `{postTooltip}` | `{postTooltip: false}` | 日历 widget 参数；`postTooltip: true` 时日历下方文章列表条目悬停显示全文 title |
 | `announcement` | `{title, content, link{text,url,external}, closable}` | content 空 | 侧栏公告卡；`content` 留空整卡不渲染 |
 | `advertisement` | `{enabled, title, image, imageLink, imageAlt, content, link{text,url,external}, closable, displayCount, expireDate?}` | `enabled: false` | 侧栏广告位；`displayCount` 按 localStorage 计数限次（-1 不限），`expireDate` 过期不渲染 |
 | `profile` | `{avatar, name, bio, url, links[{name,url,icon,showName}]}` | 全空 | 侧栏个人资料卡（`sidebar.widgets` 含 `profile` 时渲染）；icon 为内联 SVG 字符串 |

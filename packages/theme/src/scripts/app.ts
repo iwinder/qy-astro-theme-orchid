@@ -255,7 +255,9 @@ function initReveal() {
 	const reveals = doc.querySelectorAll(".reveal");
 	if (!reveals.length) return;
 	requestAnimationFrame(() => {
-		reveals.forEach((el) => el.classList.add("is-in"));
+		reveals.forEach((el) => {
+			el.classList.add("is-in");
+		});
 	});
 }
 

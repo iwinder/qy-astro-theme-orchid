@@ -828,6 +828,17 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.40）**：`pnpm --filter site build` 通过；dist 断言全过——73 个含日历页面均带 `dayListHtml` 脚本，产物 CSS 含 `.nav-sub::before`（桌面桥 + ≤860px `content: none` 覆盖）/`.cal-day.sel`/`.cal-post`，产物 JS 无 `revealTimer` 残留且含 `requestAnimationFrame`。dev（4321）真浏览器实测（605px 视口）：默认「2026年10月 · 4 篇」列 4 条标题、computed style nowrap/hidden/ellipsis；点 10 日 → 「10/10 · 2 篇」过滤 2 条、`cal-day.sel` 键值正确；再点同一日回到「2026年10月 · 4 篇」、sel 清空；`.reveal` 11/11 同帧全入场（batch 生效）；CSSOM 确认桥规则在位（伪类 hover 无法脚本模拟，桌面贴合性由 CSS 几何自证）；console 仅一条与本改动无关的既有 `/music/a.mp3` 404（site demo 资源缺口）。
 
+### 4.41 日历文章列表悬停全文开关（✅ 2026-10-15 完成）
+
+用户反馈：日历文章列表「悬停看全文」（§4.40 加的 `title` 属性）应做成开关且**默认不打开**。
+
+- **配置（schema.ts）**：`sidebar` 下新增 `calendar` 参数节（与 `sidebar.friends` 惯例平级）：`sidebar.calendar.postTooltip: z.boolean().default(false)`，default 显式完整字面量 `{ postTooltip: false }`（Zod v4 惯例，§7 备忘）；sidebar 顶层 default 字面量同步补 `calendar: { postTooltip: false }`
+- **传递（Sidebar.astro）**：`<Calendar postTooltip={config.sidebar.calendar?.postTooltip ?? false} />`——可选链兜底：dev 旧 schema 快照（未重启时虚拟模块 config 无 calendar 键）下不炸、按关处理
+- **渲染（Calendar.astro）**：Props 加 `postTooltip`（默认 false），经 `data-post-tooltip="1/0"` 进 custom element；`dayListHtml` 内仅 `postTip` 为真时输出 `title="{esc(title)}"`，默认纯净 `<a>`。README 配置表加 `sidebar.calendar` 行；site `sidebarConfig.ts` 显式补 `calendar: { postTooltip: false }`（`ThemeConfig["sidebar"]` 输出类型必有键，兼作文档示范）
+- **顺手修正**：§4.40 的 `reveals.forEach((el) => el.classList.add(...))` 箭头简写隐式返回触发 biome `useIterableCallbackReturn` error（本轮自查发现）——改 block body 消除
+
+**验证（§4.41）**：node 26 type-stripping 直跑 schema.ts parse 四项断言全过——全缺省补全 `{postTooltip:false}`、site 显式形态保留、显式 true 开启、`friends` 默认不受影响（default 字面量惯例回归）。dev（4321）HMR 实测：列表照常渲染（「2026年10月 · 4 篇」×4），`data-post-tooltip="0"`、`.cal-post` 均无 `title` 属性（默认关生效），旧 config 快照下 `?.` 兜底正常。VS Code 诊断四个改动文件 0 错误；`pnpm test` 过；biome 单查 app.ts 确认本轮 error 清零（剩余 2 error 均为历史遗留：231 行 forEach 简写与 321/856 行 format 差异，属遗留清理项）。⚠️ 本轮 `pnpm --filter site build` 因 TRAE 终端通道故障（toolhost 路由错误 + Exec 内 build 类命令审批不放行）未能执行，待终端恢复后补跑（改动面：schema 子键/条件渲染 title，风险极低）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

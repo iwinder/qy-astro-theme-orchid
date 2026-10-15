@@ -187,7 +187,9 @@ if (widgets.some((w) => w.type === "friends")) {
             </div>
           </section>
         )}
-        {w.type === 'calendar' && <Calendar lang={config.lang} />}
+        {w.type === 'calendar' && (
+          <Calendar lang={config.lang} postTooltip={config.sidebar.calendar?.postTooltip ?? false} />
+        )}
         {w.type === 'toc' && isPost && config.toc.enabled && tocItems.length > 0 && (
           <section class="side-card card reveal toc-widget">
             <h3>{t('tocTitle')}</h3>
