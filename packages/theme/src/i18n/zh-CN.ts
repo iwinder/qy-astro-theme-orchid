@@ -54,8 +54,8 @@ const zhCN = {
 	running: "已运行",
 	daysCount: "{n} 天",
 	calendarTitle: "日历",
-	activityTitle: "活跃度",
 	dayPostsCount: "{n} 篇",
+	heatWeekTip: "{m}第{w}周 · {n}",
 	/* 列表 / 聚合页 */
 	recentPosts: "近期文章",
 	/* 列表形态切换（§4.34） */

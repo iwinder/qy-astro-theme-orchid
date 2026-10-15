@@ -1,10 +1,11 @@
 ---
 /**
  * 侧栏日历 + 活跃度热力图（P2 侧栏改造）。
- * 月视图（周一起始，当月有文章日高亮）+ 近 12 个月热力图（每月 4 段，透明度 5 档），
+ * 月视图（周一起始，当月有文章日高亮）+ 近 12 个月热力图（每月 4 段，透明度 5 档）：
+ *   顶部月份标签（§4.43），整列可点击跳转对应月份，单元悬停提示月份第几周 · 几篇。
  * 数据复用 /api/allPostMeta.json（加密文章已在端点侧排除）。
- * 日历下方文章列表（§4.40）：默认当月全部，点选有文章日期过滤当日，再点取消；仅标题。
- *   条目悬停全文 title 可经 sidebar.calendar.postTooltip 开启（§4.41），默认关。
+ * 热力图下方文章列表（§4.40，§4.43 移至热力图下）：默认当月全部，点选有文章日期过滤当日，再点取消；
+ *   按时间倒序，左侧标题右侧日期；条目悬停全文 title 可经 sidebar.calendar.postTooltip 开启（§4.41），默认关。
  * <qy-calendar> 为 VT 安全 custom element：is:inline + customElements.get 防重复 define，
  * 元数据缓存在 window.__qyAllPostMetaCache（与 random-posts 共用）。
  */
@@ -26,7 +27,7 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
     data-lang={lang}
     data-api-url="/api/allPostMeta.json"
     data-label-posts={t('dayPostsCount')}
-    data-label-activity={t('activityTitle')}
+    data-label-heat-week={t('heatWeekTip')}
     data-post-tooltip={postTooltip ? '1' : '0'}
   ></qy-calendar>
 </section>
@@ -70,7 +71,8 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
             });
             var locale = self.dataset.lang || 'zh-CN';
             var postsLabel = self.dataset.labelPosts || '{n}';
-            var activityLabel = self.dataset.labelActivity || '';
+            // 热力图单元悬停模板（§4.43）：{m}=月份短文案、{w}=第几周、{n}=篇数
+            var weekTip = self.dataset.labelHeatWeek || '{m}第{w}周 · {n}';
             var today = new Date();
             var thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
             var cur = new Date(thisMonth);
@@ -79,6 +81,8 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
               month: 'long',
             });
             var fmtWeek = new Intl.DateTimeFormat(locale, { weekday: 'narrow' });
+            // 热力图悬停月份短文案（§4.43）：zh="10月"、en="Oct"
+            var fmtMonthShort = new Intl.DateTimeFormat(locale, { month: 'short' });
             // 周一起始的星期表头（2024-01-01 恰好是周一）
             var weekHeads = [];
             for (var i = 0; i < 7; i++) {
@@ -104,6 +108,8 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
               });
             };
             var fmtDay = new Intl.DateTimeFormat(locale, { month: 'numeric', day: 'numeric' });
+            // 列表条目日期（§4.43）：两位月/日，如 10/08
+            var fmtItemDate = new Intl.DateTimeFormat(locale, { month: '2-digit', day: '2-digit' });
             // 当前选中的日期 key（null = 未选中，列表显示当月全部）
             var selKey = null;
             // 文章列表条目悬停显示全文 title（§4.41），默认关
@@ -147,12 +153,17 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
               return html + '</div>';
             };
 
-            // 日历下方文章列表（§4.40）：默认当月全部，选中日期则只列当日；仅标题，超宽省略号截断
+            // 热力图下方文章列表（§4.40，§4.43 移至热力图下）：默认当月全部，选中日期则只列当日；
+            // 按时间倒序，左侧标题右侧日期，超宽标题省略号截断
             var dayListHtml = function () {
               var ym = cur.getFullYear() + '-' + String(cur.getMonth() + 1).padStart(2, '0');
               var list = meta.filter(function (p) {
                 if (selKey) return dayKey(p) === selKey;
                 return dayKey(p).slice(0, 7) === ym;
+              });
+              // 时间倒序（filter 返回新数组，原地 sort 安全）
+              list.sort(function (a, b) {
+                return new Date(b.published) - new Date(a.published);
               });
               var head;
               if (selKey) {
@@ -168,17 +179,21 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
               if (list.length) {
                 html += '<div class="cal-list-items">';
                 list.forEach(function (p) {
+                  var d = new Date(p.published);
                   html +=
                     '<a class="cal-post" href="/posts/' + p.id + '/"' +
                     (postTip ? ' title="' + esc(p.title) + '"' : '') +
-                    '>' + esc(p.title) + '</a>';
+                    '><span class="cal-post-title">' + esc(p.title) + '</span>' +
+                    '<time class="cal-post-date" datetime="' + dayKey(p) + '">' +
+                    fmtItemDate.format(d) + '</time></a>';
                 });
                 html += '</div>';
               }
               return html + '</div>';
             };
 
-            // 近 12 个月热力图：每月 4 段（周段），透明度 5 档 0 / .45 / .65 / .85 / 1
+            // 近 12 个月热力图（§4.43 改造）：顶部月份标签、整列可点击跳转对应月份；
+            // 每月 4 段（周段），透明度 5 档 0 / .45 / .65 / .85 / 1，单元悬停提示月份第几周 · 几篇
             var heatHtml = function () {
               var html = '';
               for (var i = 11; i >= 0; i--) {
@@ -193,26 +208,31 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
                     y + '-' + String(m + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
                   buckets[w] += byDay[key] || 0;
                 }
-                var mk = y + '-' + String(m + 1).padStart(2, '0');
                 var total = buckets[0] + buckets[1] + buckets[2] + buckets[3];
+                var mShort = fmtMonthShort.format(d);
                 html +=
-                  '<div class="cal-heat-month" title="' + mk + ' · ' + postsLabel.replace('{n}', total) + '">';
+                  '<div class="cal-heat-month" data-y="' + y + '" data-m="' + m + '"' +
+                  ' role="button" tabindex="0" title="' +
+                  esc(mShort + ' · ' + postsLabel.replace('{n}', total)) + '">' +
+                  '<b class="cal-heat-label">' + (m + 1) + '</b>' +
+                  '<div class="cal-heat-cells">';
                 for (var b = 0; b < 4; b++) {
                   var n = buckets[b];
                   var o = n === 0 ? 0 : n < 3 ? 0.45 : n < 6 ? 0.65 : n < 10 ? 0.85 : 1;
-                  html += '<i class="cal-heat-cell" style="--o:' + o + '"></i>';
+                  html +=
+                    '<i class="cal-heat-cell" style="--o:' + o + '" title="' +
+                    esc(weekTip.replace('{m}', mShort).replace('{w}', b + 1).replace('{n}', n)) +
+                    '"></i>';
                 }
-                html += '</div>';
+                html += '</div></div>';
               }
               return html;
             };
 
             var build = function () {
+              // 渲染顺序（§4.43）：月视图 → 热力图 → 文章列表
               self.innerHTML =
-                monthHtml() +
-                dayListHtml() +
-                '<div class="cal-heat-title">' + activityLabel + '</div>' +
-                '<div class="cal-heat">' + heatHtml() + '</div>';
+                monthHtml() + '<div class="cal-heat">' + heatHtml() + '</div>' + dayListHtml();
               self.querySelectorAll('.cal-nav').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                   var dir = parseInt(btn.dataset.dir, 10);
@@ -222,6 +242,21 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
                   cur = next;
                   selKey = null; // 翻月取消日期选中，列表回到当月全部
                   build();
+                });
+              });
+              // 点热力图整列（§4.43）：跳转对应月份，列表跟随；目标全为过去月份无需未来校验；Enter/Space 同点按
+              self.querySelectorAll('.cal-heat-month').forEach(function (el) {
+                var jump = function () {
+                  cur = new Date(+el.dataset.y, +el.dataset.m, 1);
+                  selKey = null;
+                  build();
+                };
+                el.addEventListener('click', jump);
+                el.addEventListener('keydown', function (e) {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    jump();
+                  }
                 });
               });
               // 点日期（§4.40）：toggle 选中，列表在当日/当月间切换；Enter/Space 同点按
