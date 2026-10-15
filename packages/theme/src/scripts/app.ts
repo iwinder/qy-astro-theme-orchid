@@ -248,32 +248,15 @@ function closeMobileNav() {
 	if (burger) burger.setAttribute("aria-expanded", "false");
 }
 
-/* reveal：首个立即入场，其余 70ms 逐个；reduced-motion 时直接全部显示 */
-let revealTimer: ReturnType<typeof setInterval> | null = null;
+/* reveal：全部同步入场（§4.40）：原 70ms 逐个级联在元素多时此起彼伏，
+   整屏持续变化被感知为频闪——改为一帧后 batch 加类，单次整体淡入。
+   reduced-motion 由 CSS 全局禁用过场兜底 */
 function initReveal() {
-	if (revealTimer) {
-		clearInterval(revealTimer);
-		revealTimer = null;
-	}
 	const reveals = doc.querySelectorAll(".reveal");
 	if (!reveals.length) return;
-	if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-		reveals.forEach((el) => {
-			el.classList.add("is-in");
-		});
-		return;
-	}
-	let ri = 0;
-	reveals[0].classList.add("is-in");
-	revealTimer = setInterval(() => {
-		ri++;
-		if (ri >= reveals.length) {
-			if (revealTimer) clearInterval(revealTimer);
-			revealTimer = null;
-			return;
-		}
-		reveals[ri].classList.add("is-in");
-	}, 70);
+	requestAnimationFrame(() => {
+		reveals.forEach((el) => el.classList.add("is-in"));
+	});
 }
 
 /* TOC 高亮：IntersectionObserver，与原型同款 rootMargin */

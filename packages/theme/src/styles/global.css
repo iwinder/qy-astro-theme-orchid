@@ -288,6 +288,16 @@ html.dark .site-title:hover {
 		visibility 0.15s;
 	z-index: 110;
 }
+/* 透明桥（§4.40）：补齐面板与父项间 6px 空隙，鼠标移向子菜单不丢 :hover；
+   仅面板展开态（hover/open-sub 下 pointer-events 生效）需要承接 */
+.nav-sub::before {
+	content: "";
+	position: absolute;
+	top: -7px;
+	left: 0;
+	right: 0;
+	height: 7px;
+}
 .nav-item.has-sub:hover .nav-sub,
 .nav-item.open-sub .nav-sub {
 	opacity: 1;
@@ -316,6 +326,10 @@ html.dark .site-title:hover {
 		width: 100%;
 		text-align: left;
 		justify-content: flex-start;
+	}
+	/* static 布局下伪元素会相对 nav-item 错位，移动端禁用桥 */
+	.nav-sub::before {
+		content: none;
 	}
 	.nav-sub {
 		position: static;
@@ -1502,6 +1516,50 @@ html.dark .cal-day.has-post {
 }
 .cal-heat-cell {
 	background: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / max(var(--o, 0), 0.08));
+}
+
+/* 日历下方文章列表（§4.40）：月视图 → 列表 → 热力图；默认当月全部，点日期过滤当日；
+   只列标题，超宽省略号截断，过长纵向滚动 */
+.cal-list {
+	margin-top: 10px;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+.cal-list-head {
+	font-size: 12px;
+	color: var(--muted);
+}
+.cal-list-items {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	max-height: 176px;
+	overflow-y: auto;
+}
+.cal-post {
+	display: block;
+	font-size: 13px;
+	line-height: 1.5;
+	color: var(--ink-2);
+	padding: 4px 8px;
+	border-radius: var(--radius-sm);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.cal-post:hover {
+	color: var(--accent-ink);
+	background: var(--bg-soft);
+}
+/* 有文章的日期可点选（§4.40）：选中态实底强调色，与 today 描边叠加可区分 */
+.cal-day.has-post {
+	cursor: pointer;
+}
+.cal-day.sel {
+	background: var(--accent);
+	color: #fff;
+	font-weight: 600;
 }
 
 /* 文章页侧栏目录 */

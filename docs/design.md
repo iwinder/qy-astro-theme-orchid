@@ -818,6 +818,16 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.39）**：`pnpm --filter site build` 通过；dist 断言全过——首页 banner 内含 `wallpaper-hero` + hero 文案、无独立 `section.hero`、list-head 位于首张置顶卡之前、首页含 featured 置顶卡；/page/2/ 与首页卡片数一致（6 vs 6）、无 featured 卡、banner 与 hero 叠加照旧渲染（`/page/N/` 也传 `page="home"`，与旧行为一致）。dev server curl 验证 list-head 先于 featured 卡。hero 叠加的视觉效果需用户重启 dev（配置快照仍是旧值，banner 未渲染）后确认。
 
+### 4.40 频闪 / 导航下拉悬停断链 / 日历文章列表（✅ 2026-10-15 完成）
+
+用户反馈三点：① 打开页面后感觉屏幕在频闪；② 菜单悬停到有子菜单的父项时子菜单应可直接选择，不应先点一次父级；③ 日历下方应有文章列表——默认展示当月全部，点某天展示当天的，只列标题、超宽省略号截断。
+
+- **频闪（app.ts `initReveal`）**：根因 = reveal 入场用 70ms `setInterval` 逐个加 `is-in` 级联，首页 11 个 `.reveal` 元素时约 10 个 0.6s opacity+translateY 过渡并行，整屏 ~1.4s 持续此起彼伏地淡入，被感知为「频闪」（浏览器实测：8 个未入场时 10 个动画同时进行）。修复：删除级联计时器（`revealTimer` 移除），改为一帧后 `requestAnimationFrame` 内对全部 `.reveal` 批量加 `is-in`——单次整体 0.6s 淡入；`prefers-reduced-motion` 仍由 CSS 全局禁用过场兜底；`showDecrypted()`（加密文解密后）复用处对同步版天然兼容
+- **导航下拉悬停断链（global.css）**：`.nav-sub` 面板 `top: calc(100% + 6px)` 与父项之间有 6px 空隙，空隙不属于任何可悬停盒——鼠标从父项移向子菜单穿越空隙时 `:hover` 丢失、面板收回，用户只能点父级（无 href 的 `button.nav-sub-toggle` 加 `.open-sub` 常开）。修复：`.nav-sub::before` 透明桥（`top:-7px; height:7px; left/right:0`）补齐悬停路径，仅面板展开态（hover / open-sub 下 pointer-events 生效）承接；移动端（≤860px static 布局，伪元素会相对 nav-item 错位）`content: none` 禁用。悬停父项直接展开子菜单的 `:hover` 规则本就存在，桥只是把断掉的 hover 路径接上
+- **日历文章列表（Calendar.astro + global.css）**：复用 `/api/allPostMeta.json` 缓存（加密文已在端点侧排除），`.cal-list` 插入月视图与热力图之间。默认列当月全部（`dayKey(p).slice(0,7) === 年-月`）；有文章的日期加 `data-key` + `role="button" tabindex="0"`，点击 toggle 选中（再点取消；Enter/Space 同点按），列表过滤当日、头部改 `fmtDay` 本地化日期，`.cal-day.sel` 实底强调色选中态（与 today 描边叠加可区分）；翻月清空选中回当月列表。只渲染标题：`esc()` HTML 转义防 XSS，href 与 RecommendedPost 同口径 `/posts/<id>/`，`.cal-post` nowrap+hidden+ellipsis 截断（`title` 属性悬停看全文），`.cal-list-items` `max-height: 176px` 纵向滚动兜底；列表头部计数复用 `dayPostsCount` i18n 文案
+
+**验证（§4.40）**：`pnpm --filter site build` 通过；dist 断言全过——73 个含日历页面均带 `dayListHtml` 脚本，产物 CSS 含 `.nav-sub::before`（桌面桥 + ≤860px `content: none` 覆盖）/`.cal-day.sel`/`.cal-post`，产物 JS 无 `revealTimer` 残留且含 `requestAnimationFrame`。dev（4321）真浏览器实测（605px 视口）：默认「2026年10月 · 4 篇」列 4 条标题、computed style nowrap/hidden/ellipsis；点 10 日 → 「10/10 · 2 篇」过滤 2 条、`cal-day.sel` 键值正确；再点同一日回到「2026年10月 · 4 篇」、sel 清空；`.reveal` 11/11 同帧全入场（batch 生效）；CSSOM 确认桥规则在位（伪类 hover 无法脚本模拟，桌面贴合性由 CSS 几何自证）；console 仅一条与本改动无关的既有 `/music/a.mp3` 404（site demo 资源缺口）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

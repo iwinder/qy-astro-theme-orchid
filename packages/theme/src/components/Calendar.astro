@@ -3,6 +3,7 @@
  * 侧栏日历 + 活跃度热力图（P2 侧栏改造）。
  * 月视图（周一起始，当月有文章日高亮）+ 近 12 个月热力图（每月 4 段，透明度 5 档），
  * 数据复用 /api/allPostMeta.json（加密文章已在端点侧排除）。
+ * 日历下方文章列表（§4.40）：默认当月全部，点选有文章日期过滤当日，再点取消；仅标题。
  * <qy-calendar> 为 VT 安全 custom element：is:inline + customElements.get 防重复 define，
  * 元数据缓存在 window.__qyAllPostMetaCache（与 random-posts 共用）。
  */
@@ -82,6 +83,25 @@ const { lang = "zh-CN" } = Astro.props;
             var tooltip = function (key, n) {
               return key + ' · ' + postsLabel.replace('{n}', n);
             };
+            // 与 byDay 一致的 YYYY-MM-DD key（本地时区），列表过滤用
+            var dayKey = function (p) {
+              var d = new Date(p.published);
+              return (
+                d.getFullYear() +
+                '-' +
+                String(d.getMonth() + 1).padStart(2, '0') +
+                '-' +
+                String(d.getDate()).padStart(2, '0')
+              );
+            };
+            var esc = function (s) {
+              return String(s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+              });
+            };
+            var fmtDay = new Intl.DateTimeFormat(locale, { month: 'numeric', day: 'numeric' });
+            // 当前选中的日期 key（null = 未选中，列表显示当月全部）
+            var selKey = null;
 
             var monthHtml = function () {
               var y = cur.getFullYear();
@@ -107,13 +127,46 @@ const { lang = "zh-CN" } = Astro.props;
                 var n = byDay[key] || 0;
                 var cls = 'cal-day';
                 if (n > 0) cls += ' has-post';
+                if (selKey && key === selKey) cls += ' sel';
                 if (y === today.getFullYear() && m === today.getMonth() && day === today.getDate()) {
                   cls += ' today';
                 }
                 html +=
                   '<span class="' + cls + '"' +
-                  (n > 0 ? ' title="' + tooltip(key, n) + '"' : '') +
+                  (n > 0
+                    ? ' data-key="' + key + '" role="button" tabindex="0" title="' + tooltip(key, n) + '"'
+                    : '') +
                   '>' + day + '</span>';
+              }
+              return html + '</div>';
+            };
+
+            // 日历下方文章列表（§4.40）：默认当月全部，选中日期则只列当日；仅标题，超宽省略号截断
+            var dayListHtml = function () {
+              var ym = cur.getFullYear() + '-' + String(cur.getMonth() + 1).padStart(2, '0');
+              var list = meta.filter(function (p) {
+                if (selKey) return dayKey(p) === selKey;
+                return dayKey(p).slice(0, 7) === ym;
+              });
+              var head;
+              if (selKey) {
+                var parts = selKey.split('-');
+                head = fmtDay.format(new Date(+parts[0], +parts[1] - 1, +parts[2]));
+              } else {
+                head = fmtMonth.format(cur);
+              }
+              var html =
+                '<div class="cal-list"><div class="cal-list-head">' +
+                head + ' · ' + postsLabel.replace('{n}', list.length) +
+                '</div>';
+              if (list.length) {
+                html += '<div class="cal-list-items">';
+                list.forEach(function (p) {
+                  html +=
+                    '<a class="cal-post" href="/posts/' + p.id + '/" title="' + esc(p.title) +
+                    '">' + esc(p.title) + '</a>';
+                });
+                html += '</div>';
               }
               return html + '</div>';
             };
@@ -150,6 +203,7 @@ const { lang = "zh-CN" } = Astro.props;
             var build = function () {
               self.innerHTML =
                 monthHtml() +
+                dayListHtml() +
                 '<div class="cal-heat-title">' + activityLabel + '</div>' +
                 '<div class="cal-heat">' + heatHtml() + '</div>';
               self.querySelectorAll('.cal-nav').forEach(function (btn) {
@@ -159,7 +213,22 @@ const { lang = "zh-CN" } = Astro.props;
                   // 不允许翻到未来月份
                   if (next > thisMonth) return;
                   cur = next;
+                  selKey = null; // 翻月取消日期选中，列表回到当月全部
                   build();
+                });
+              });
+              // 点日期（§4.40）：toggle 选中，列表在当日/当月间切换；Enter/Space 同点按
+              self.querySelectorAll('.cal-day.has-post').forEach(function (el) {
+                var toggle = function () {
+                  selKey = selKey === el.dataset.key ? null : el.dataset.key;
+                  build();
+                };
+                el.addEventListener('click', toggle);
+                el.addEventListener('keydown', function (e) {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggle();
+                  }
                 });
               });
             };
