@@ -861,6 +861,16 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.43）**：`pnpm --filter site build` 通过；dist 断言全过——`data-label-heat-week` 传参在位、产物 JS 模板含 `cal-heat-month` / `cal-post-date`、全 dist 无「活跃度」/ `cal-heat-title` / `label-activity` 残留；`pnpm test` 3/3 过；biome 复查 Calendar.astro / global.css / schema.ts 本轮改动 0 新增 error（剩余 3 error 均历史遗留：schema L412+ format、global.css L83 duplicate、L3473 format）。月份标签 / 周悬停 / 点击跳月 / 列表倒序的视觉效果待用户重启 dev 后浏览器实测。
 
+### 4.44 热力图塌陷修复与月份范围改今年 1-12 月（✅ 2026-10-16 完成）
+
+用户反馈：① 热力图没了（§4.43 改造后视觉消失）；② 热力图应为今年 1-12 月，而非「去年 11、12 月 + 今年 1-10 月」的近 12 个月滚动窗口。
+
+- **塌陷根因（CSS 教训）**：§4.43 把 `aspect-ratio: 1` 从 `.cal-heat-month` 整列移到 `.cal-heat-cell`，但格子是 `<i>` inline 元素（aspect-ratio 不生效），且格子外包了 `.cal-heat-cells` block div 截断 flex 列的 stretch 链 → 格子宽高 auto 塌 0，`.cal-heat` 总高仅剩标签 12px，视觉上「热力图没了」。浏览器 computed style 实测：`.cal-heat` height 12px、cell `aspectRatio: 1/1` 未生效
+- **global.css 修复**：新增 `.cal-heat-cells { display:flex; flex-direction:column; gap:3px }` 承载格子；`.cal-heat-cell` 改 `display:block; width:100%; aspect-ratio:5`（40px 列宽 × 8px 扁条，接近原热力图形态）；新增 `.cal-heat-month:not([role='button']) { cursor:default }`；hover label 变色规则选择器限定 `[role='button']`
+- **Calendar.astro**：热力图范围由「近 12 个月」改为**今年 1-12 月**（`for m 0..11`，`y = today.getFullYear()`，列顶数字 1-12）；未来月份列（`d > thisMonth`，即 11、12 月）不渲染 `role="button" tabindex="0"`，仅作占位展示（月视图本就不允许翻未来），jump 绑定选择器同步限定 `.cal-heat-month[role="button"]`
+
+**验证（§4.44）**：`node -e fs.rmSync` 清 dist + `pnpm --filter site build` 通过；浏览器（preview 4322）静态断言全过——`.cal-heat` 高 53.47px（塌陷修复）、格子 40.59×8.12（扁条生效）、列标签 `1,2,…,12`、可点列 10 个（1-10 月）、11/12 月无 role（futureNoRole）；交互实测——点 9 月列月视图标题变「2026年9月」（列表空为该月无文章，正确跟随）、点 10 月列回「2026年10月」且列表 4 条倒序（10/11、10/10、10/10、10/09，左标题右日期）；截图确认 12 列热力图 + 月份数字 + 下方列表布局。biome 复查本轮改动 0 新增 error（2 error 均历史遗留：global.css L83 duplicate、L1 format）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

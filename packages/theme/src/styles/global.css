@@ -1508,12 +1508,16 @@ html.dark .cal-day.has-post {
 	gap: 3px;
 	cursor: pointer;
 }
+/* 未来月份列（§4.44）：无 role，不可点击跳月 */
+.cal-heat-month:not([role='button']) {
+	cursor: default;
+}
 .cal-heat-month:focus-visible {
 	outline: 1.5px solid var(--accent);
 	outline-offset: 1px;
 	border-radius: 2px;
 }
-.cal-heat-month:hover .cal-heat-label {
+.cal-heat-month[role='button']:hover .cal-heat-label {
 	color: var(--accent-ink);
 }
 /* 列顶月份数字标签（§4.43） */
@@ -1524,8 +1528,18 @@ html.dark .cal-day.has-post {
 	text-align: center;
 	color: var(--muted);
 }
+/* 格子容器（§4.44 修正塌陷）：flex 竖排承载格子，格子以宽度自持扁条比例；
+   §4.43 曾把 aspect-ratio 移到 <i> 格子上——inline 元素上不生效且外包 div 截断 stretch，
+   导致格子高 0、热力图整体塌成 12px（仅剩标签） */
+.cal-heat-cells {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
 .cal-heat-cell {
-	aspect-ratio: 1;
+	display: block;
+	width: 100%;
+	aspect-ratio: 5;
 	border-radius: 2px;
 	background: hsl(
 		var(--accent-h) var(--accent-s) var(--accent-l) / max(var(--o, 0), 0.08)
@@ -1539,10 +1553,6 @@ html.dark .cal-day.has-post {
 	display: flex;
 	flex-direction: column;
 	gap: 3px;
-}
-.cal-list-head {
-	font-size: 12px;
-	color: var(--muted);
 }
 .cal-list-items {
 	display: flex;

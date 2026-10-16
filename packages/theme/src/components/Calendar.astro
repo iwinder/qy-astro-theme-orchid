@@ -107,7 +107,6 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
               });
             };
-            var fmtDay = new Intl.DateTimeFormat(locale, { month: 'numeric', day: 'numeric' });
             // 列表条目日期（§4.43）：两位月/日，如 10/08
             var fmtItemDate = new Intl.DateTimeFormat(locale, { month: '2-digit', day: '2-digit' });
             // 当前选中的日期 key（null = 未选中，列表显示当月全部）
@@ -153,8 +152,8 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
               return html + '</div>';
             };
 
-            // 热力图下方文章列表（§4.40，§4.43 移至热力图下）：默认当月全部，选中日期则只列当日；
-            // 按时间倒序，左侧标题右侧日期，超宽标题省略号截断
+            // 热力图下方文章列表（§4.40，§4.43 移至热力图下，§4.43 修正去统计标题）：默认当月全部，
+            // 选中日期则只列当日；按时间倒序，左侧标题右侧日期，超宽标题省略号截断
             var dayListHtml = function () {
               var ym = cur.getFullYear() + '-' + String(cur.getMonth() + 1).padStart(2, '0');
               var list = meta.filter(function (p) {
@@ -165,17 +164,7 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
               list.sort(function (a, b) {
                 return new Date(b.published) - new Date(a.published);
               });
-              var head;
-              if (selKey) {
-                var parts = selKey.split('-');
-                head = fmtDay.format(new Date(+parts[0], +parts[1] - 1, +parts[2]));
-              } else {
-                head = fmtMonth.format(cur);
-              }
-              var html =
-                '<div class="cal-list"><div class="cal-list-head">' +
-                head + ' · ' + postsLabel.replace('{n}', list.length) +
-                '</div>';
+              var html = '<div class="cal-list">';
               if (list.length) {
                 html += '<div class="cal-list-items">';
                 list.forEach(function (p) {
@@ -192,14 +181,14 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
               return html + '</div>';
             };
 
-            // 近 12 个月热力图（§4.43 改造）：顶部月份标签、整列可点击跳转对应月份；
-            // 每月 4 段（周段），透明度 5 档 0 / .45 / .65 / .85 / 1，单元悬停提示月份第几周 · 几篇
+            // 今年 1-12 月热力图（§4.44，原近 12 个月）：顶部月份数字标签，列可点击跳转对应月份；
+            // 每月 4 段（周段），透明度 5 档 0 / .45 / .65 / .85 / 1，单元悬停提示月份第几周 · 几篇；
+            // 未来月份列不渲染为按钮（月视图不允许翻到未来），仅作占位展示
             var heatHtml = function () {
               var html = '';
-              for (var i = 11; i >= 0; i--) {
-                var d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-                var y = d.getFullYear();
-                var m = d.getMonth();
+              var y = today.getFullYear();
+              for (var m = 0; m < 12; m++) {
+                var d = new Date(y, m, 1);
                 var days = new Date(y, m + 1, 0).getDate();
                 var buckets = [0, 0, 0, 0];
                 for (var day = 1; day <= days; day++) {
@@ -210,9 +199,11 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
                 }
                 var total = buckets[0] + buckets[1] + buckets[2] + buckets[3];
                 var mShort = fmtMonthShort.format(d);
+                var future = d > thisMonth;
                 html +=
                   '<div class="cal-heat-month" data-y="' + y + '" data-m="' + m + '"' +
-                  ' role="button" tabindex="0" title="' +
+                  (future ? '' : ' role="button" tabindex="0"') +
+                  ' title="' +
                   esc(mShort + ' · ' + postsLabel.replace('{n}', total)) + '">' +
                   '<b class="cal-heat-label">' + (m + 1) + '</b>' +
                   '<div class="cal-heat-cells">';
@@ -244,8 +235,9 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
                   build();
                 });
               });
-              // 点热力图整列（§4.43）：跳转对应月份，列表跟随；目标全为过去月份无需未来校验；Enter/Space 同点按
-              self.querySelectorAll('.cal-heat-month').forEach(function (el) {
+              // 点热力图整列（§4.43，§4.44 限有 role 的列）：跳转对应月份，列表跟随；
+              // 未来月份列无 role 不绑（月视图不允许翻到未来）；Enter/Space 同点按
+              self.querySelectorAll('.cal-heat-month[role="button"]').forEach(function (el) {
                 var jump = function () {
                   cur = new Date(+el.dataset.y, +el.dataset.m, 1);
                   selKey = null;
