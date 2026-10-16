@@ -881,6 +881,19 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.45）**：rebuild 后 preview 4322 实测（内置视口 605px 固定无 resize 能力，桌面 280px 列以注入 `.home-layout { grid-template-columns: minmax(0,1fr) 280px !important }` 模拟）——`qy-calendar` computed display:block、宽度精确贴合卡片内容宽；10 月（4 篇含长标题）与 9 月（无文章）两状态下卡片均恒 280px、widget 均 242px，**宽度不随列表内容变动**；10 月长标题 `scrollWidth > clientWidth`（省略号截断生效），列表右日期对齐不收缩；截图确认布局正常。biome 复查 global.css 0 新增 error（历史遗留 L1/L83 除外）。
 
+### 4.46 侧栏视觉对齐参考站：留白/圆角/列距/标题层级统一（✅ 2026-10-16 完成）
+
+用户对比后反馈 orchid-blog 侧栏「视觉上更宽、更舒服」。勘查结论：两边侧栏列宽名义完全相同（均 280px，参考站 `17.5rem`），差异全在视觉处理——卡片内边距过大（22px）、列距过大（32px）、容器留白过大（24px）、标题字号层级弱（14px 灰色小字 vs 参考站 18px 粗体+主题色竖条）、圆角偏小（12px vs 16px）、条目字重不足。按 4 项方案对齐（用户批准）：
+
+- **`global.css` 调整**：
+  1. `.side-card`：`padding: 20px 22px` → `20px 16px`，`border-radius: 16px`（**scoped 覆盖**；全局 `--radius:12px` 有 13 处使用点——modal/search-panel/cover 等，不动全局避免连带视觉风险）；移动端（≤640px）覆盖 `16px 18px` → `16px` 统一
+  2. `.home-layout`：桌面列 `gap: 32px` → `16px`（写入 `min-width:1025px` media query，移动端保持 32px 纵向节奏）；`.shell` `padding-inline: 24px` → `16px`（对齐参考站 `px-2 md:px-4`，≤640px 原本就是 16px）
+  3. `.side-card h3`：14px/`--muted`/`0.12em` → 16px/`--ink`/`0.05em`，改 flex + `::before` 4×16px 圆角竖条 `background: var(--accent)`（对齐参考站 WidgetLayout `text-lg font-bold` + `before:w-1 h-4 rounded-md bg-(--primary)`）；`.chip` 与 `.cat-list a` 补 `font-weight: 600`（对齐参考站 `font-bold` 条目层级）
+  4. `.post-layout`（≥768px）：侧栏 `220px` → `280px` 与首页统一；`max-width: 1120px` → `1180px` 同步 +60px，正文阅读行宽（1120−220−36=864px）保持不变
+- **设计取舍**：未搬 sticky 侧栏（参考站 `sticky top-4`，属行为差异非视觉宽度问题，留待后续）；侧栏 widget 间 `gap: 20px` 保持（参考站 16px，差异微小）
+
+**验证（§4.46）**：`node -e fs.rmSync` 清 dist + rebuild 通过；preview 4322（navigate 带 `Cache-Control: no-cache`）注入桌面模拟样式 `.home-layout{grid-template-columns:minmax(0,1fr) 280px !important; gap:16px !important}` 后 computed 断言 9/9 通过——`.shell` padding 16px、`.home-layout` gap 16px、`.sidebar` 280px、`.side-card` padding 16px / 圆角 16px、h3 16px + 竖条 4px `rgb(73,156,142)`（accent）、`.chip`/`.cat-list a` font-weight 600；CSSOM 复核构建产物 @media 内规则：`.post-layout{…280px; max-width:1180px}`、≤640px `.side-card{padding:16px}` 均在。截图通道本轮被渲染器节流（浏览器窗口离屏），以量化断言 + CSSOM 双重复核替代；**排查新教训：该浏览器 evaluate 引擎对含 `function` 关键字的脚本静默返回 undefined，箭头函数可用**。biome 复查 global.css 0 新增 error（历史遗留 L1/L83 除外）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

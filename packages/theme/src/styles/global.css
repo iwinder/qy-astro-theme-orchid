@@ -151,7 +151,8 @@ html.dark a:hover {
 .shell {
 	max-width: var(--page-width, 1600px);
 	margin-inline: auto;
-	padding-inline: 24px;
+	/* §4.46 对齐参考站 px-2 md:px-4：容器内边距 16px，页面留白交给列距与卡片内边距 */
+	padding-inline: 16px;
 }
 /* xl(1280+) 对齐参考站 w-92vw 策略：容器取 min(92vw, pageWidth)，
    宽屏最多 1600px 居中、两侧留 4% 呼吸位；<1280px 全宽铺满（§4.32 迭代） */
@@ -675,6 +676,8 @@ html.dark #modeToggle .i-sun {
 	padding: 2px 12px;
 	border-radius: 999px;
 	font-size: 13px;
+	/* §4.46 对齐参考站 text-sm font-bold 标签层级 */
+	font-weight: 600;
 	color: var(--ink-2);
 	background: var(--bg-soft);
 	border: 1px solid var(--border);
@@ -772,6 +775,8 @@ html.dark .btn:hover {
 @media (min-width: 1025px) {
 	.home-layout {
 		grid-template-columns: minmax(0, 1fr) 280px;
+		/* §4.46 对齐参考站 gap-4：桌面列距 16px（移动端保持 32px 纵向节奏） */
+		gap: 16px;
 	}
 }
 
@@ -1189,17 +1194,32 @@ html.dark .layout-switch:hover {
 	gap: 20px;
 	min-width: 0;
 }
+/* §4.46 对齐参考站：内边距收窄至 16px、圆角 16px（scoped 覆盖，不动全局 --radius），
+   白卡贴边更舒展、视觉上更宽 */
 .side-card {
-	padding: 20px 22px;
+	padding: 20px 16px;
+	border-radius: 16px;
 	min-width: 0;
 	max-width: 100%;
 }
+/* §4.46 对齐参考站 WidgetLayout 标题：text-lg font-bold + 主题色竖条 before:w-1 h-4 */
 .side-card h3 {
-	font-size: 14px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 16px;
 	font-weight: 600;
-	letter-spacing: 0.12em;
-	color: var(--muted);
+	letter-spacing: 0.05em;
+	color: var(--ink);
 	margin-bottom: 12px;
+}
+.side-card h3::before {
+	content: '';
+	width: 4px;
+	height: 16px;
+	border-radius: 2px;
+	background: var(--accent);
+	flex: none;
 }
 .side-card p {
 	font-size: 14px;
@@ -1213,6 +1233,8 @@ html.dark .layout-switch:hover {
 .cat-list a {
 	display: flex;
 	justify-content: space-between;
+	/* §4.46 对齐参考站条目加粗层级 */
+	font-weight: 600;
 	color: var(--ink-2);
 }
 .cat-list a:hover {
@@ -1761,9 +1783,9 @@ a.page-item:hover {
 }
 @media (min-width: 768px) {
 	.post-layout {
-		grid-template-columns: minmax(0, 1fr) 220px;
-		/* 文章页维持 ~816px 正文阅读行宽，不随 pageWidth 铺开（§4.32 迭代） */
-		max-width: 1120px;
+		grid-template-columns: minmax(0, 1fr) 280px;
+		/* §4.46 侧栏统一 280px（与首页一致），max-width 同步 +60px 保持正文阅读行宽不变（§4.32 迭代） */
+		max-width: 1180px;
 	}
 }
 .prose {
@@ -3574,7 +3596,8 @@ html.dark .friend-card:hover .friend-name {
 		padding-right: 72px;
 	}
 	.side-card {
-		padding: 16px 18px;
+		/* §4.46 移动端与桌面统一 16px 内边距 */
+		padding: 16px;
 	}
 	.site-main {
 		padding-top: 24px;
