@@ -1182,12 +1182,17 @@ html.dark .layout-switch:hover {
 }
 
 /* sidebar */
+/* §4.45：min-width:0 阻断子内容 min-content 沿 grid/flex 链向上撑宽，
+   保证侧栏宽度恒定（内容在卡片内截断，而非卡片被内容撑动） */
 .sidebar {
 	display: grid;
 	gap: 20px;
+	min-width: 0;
 }
 .side-card {
 	padding: 20px 22px;
+	min-width: 0;
+	max-width: 100%;
 }
 .side-card h3 {
 	font-size: 14px;
@@ -1412,8 +1417,15 @@ html.dark .side-friends a:hover {
 }
 
 /* 日历 widget（月视图 + 活跃度热力图） */
-.qy-calendar {
+/* §4.45：宽度恒定——<qy-calendar> 无 class，选择器用标签名；
+   自定义元素默认 display:inline（宽度随内容 shrink-to-fit），文章标题 min-content
+   会沿 inline/flex 链向上撑宽卡片，导致侧栏宽度随列表有无文章/标题长短变动；
+   display:block + min-width:0 + max-width:100% 斩断传播，列表在固定宽度内截断 */
+qy-calendar {
 	--cal-cell: 13px;
+	display: block;
+	min-width: 0;
+	max-width: 100%;
 }
 .cal-head {
 	display: flex;
@@ -1549,11 +1561,13 @@ html.dark .cal-day.has-post {
 
 /* 热力图下方文章列表（§4.40，§4.43 移至热力图下）：月视图 → 热力图 → 列表；
    默认当月全部，点日期过滤当日；按时间倒序，左标题右日期，超宽标题省略号截断，过长纵向滚动 */
+/* §4.45：链条加 min-width:0，文章列表在 widget 固定宽度内截断 */
 .cal-list {
 	margin-top: 10px;
 	display: flex;
 	flex-direction: column;
 	gap: 3px;
+	min-width: 0;
 }
 .cal-list-items {
 	display: flex;
@@ -1561,6 +1575,7 @@ html.dark .cal-day.has-post {
 	gap: 2px;
 	max-height: 176px;
 	overflow-y: auto;
+	min-width: 0;
 }
 .cal-post {
 	display: flex;
@@ -1572,9 +1587,12 @@ html.dark .cal-day.has-post {
 	color: var(--ink-2);
 	padding: 4px 8px;
 	border-radius: var(--radius-sm);
+	min-width: 0;
 }
-/* 左侧标题：超宽省略号截断（§4.43） */
+/* 左侧标题：flex:1 1 0 + min-width:0 允许收缩，超宽省略号截断（§4.43/§4.45） */
 .cal-post-title {
+	flex: 1 1 0;
+	min-width: 0;
 	overflow: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;

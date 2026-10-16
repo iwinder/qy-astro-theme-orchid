@@ -872,6 +872,15 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.44）**：`node -e fs.rmSync` 清 dist + `pnpm --filter site build` 通过；浏览器（preview 4322）静态断言全过——修订后：48 格 12×4 平铺、格子 36.8×36.8 正方形（width:85% + aspect-ratio:1 生效）、标签行 `1,2,…,12`、可点格子 40 个（1-10 月 ×4）、11/12 月 8 格无 role；交互实测——点 9 月格子月视图标题变「2026年9月」（列表空为该月无文章，正确跟随）、点 10 月列回「2026年10月」且列表 4 条倒序（10/11、10/10、10/10、10/09，左标题右日期）；截图确认正方形小格子网格 + 月份标签行 + 下方列表布局，与 orchid-blog 原版一致。biome 复查本轮改动 0 新增 error（2 error 均历史遗留：global.css L83 duplicate、L1 format）。
 
+### 4.45 侧栏宽度恒定：文章列表适应组件而非撑宽组件（✅ 2026-10-16 完成）
+
+用户反馈：左侧组件栏宽度不应随热力图下方文章列表有无文章而变动，应让文章列表适应组件宽度（标题超宽在组件内截断），而非组件适应文章标题。
+
+- **根因（两层）**：① `<qy-calendar>` 自定义元素未设 `display`（默认 **inline**，宽度随内容 shrink-to-fit）；② 整条 flex 链（`.cal-list` / `.cal-list-items` / `.cal-post` / `.cal-post-title`）缺 `min-width: 0`，长标题 min-content 一路向上传播撑动卡片。排查中另发现关键事实：**该元素渲染时无 class 属性**，原 `.qy-calendar`（带点类选择器）从未匹配过——CSSOM 实测规则存在但 computed 仍 inline 才定位到选择器失配
+- **global.css 修复**：选择器 `.qy-calendar` 改**标签选择器 `qy-calendar`**，并设 `display:block; min-width:0; max-width:100%`（块级充满卡片内容宽、斩断收缩传播）；`.sidebar` / `.side-card` / `.cal-list` / `.cal-list-items` / `.cal-post` 链条各补 `min-width: 0`（`.side-card` 另补 `max-width:100%`）；`.cal-post-title` 补 `flex: 1 1 0; min-width: 0`（允许收缩，配合既有 ellipsis 三件套在组件内截断），`.cal-post-date` 保持不收缩
+
+**验证（§4.45）**：rebuild 后 preview 4322 实测（内置视口 605px 固定无 resize 能力，桌面 280px 列以注入 `.home-layout { grid-template-columns: minmax(0,1fr) 280px !important }` 模拟）——`qy-calendar` computed display:block、宽度精确贴合卡片内容宽；10 月（4 篇含长标题）与 9 月（无文章）两状态下卡片均恒 280px、widget 均 242px，**宽度不随列表内容变动**；10 月长标题 `scrollWidth > clientWidth`（省略号截断生效），列表右日期对齐不收缩；截图确认布局正常。biome 复查 global.css 0 新增 error（历史遗留 L1/L83 除外）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
