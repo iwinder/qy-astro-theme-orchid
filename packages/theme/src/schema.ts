@@ -399,6 +399,7 @@ export const themeConfigSchema = z.object({
 	 * - enabled=false 跳过该 widget；两个方向的显隐（对齐参考模板 showOnPostPage/hideOnNonPostPage）：
 	 *   showOnPost=false 仅列表页显示；postOnly=true 仅文章页侧栏显示（如 toc）
 	 * - hideOnMobile=true 移动端（<768px）隐藏该 widget（§4.49 移动端差异化侧栏，默认 toc/calendar 隐藏）
+	 * - position="sticky" 渲染进粘性容器，≥768px 跟随滚动（§4.50）；默认 "top" 普通流式
 	 * - onPost=false 时文章详情页不渲染侧栏（TOC 保持正文右侧原位）
 	 */
 	sidebar: z
@@ -410,16 +411,16 @@ export const themeConfigSchema = z.object({
 				.array(
 					z.object({
 						type: z.enum([
-						"announcement",
-						"categories",
-						"tags",
-						"friends",
-						"calendar",
-						"toc",
-						"siteInfo",
-						"advertisement",
-						"profile",
-					]),
+							"announcement",
+							"categories",
+							"tags",
+							"friends",
+							"calendar",
+							"toc",
+							"siteInfo",
+							"advertisement",
+							"profile",
+						]),
 						enabled: z.boolean().default(true),
 						/** 文章页侧栏是否保留该 widget（false = 仅首页/列表页显示） */
 						showOnPost: z.boolean().default(true),
@@ -427,15 +428,22 @@ export const themeConfigSchema = z.object({
 						postOnly: z.boolean().default(false),
 						/** 移动端（<768px）隐藏该 widget（§4.49 移动端差异化侧栏） */
 						hideOnMobile: z.boolean().default(false),
+						/** 渲染分组：sticky 组包进粘性容器跟随滚动（≥768px 生效，§4.50）；默认 top 普通流式 */
+						position: z.enum(["top", "sticky"]).default("top"),
 					}),
 				)
 				.default([
 					{ type: "announcement" },
-					{ type: "categories" },
-					{ type: "tags" },
+					{ type: "categories", position: "sticky" },
+					{ type: "tags", position: "sticky" },
 					{ type: "friends" },
-					{ type: "calendar", hideOnMobile: true },
-					{ type: "toc", postOnly: true, hideOnMobile: true },
+					{ type: "calendar", hideOnMobile: true, position: "sticky" },
+					{
+						type: "toc",
+						postOnly: true,
+						hideOnMobile: true,
+						position: "sticky",
+					},
 					{ type: "siteInfo" },
 					{ type: "advertisement" },
 				]),
@@ -448,8 +456,10 @@ export const themeConfigSchema = z.object({
 				})
 				.default({ count: 3, random: false }),
 			/** 标签 widget 参数：count 为展示的热门标签数量（0 = 全部展示），
-		 *  超出部分收进「…更多」入口跳转标签页（§4.48） */
-			tags: z.object({ count: z.number().int().min(0).default(12) }).default({ count: 12 }),
+			 *  超出部分收进「…更多」入口跳转标签页（§4.48） */
+			tags: z
+				.object({ count: z.number().int().min(0).default(12) })
+				.default({ count: 12 }),
 			/** 日历 widget 参数 */
 			calendar: z
 				.object({
@@ -457,23 +467,23 @@ export const themeConfigSchema = z.object({
 					postTooltip: z.boolean().default(false),
 				})
 				.default({ postTooltip: false }),
-	})
-	.default({
-		onPost: false,
-		widgets: [
-			{ type: "announcement" },
-			{ type: "categories" },
-			{ type: "tags" },
-			{ type: "friends" },
-			{ type: "calendar", hideOnMobile: true },
-			{ type: "toc", postOnly: true, hideOnMobile: true },
-			{ type: "siteInfo" },
-			{ type: "advertisement" },
-		],
-		friends: { count: 3, random: false },
-		tags: { count: 12 },
-		calendar: { postTooltip: false },
-	}),
+		})
+		.default({
+			onPost: false,
+			widgets: [
+				{ type: "announcement" },
+				{ type: "categories", position: "sticky" },
+				{ type: "tags", position: "sticky" },
+				{ type: "friends" },
+				{ type: "calendar", hideOnMobile: true, position: "sticky" },
+				{ type: "toc", postOnly: true, hideOnMobile: true, position: "sticky" },
+				{ type: "siteInfo" },
+				{ type: "advertisement" },
+			],
+			friends: { count: 3, random: false },
+			tags: { count: 12 },
+			calendar: { postTooltip: false },
+		}),
 	/** 打赏页（收款码 image 与跳转 link 至少配一个；均为空渲染占位框） */
 	sponsor: z
 		.object({
@@ -557,7 +567,8 @@ export const themeConfigSchema = z.object({
 				})
 				.default({
 					envId: "",
-					jsUrl: "https://registry.npmmirror.com/twikoo/1.7.13/files/dist/twikoo.min.js",
+					jsUrl:
+						"https://registry.npmmirror.com/twikoo/1.7.13/files/dist/twikoo.min.js",
 					cssUrl: "",
 				}),
 			waline: z
@@ -611,7 +622,8 @@ export const themeConfigSchema = z.object({
 			artalk: { server: "", locale: "zh-CN", visitorCount: true },
 			twikoo: {
 				envId: "",
-				jsUrl: "https://registry.npmmirror.com/twikoo/1.7.13/files/dist/twikoo.min.js",
+				jsUrl:
+					"https://registry.npmmirror.com/twikoo/1.7.13/files/dist/twikoo.min.js",
 				cssUrl: "",
 			},
 			waline: { serverURL: "", lang: "zh-CN", visitorCount: true },

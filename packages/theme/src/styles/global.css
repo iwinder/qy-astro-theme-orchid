@@ -1188,11 +1188,30 @@ html.dark .layout-switch:hover {
 
 /* sidebar */
 /* §4.45：min-width:0 阻断子内容 min-content 沿 grid/flex 链向上撑宽，
-   保证侧栏宽度恒定（内容在卡片内截断，而非卡片被内容撑动） */
+   保证侧栏宽度恒定（内容在卡片内截断，而非卡片被内容撑动）
+   §4.50：align-self:stretch 拉伸 aside 至行轨道高度（父级 align-items:start 不拉伸 item），
+   为 .side-sticky 提供粘性活动空间；display 改 flex column，防止内部行被 stretch 拉伸撑大组间距 */
 .sidebar {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	min-width: 0;
+	align-self: stretch;
+}
+/* §4.50 position 分组容器（top/sticky 双组）：组内卡片间距保持 20px 节奏 */
+.side-top,
+.side-sticky {
 	display: grid;
 	gap: 20px;
 	min-width: 0;
+}
+/* §4.50 sticky 组：≥768px 吸附于 sticky header 下方跟随滚动
+   （top 间距对齐独立 toc 的 calc(var(--header-h) + 24px)）；移动端平铺无 sticky */
+@media (min-width: 768px) {
+	.side-sticky {
+		position: sticky;
+		top: calc(var(--header-h) + 24px);
+	}
 }
 /* §4.49 移动端差异化侧栏：<768px 隐藏 hideOnMobile 的 widget（默认 toc/calendar 隐藏）。
    参照 orchid-blog「移动端独立组件列表 + md 断点显隐」机制，此处用单 DOM + 显隐位等价实现 */
@@ -1221,7 +1240,7 @@ html.dark .layout-switch:hover {
 	margin-bottom: 12px;
 }
 .side-card h3::before {
-	content: '';
+	content: "";
 	width: 4px;
 	height: 16px;
 	border-radius: 2px;
@@ -1674,14 +1693,15 @@ html.dark .cal-day.has-post {
 	cursor: pointer;
 	transition: box-shadow 0.15s ease;
 	background: hsl(
-		var(--accent-h) var(--accent-s) var(--accent-l) / max(var(--o, 0), 0.08)
+		var(--accent-h) var(--accent-s) var(--accent-l) /
+		max(var(--o, 0), 0.08)
 	);
 }
 /* 未来月份格子（§4.44）：无 role，不可点击跳月 */
-.cal-heat-cell:not([role='button']) {
+.cal-heat-cell:not([role="button"]) {
 	cursor: default;
 }
-.cal-heat-cell[role='button']:hover {
+.cal-heat-cell[role="button"]:hover {
 	box-shadow: 0 0 1px 1.5px hsl(var(--accent-h) var(--accent-s) var(--accent-l));
 }
 .cal-heat-cell:focus-visible {
@@ -3632,7 +3652,11 @@ html.dark .friend-card:hover .friend-name {
 	height: 3px;
 	transform-origin: 0 50%;
 	transform: scaleX(0);
-	background: linear-gradient(90deg, var(--accent), var(--accent-deep, var(--accent)));
+	background: linear-gradient(
+		90deg,
+		var(--accent),
+		var(--accent-deep, var(--accent))
+	);
 	pointer-events: none;
 }
 .back-top {

@@ -1,7 +1,5 @@
 ---
 import config from "virtual:theme/config";
-import Calendar from "./Calendar.astro";
-import type { TocHeading } from "./Toc.astro";
 import { t } from "../i18n/index.js";
 import {
 	collectCategories,
@@ -9,6 +7,8 @@ import {
 	daysSince,
 	type PostLike,
 } from "../utils.js";
+import Calendar from "./Calendar.astro";
+import type { TocHeading } from "./Toc.astro";
 
 interface Props {
 	/** 全站已发布文章（用于聚合分类/标签/统计） */
@@ -37,9 +37,14 @@ const runDays = config.since ? daysSince(config.since) : null;
 // 两个方向的显隐（对齐参考模板 showOnPostPage/hideOnNonPostPage）：
 // showOnPost=false 仅列表页显示；postOnly=true 仅文章页侧栏显示；文章页整体开关由路由层 onPost 把关
 // hideOnMobile=true 的 widget 在 <768px 隐藏（§4.49 移动端差异化，CSS .side-hide-m）
-const widgets = config.sidebar.widgets.filter((w) =>
-	w.enabled && (isPost ? w.showOnPost : !w.postOnly),
+const widgets = config.sidebar.widgets.filter(
+	(w) => w.enabled && (isPost ? w.showOnPost : !w.postOnly),
 );
+
+// §4.50 sticky 侧栏：按 position 拆两组——top 组普通流式，sticky 组包进粘性容器
+// （≥768px 跟随滚动，CSS .side-sticky）；组内保持 widgets 数组顺序
+const topWidgets = widgets.filter((w) => w.position !== "sticky");
+const stickyWidgets = widgets.filter((w) => w.position === "sticky");
 
 // 公告 widget（P1-17）：content 留空整卡不渲染
 const ann = config.announcement;
@@ -75,8 +80,15 @@ if (widgets.some((w) => w.type === "friends")) {
 
 <aside class="sidebar">
   {
-    widgets.map((w) => (
-      <>
+    [
+      { cls: "side-top", list: topWidgets },
+      { cls: "side-sticky", list: stickyWidgets },
+    ]
+      .filter((g) => g.list.length > 0)
+      .map((group) => (
+        <div class={group.cls}>
+          {group.list.map((w) => (
+            <>
         {w.type === 'profile' && showProfile && (
           <section class:list={["side-card", "card", "reveal", "profile-card", { "side-hide-m": w.hideOnMobile }]}>
             <div class="profile-head">
@@ -264,8 +276,10 @@ if (widgets.some((w) => w.type === "friends")) {
             </div>
           </section>
         )}
-      </>
-    ))
+            </>
+          ))}
+        </div>
+      ))
   }
 </aside>
 

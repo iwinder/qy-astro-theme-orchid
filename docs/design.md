@@ -927,6 +927,18 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.49）**：rebuild 后 dist 断言首页 `<section class="... calendar-widget side-hide-m">`、文章页 `.toc-widget` 同含 side-hide-m；preview 4322 移动视口（492px）computed：首页日历 `display:none`、文章页 toc `display:none`；注入桌面模拟样式 `@media(max-width:767px){.side-hide-m{display:revert !important}}` 后两者恢复 `display:block`（PC 端正常显示）；CSSOM 复核两条媒体规则（`width <= 767px` / `max-width: 767px`）均在构建产物中。biome 复查 0 新增（唯一 error 为继承遗留 global.css:83 重复属性；warnings 均为 .astro frontmatter 误报与 noImportantStyles 历史遗留）。
 
+### 4.50 侧栏 sticky 粘性分组，跟随滚动（✅ 2026-10-17 完成）
+
+用户诉求：参考站 widget `position: "sticky"` 能跟随滚轮下滑，为何本主题没有。分析后用户拍板「先不拆独立配置，用户看不见的内容就不需要渲染，其他正常优化调整」——即**不做**参考站 leftComponents/rightComponents/mobileBottomComponents 三列表拆分（单侧栏布局下左/右列表重复配置；移动端独立底部区块会在桌面端渲染隐藏内容），**保持** §4.48 slice 裁剪式「更多」（不做全渲染 + max-height 截断），只做 sticky 跟随滚动。参考站 sticky 机制（勘查 SideBar.astro L84-227 / MainGridLayout.astro L824-902）：每侧按 widget.position 拆 top/sticky 两组，top 组普通流式、sticky 组整体包进 `id={side}-sidebar-sticky` 容器加 `sticky top-4`。本主题落地方案：
+
+- **schema**：widgets item 增加 `position: z.enum(["top", "sticky"]).default("top")`（JSDoc 注明 sticky 渲染进粘性容器 ≥768px 跟随滚动）；主题内层两处默认 widgets 数组中 categories/tags/calendar/toc 补 `position: "sticky"`（对齐参考站），profile/announcement/friends/siteInfo/advertisement 保持默认 top
+- **Sidebar.astro**：按 position 拆 `topWidgets`/`stickyWidgets` 两组（组内保持 widgets 数组顺序），模板外层遍历 `[{cls:"side-top"},{cls:"side-sticky"}].filter(组非空)` 渲染双容器——组空不渲染容器，避免 flex gap 空隙；9 类 widget 的 section/组件渲染逻辑零改动（sticky 只影响分组容器）
+- **CSS**：`.sidebar` 由 grid 改 `display:flex; flex-direction:column; align-self:stretch`——父级 `.home-layout`/`.post-layout` 均为 `align-items:start` 不拉伸 item，aside 高度=内容高度则 sticky 无活动空间，`align-self:stretch` 将 aside 拉伸至行轨道高度（=主内容列高度，独立 toc 的 grid item sticky 能生效同理）；改 flex column 防止内部行被 stretch 拉伸撑大组间距。新增 `.side-top,.side-sticky{display:grid;gap:20px;min-width:0}`（组内保持 20px 节奏）；`@media (min-width:768px){.side-sticky{position:sticky;top:calc(var(--header-h) + 24px)}}`——吸附于 sticky header 下方（top 间距对齐独立 toc 的 24px），lightningcss 产物规范化为 `(width>=768px)` 等价
+- **简化决策**：省略参考站 JS 滚动后动态切 `top-0/top-4` 修正（sticky 元素未达阈值前随文档流滚动，固定 top 行为自然）；移动端（<768px）平铺无 sticky（对齐参考站 mobile-bottom 行为）；sticky 组超高视口是固有权衡（参考站同样），不引入 max-height/overflow
+- **site 覆写陷阱复防**：site/config/sidebarConfig.ts 四项（categories/tags/calendar/toc）显式补 `position: "sticky"`（同 §4.49——site 自带 widgets 数组时 item 默认值不继承主题内层默认，漏写则回落 default("top") 失效）
+
+**验证（§4.50）**：rebuild 后 dist 断言首页 aside 骨架 `.side-top`[profile→announcement→friends→siteInfo] + `.side-sticky`[categories→tags→calendar]（advertisement 未配内容不渲染，两组均无）；文章页 features-demo toc 落 sticky 组、siteInfo 落 top 组、日历仍带 side-hide-m；构建 CSS 断言 `@media (width>=768px){.side-sticky{top:calc(var(--header-h) + 24px);position:sticky}}`。preview 4322 移动视口（492px）断言双容器结构且 `.side-sticky` computed `position:static`（<768 不启用）；模拟桌面吸附验证：拉高 aside 至 3000px + inline 强制 sticky 后，scrollY 4300→5100 五点扫描 `.side-sticky` 视口 top 恒 = 88px（= --header-h 64 + 24，吸附于 header 下方跟随滚动），scrollY 5300 超出包含块区间被拉离（sticky 语义正确）；发现 `scroll-behavior:smooth` 使 scrollTo 异步（scrollY 读 0），改 `{behavior:'instant'}` 解决；组间距实测 20px（flex column gap 未被拉伸撑大）。biome 复查发现 4 文件 format/organizeImports error（本次编辑格式偏差），`--write` 修复后 0 新增 error（唯一 error 仍为继承遗留 global.css:83；附带统一了既有引号/长行格式偏差）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
