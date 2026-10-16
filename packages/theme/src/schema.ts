@@ -18,6 +18,23 @@ const live2dModelSchema = z.object({
 });
 
 /**
+ * 侧栏 widget 共享基字段（§4.51 配置统一）：各 widget 分支 extend 复用。
+ * 专属参数（tags.count / friends.count+random / calendar.postTooltip）平铺进
+ * 对应分支的数组项上，不再有 sidebar.friends/tags/calendar 独立参数块。
+ */
+const sidebarWidgetBase = z.object({
+	enabled: z.boolean().default(true),
+	/** 文章页侧栏是否保留该 widget（false = 仅首页/列表页显示） */
+	showOnPost: z.boolean().default(true),
+	/** 仅文章页侧栏显示（true = 首页/列表页不出现，如 toc） */
+	postOnly: z.boolean().default(false),
+	/** 移动端（<768px）隐藏该 widget（§4.49 移动端差异化侧栏） */
+	hideOnMobile: z.boolean().default(false),
+	/** 渲染分组：sticky 组包进粘性容器跟随滚动（≥768px 生效，§4.50）；默认 top 普通流式 */
+	position: z.enum(["top", "sticky"]).default("top"),
+});
+
+/**
  * 主题配置 schema（astro.config.ts 中 defineTheme({...}) 的入参）
  * 后续新增配置项一律给 default，保证老站点升级后无需改动配置
  */
@@ -396,6 +413,8 @@ export const themeConfigSchema = z.object({
 	 * 侧栏 widget 体系（P2 侧栏改造）：
 	 * - widgets 数组即渲染顺序，可自由增删/排序/开关；类型：
 	 *   announcement / categories / tags / friends / calendar / toc / siteInfo / advertisement / profile
+	 * - 开关/显隐/专属参数统一配置在数组项上（§4.51）：tags.count、friends.count/random、
+	 *   calendar.postTooltip；无独立参数块
 	 * - enabled=false 跳过该 widget；两个方向的显隐（对齐参考模板 showOnPostPage/hideOnNonPostPage）：
 	 *   showOnPost=false 仅列表页显示；postOnly=true 仅文章页侧栏显示（如 toc）
 	 * - hideOnMobile=true 移动端（<768px）隐藏该 widget（§4.49 移动端差异化侧栏，默认 toc/calendar 隐藏）
@@ -406,31 +425,39 @@ export const themeConfigSchema = z.object({
 		.object({
 			/** 文章详情页是否启用侧栏 */
 			onPost: z.boolean().default(false),
-			/** widget 渲染顺序 = 数组顺序 */
+			/** widget 渲染顺序 = 数组顺序；开关/显隐/专属参数统一配置在数组项上（§4.51） */
 			widgets: z
 				.array(
-					z.object({
-						type: z.enum([
-							"announcement",
-							"categories",
-							"tags",
-							"friends",
-							"calendar",
-							"toc",
-							"siteInfo",
-							"advertisement",
-							"profile",
-						]),
-						enabled: z.boolean().default(true),
-						/** 文章页侧栏是否保留该 widget（false = 仅首页/列表页显示） */
-						showOnPost: z.boolean().default(true),
-						/** 仅文章页侧栏显示（true = 首页/列表页不出现，如 toc） */
-						postOnly: z.boolean().default(false),
-						/** 移动端（<768px）隐藏该 widget（§4.49 移动端差异化侧栏） */
-						hideOnMobile: z.boolean().default(false),
-						/** 渲染分组：sticky 组包进粘性容器跟随滚动（≥768px 生效，§4.50）；默认 top 普通流式 */
-						position: z.enum(["top", "sticky"]).default("top"),
-					}),
+					z.discriminatedUnion("type", [
+						sidebarWidgetBase.extend({ type: z.literal("announcement") }),
+						sidebarWidgetBase.extend({ type: z.literal("categories") }),
+						/**
+						 * 标签 widget：count 为展示的热门标签数量（0 = 全部展示），
+						 * 超出部分收进「…更多」入口跳转标签页（§4.48）
+						 */
+						sidebarWidgetBase.extend({
+							type: z.literal("tags"),
+							count: z.number().int().min(0).default(12),
+						}),
+						/**
+						 * 友链 widget：count 展示数量；random=true 构建期随机取样，
+						 * false 则 featured 优先、其余按 weight 降序取前 count 个
+						 */
+						sidebarWidgetBase.extend({
+							type: z.literal("friends"),
+							count: z.number().int().min(1).default(3),
+							random: z.boolean().default(false),
+						}),
+						sidebarWidgetBase.extend({
+							type: z.literal("calendar"),
+							/** 日历下方文章列表条目悬停显示全文 title（§4.41）；默认关 */
+							postTooltip: z.boolean().default(false),
+						}),
+						sidebarWidgetBase.extend({ type: z.literal("toc") }),
+						sidebarWidgetBase.extend({ type: z.literal("siteInfo") }),
+						sidebarWidgetBase.extend({ type: z.literal("advertisement") }),
+						sidebarWidgetBase.extend({ type: z.literal("profile") }),
+					]),
 				)
 				.default([
 					{ type: "announcement" },
@@ -447,26 +474,6 @@ export const themeConfigSchema = z.object({
 					{ type: "siteInfo" },
 					{ type: "advertisement" },
 				]),
-			/** 友链 widget 参数 */
-			friends: z
-				.object({
-					count: z.number().int().min(1).default(3),
-					/** 构建期随机取样；false 则 featured 优先、其余按 weight 降序取前 count 个 */
-					random: z.boolean().default(false),
-				})
-				.default({ count: 3, random: false }),
-			/** 标签 widget 参数：count 为展示的热门标签数量（0 = 全部展示），
-			 *  超出部分收进「…更多」入口跳转标签页（§4.48） */
-			tags: z
-				.object({ count: z.number().int().min(0).default(12) })
-				.default({ count: 12 }),
-			/** 日历 widget 参数 */
-			calendar: z
-				.object({
-					/** 日历下方文章列表条目悬停显示全文 title（§4.41）；默认关 */
-					postTooltip: z.boolean().default(false),
-				})
-				.default({ postTooltip: false }),
 		})
 		.default({
 			onPost: false,
@@ -480,9 +487,6 @@ export const themeConfigSchema = z.object({
 				{ type: "siteInfo" },
 				{ type: "advertisement" },
 			],
-			friends: { count: 3, random: false },
-			tags: { count: 12 },
-			calendar: { postTooltip: false },
 		}),
 	/** 打赏页（收款码 image 与跳转 link 至少配一个；均为空渲染占位框） */
 	sponsor: z

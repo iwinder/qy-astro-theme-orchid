@@ -6,7 +6,7 @@
  * 年月标签可点击展开年月选择器（§4.47：年步进 + 12 月网格、未来月置灰），非当月时头部出现「回到本月」按钮。
  * 数据复用 /api/allPostMeta.json（加密文章已在端点侧排除）。
  * 热力图下方文章列表（§4.40，§4.43 移至热力图下）：默认当月全部，点选有文章日期过滤当日，再点取消；
- *   按时间倒序，左侧标题右侧日期；条目悬停全文 title 可经 sidebar.calendar.postTooltip 开启（§4.41），默认关。
+ *   按时间倒序，左侧标题右侧日期；条目悬停全文 title 可经 widgets 数组 calendar 项的 postTooltip 开启（§4.41），默认关。
  * <qy-calendar> 为 VT 安全 custom element：is:inline + customElements.get 防重复 define，
  * 元数据缓存在 window.__qyAllPostMetaCache（与 random-posts 共用）。
  */

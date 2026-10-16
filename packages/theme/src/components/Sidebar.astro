@@ -26,8 +26,10 @@ const cats = [...collectCategories(posts).entries()];
 const tags = [...collectTags(posts).keys()];
 
 // 标签 widget（§4.48）：仅展示前 count 个热门标签（collectTags 已按文章数降序），
-// 其余收进「…更多」入口跳转 /tags/；count=0 表示全部展示
-const tagCount = config.sidebar.tags.count;
+// 其余收进「…更多」入口跳转 /tags/；count=0 表示全部展示。
+// §4.51 参数平铺：从 widgets 数组的 tags 项读取
+const tagWidget = config.sidebar.widgets.find((w) => w.type === "tags");
+const tagCount = tagWidget?.type === "tags" ? tagWidget.count : 12;
 const shownTags = tagCount > 0 ? tags.slice(0, tagCount) : tags;
 const tagHidden = tags.length - shownTags.length;
 
@@ -63,10 +65,11 @@ const showAd =
 	ad.enabled && Boolean(ad.image || ad.content || ad.link.text) && !adExpired;
 
 // 友链 widget（决策 8）：与友链页同源 themeConfig.friends.list；
-// random=false 时 featured 优先、其余按 weight 降序，取前 count 个
-const fw = config.sidebar.friends;
+// random=false 时 featured 优先、其余按 weight 降序，取前 count 个。
+// §4.51 参数平铺：count/random 从 widgets 数组的 friends 项读取
+const fw = config.sidebar.widgets.find((w) => w.type === "friends");
 let sideFriends: typeof config.friends.list = [];
-if (widgets.some((w) => w.type === "friends")) {
+if (fw?.type === "friends") {
 	const enabled = config.friends.list.filter((f) => f.enabled);
 	const pool = fw.random
 		? [...enabled].sort(() => Math.random() - 0.5)
@@ -213,7 +216,7 @@ if (widgets.some((w) => w.type === "friends")) {
         {w.type === 'calendar' && (
           <Calendar
             lang={config.lang}
-            postTooltip={config.sidebar.calendar?.postTooltip ?? false}
+            postTooltip={w.postTooltip}
             hideMobile={w.hideOnMobile}
           />
         )}

@@ -939,6 +939,20 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.50）**：rebuild 后 dist 断言首页 aside 骨架 `.side-top`[profile→announcement→friends→siteInfo] + `.side-sticky`[categories→tags→calendar]（advertisement 未配内容不渲染，两组均无）；文章页 features-demo toc 落 sticky 组、siteInfo 落 top 组、日历仍带 side-hide-m；构建 CSS 断言 `@media (width>=768px){.side-sticky{top:calc(var(--header-h) + 24px);position:sticky}}`。preview 4322 移动视口（492px）断言双容器结构且 `.side-sticky` computed `position:static`（<768 不启用）；模拟桌面吸附验证：拉高 aside 至 3000px + inline 强制 sticky 后，scrollY 4300→5100 五点扫描 `.side-sticky` 视口 top 恒 = 88px（= --header-h 64 + 24，吸附于 header 下方跟随滚动），scrollY 5300 超出包含块区间被拉离（sticky 语义正确）；发现 `scroll-behavior:smooth` 使 scrollTo 异步（scrollY 读 0），改 `{behavior:'instant'}` 解决；组间距实测 20px（flex column gap 未被拉伸撑大）。biome 复查发现 4 文件 format/organizeImports error（本次编辑格式偏差），`--write` 修复后 0 新增 error（唯一 error 仍为继承遗留 global.css:83；附带统一了既有引号/长行格式偏差）。
 
+### 4.51 侧栏 widget 参数平铺，统一配置方式（✅ 2026-10-17 完成）
+
+用户诉求：site/config/sidebarConfig.ts 中同一 widget 出现两种配置方式——widgets 数组项 `{ type: "calendar", enabled: true }`（开关/显隐）与独立参数块 `calendar: { postTooltip: false }`（参数），应统一成一种。方案：**参数平铺进 widgets 数组项**（参考站 specificConfig 思路但更扁平），一个组件的所有配置收在一处，删除 sidebar 对象下的独立参数块。
+
+- **schema.ts**：新增模块级 `sidebarWidgetBase`（enabled/showOnPost/postOnly/hideOnMobile/position 共享基字段，各分支 extend 复用）；widgets item 由 `z.object({ type: z.enum([...9类]), ...基字段 })` 改为 `z.discriminatedUnion("type", [...])`——9 类 widget 各一个分支（type 收窄为 `z.literal`），专属参数平铺进对应分支：tags `.count`（int≥0，default 12）、friends `.count`（int≥1，default 3）+ `.random`（default false）、calendar `.postTooltip`（default false），其余 6 类仅基字段；删除 `sidebar.friends/tags/calendar` 三个独立参数块及外层 `.default({...})` 对应键。Zod v4 discriminatedUnion 按 type 判别，`ThemeConfig` 类型经 `z.infer` 自动更新为 union 数组
+- **Sidebar.astro**（消费处窄化，union 的 find 不自动窄化，用守卫式）：
+  - tags：`config.sidebar.tags.count` → `const tagWidget = widgets源.find(w => w.type === "tags"); const tagCount = tagWidget?.type === "tags" ? tagWidget.count : 12`
+  - friends：`const fw = config.sidebar.friends` + `widgets.some(w => w.type === "friends")` → `const fw = widgets源.find(w => w.type === "friends")` + `if (fw?.type === "friends")`（可选链判别式窄化，if 内 fw 即 friends 分支，直接读 `fw.random`/`fw.count`）
+  - calendar：`postTooltip={config.sidebar.calendar?.postTooltip ?? false}` → `postTooltip={w.postTooltip}`（模板 `{w.type === 'calendar' && ...}` 短路天然窄化）
+- **site/config/sidebarConfig.ts**：参数并入 item——`{ type: "friends", enabled: true, count: 3, random: false }`、calendar item 加 `postTooltip: false`、tags item 显式 `count: 12`；删除 friends/calendar 独立键；顶部注释改为「开关/显隐/专属参数统一配置在数组项上」。**site 覆写陷阱仍适用**（§4.49/§4.50）：数组整体覆写主题默认，非默认字段必须显式声明
+- **文档**：README 配置表删除 `sidebar.friends`/`sidebar.calendar` 两行，并入 `sidebar.widgets` 行（补 hideOnMobile/position/专属参数说明）+ tags/friends/calendar 三行 item 参数；Calendar.astro L9 JSDoc 措辞同步（「经 widgets 数组 calendar 项的 postTooltip 开启」）；design.md §4.48/§4.41 等历史段落属历史留痕不改
+
+**验证（§4.51）**：rebuild 后 dist 断言首页 aside 骨架不变（top 组 4 sections：profile/公告/友链/站点信息；sticky 组 3 sections：categories/tags/calendar-widget side-hide-m）；preview 4322 首页 browser 断言 topChildren=4、friends=3、tagLinks=13（12 tag + 更多入口）、calendar 存在、`.side-sticky` computed static（残留 492px 移动视口 <768 不启用，sticky CSS 未动）；文章页 features-demo topChildren=4、stickyChildren=5（categories/tags/calendar/toc + qy-calendar inline SCRIPT，toc postOnly 生效）、tocLinks=9、calendar 存在（showOnPost 默认 true）。biome 复查 4 改动文件 0 error（18 warnings 均为 .astro frontmatter noUnused* 误报，继承口径内）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
