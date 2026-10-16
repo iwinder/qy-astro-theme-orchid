@@ -181,12 +181,14 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
               return html + '</div>';
             };
 
-            // 今年 1-12 月热力图（§4.44，原近 12 个月）：顶部月份数字标签，列可点击跳转对应月份；
-            // 每月 4 段（周段），透明度 5 档 0 / .45 / .65 / .85 / 1，单元悬停提示月份第几周 · 几篇；
-            // 未来月份列不渲染为按钮（月视图不允许翻到未来），仅作占位展示
+            // 今年 1-12 月热力图（§4.44，原近 12 个月）：还原 orchid-blog 原版形态——
+            // 月份标签独立一行（grid 12 列），下方 48 个正方形小格子平铺 12×4；
+            // 透明度 5 档 0 / .45 / .65 / .85 / 1，格子悬停提示月份第几周 · 几篇、点击跳转对应月份；
+            // 未来月份格子不渲染为按钮（月视图不允许翻到未来），仅作占位展示
             var heatHtml = function () {
-              var html = '';
               var y = today.getFullYear();
+              var labels = '';
+              var cells = '';
               for (var m = 0; m < 12; m++) {
                 var d = new Date(y, m, 1);
                 var days = new Date(y, m + 1, 0).getDate();
@@ -197,27 +199,33 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
                     y + '-' + String(m + 1).padStart(2, '0') + '-' + String(day).padStart(2, '0');
                   buckets[w] += byDay[key] || 0;
                 }
-                var total = buckets[0] + buckets[1] + buckets[2] + buckets[3];
                 var mShort = fmtMonthShort.format(d);
                 var future = d > thisMonth;
-                html +=
-                  '<div class="cal-heat-month" data-y="' + y + '" data-m="' + m + '"' +
-                  (future ? '' : ' role="button" tabindex="0"') +
-                  ' title="' +
-                  esc(mShort + ' · ' + postsLabel.replace('{n}', total)) + '">' +
-                  '<b class="cal-heat-label">' + (m + 1) + '</b>' +
-                  '<div class="cal-heat-cells">';
+                labels += '<b class="cal-heat-label">' + (m + 1) + '</b>';
                 for (var b = 0; b < 4; b++) {
                   var n = buckets[b];
                   var o = n === 0 ? 0 : n < 3 ? 0.45 : n < 6 ? 0.65 : n < 10 ? 0.85 : 1;
-                  html +=
-                    '<i class="cal-heat-cell" style="--o:' + o + '" title="' +
+                  cells +=
+                    '<i class="cal-heat-cell" data-y="' +
+                    y +
+                    '" data-m="' +
+                    m +
+                    '" style="--o:' +
+                    o +
+                    '"' +
+                    (future ? '' : ' role="button" tabindex="0"') +
+                    ' title="' +
                     esc(weekTip.replace('{m}', mShort).replace('{w}', b + 1).replace('{n}', n)) +
                     '"></i>';
                 }
-                html += '</div></div>';
               }
-              return html;
+              return (
+                '<div class="cal-heat-labels">' +
+                labels +
+                '</div><div class="cal-heat-grid">' +
+                cells +
+                '</div>'
+              );
             };
 
             var build = function () {
@@ -235,9 +243,9 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
                   build();
                 });
               });
-              // 点热力图整列（§4.43，§4.44 限有 role 的列）：跳转对应月份，列表跟随；
-              // 未来月份列无 role 不绑（月视图不允许翻到未来）；Enter/Space 同点按
-              self.querySelectorAll('.cal-heat-month[role="button"]').forEach(function (el) {
+              // 点热力图格子（§4.43 整列点击，§4.44 还原原版改格子级点击）：跳转对应月份，列表跟随；
+              // 未来月份格子无 role 不绑（月视图不允许翻到未来）；Enter/Space 同点按
+              self.querySelectorAll('.cal-heat-cell[role="button"]').forEach(function (el) {
                 var jump = function () {
                   cur = new Date(+el.dataset.y, +el.dataset.m, 1);
                   selKey = null;

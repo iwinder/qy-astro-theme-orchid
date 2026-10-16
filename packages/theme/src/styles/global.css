@@ -1494,33 +1494,16 @@ html.dark .cal-day.has-post {
 	outline-offset: -1.5px;
 }
 .cal-heat {
-	/* §4.43：去「活跃度」标题，改为月份数字标签置于列顶 */
+	/* §4.43：去「活跃度」标题；§4.44 还原 orchid-blog 原版两行结构：月份标签行 + 12×4 格子网格 */
 	margin-top: 12px;
-	display: flex;
-	gap: 3px;
-	justify-content: space-between;
 }
-.cal-heat-month {
-	flex: 1;
-	min-width: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 3px;
-	cursor: pointer;
+/* 月份标签行（§4.43 数字展示，§4.44 独立一行 grid 12 列，同原版） */
+.cal-heat-labels {
+	display: grid;
+	grid-template-columns: repeat(12, 1fr);
+	gap: 2px;
+	margin-bottom: 4px;
 }
-/* 未来月份列（§4.44）：无 role，不可点击跳月 */
-.cal-heat-month:not([role='button']) {
-	cursor: default;
-}
-.cal-heat-month:focus-visible {
-	outline: 1.5px solid var(--accent);
-	outline-offset: 1px;
-	border-radius: 2px;
-}
-.cal-heat-month[role='button']:hover .cal-heat-label {
-	color: var(--accent-ink);
-}
-/* 列顶月份数字标签（§4.43） */
 .cal-heat-label {
 	font-size: 9px;
 	font-weight: 400;
@@ -1528,22 +1511,40 @@ html.dark .cal-day.has-post {
 	text-align: center;
 	color: var(--muted);
 }
-/* 格子容器（§4.44 修正塌陷）：flex 竖排承载格子，格子以宽度自持扁条比例；
-   §4.43 曾把 aspect-ratio 移到 <i> 格子上——inline 元素上不生效且外包 div 截断 stretch，
-   导致格子高 0、热力图整体塌成 12px（仅剩标签） */
-.cal-heat-cells {
-	display: flex;
-	flex-direction: column;
-	gap: 3px;
+/* 48 个正方形小格子平铺 12×4（§4.44 还原原版：格子 width:85% + aspect-ratio:1 自持正方形，
+   行高由内容撑起；仅 row-gap 无 column-gap，列间隙由 85% 宽度留出，同原版）；
+   教训：§4.43 曾把 aspect-ratio 放在 <i> 格子上（inline 不生效）且列级外包 div 截断
+   stretch 链，导致格子高 0、热力图塌成 12px——grid item 会被 block 化，
+   此处显式 display:block 确保 aspect-ratio 生效 */
+.cal-heat-grid {
+	display: grid;
+	grid-template-columns: repeat(12, 1fr);
+	grid-template-rows: repeat(4, 1fr);
+	row-gap: 2px;
 }
 .cal-heat-cell {
 	display: block;
-	width: 100%;
-	aspect-ratio: 5;
+	width: 85%;
+	aspect-ratio: 1;
+	margin: auto;
 	border-radius: 2px;
+	cursor: pointer;
+	transition: box-shadow 0.15s ease;
 	background: hsl(
 		var(--accent-h) var(--accent-s) var(--accent-l) / max(var(--o, 0), 0.08)
 	);
+}
+/* 未来月份格子（§4.44）：无 role，不可点击跳月 */
+.cal-heat-cell:not([role='button']) {
+	cursor: default;
+}
+.cal-heat-cell[role='button']:hover {
+	box-shadow: 0 0 1px 1.5px hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+}
+.cal-heat-cell:focus-visible {
+	outline: 1.5px solid var(--accent);
+	outline-offset: 1px;
+	border-radius: 2px;
 }
 
 /* 热力图下方文章列表（§4.40，§4.43 移至热力图下）：月视图 → 热力图 → 列表；
