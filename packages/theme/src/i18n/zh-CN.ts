@@ -53,9 +53,12 @@ const zhCN = {
 	posts: "文章",
 	running: "已运行",
 	daysCount: "{n} 天",
-	calendarTitle: "日历",
 	dayPostsCount: "{n} 篇",
 	heatWeekTip: "{m}第{w}周 · {n}",
+	/* §4.47 日历头改造 / §4.48 标签卡更多入口 */
+	tagsMore: "…更多",
+	calendarHome: "回到本月",
+	calendarPick: "选择年月",
 	/* 列表 / 聚合页 */
 	recentPosts: "近期文章",
 	/* 列表形态切换（§4.34） */

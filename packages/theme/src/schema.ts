@@ -398,6 +398,7 @@ export const themeConfigSchema = z.object({
 	 *   announcement / categories / tags / friends / calendar / toc / siteInfo / advertisement / profile
 	 * - enabled=false 跳过该 widget；两个方向的显隐（对齐参考模板 showOnPostPage/hideOnNonPostPage）：
 	 *   showOnPost=false 仅列表页显示；postOnly=true 仅文章页侧栏显示（如 toc）
+	 * - hideOnMobile=true 移动端（<768px）隐藏该 widget（§4.49 移动端差异化侧栏，默认 toc/calendar 隐藏）
 	 * - onPost=false 时文章详情页不渲染侧栏（TOC 保持正文右侧原位）
 	 */
 	sidebar: z
@@ -424,6 +425,8 @@ export const themeConfigSchema = z.object({
 						showOnPost: z.boolean().default(true),
 						/** 仅文章页侧栏显示（true = 首页/列表页不出现，如 toc） */
 						postOnly: z.boolean().default(false),
+						/** 移动端（<768px）隐藏该 widget（§4.49 移动端差异化侧栏） */
+						hideOnMobile: z.boolean().default(false),
 					}),
 				)
 				.default([
@@ -431,8 +434,8 @@ export const themeConfigSchema = z.object({
 					{ type: "categories" },
 					{ type: "tags" },
 					{ type: "friends" },
-					{ type: "calendar" },
-					{ type: "toc", postOnly: true },
+					{ type: "calendar", hideOnMobile: true },
+					{ type: "toc", postOnly: true, hideOnMobile: true },
 					{ type: "siteInfo" },
 					{ type: "advertisement" },
 				]),
@@ -444,6 +447,9 @@ export const themeConfigSchema = z.object({
 					random: z.boolean().default(false),
 				})
 				.default({ count: 3, random: false }),
+			/** 标签 widget 参数：count 为展示的热门标签数量（0 = 全部展示），
+		 *  超出部分收进「…更多」入口跳转标签页（§4.48） */
+			tags: z.object({ count: z.number().int().min(0).default(12) }).default({ count: 12 }),
 			/** 日历 widget 参数 */
 			calendar: z
 				.object({
@@ -451,22 +457,23 @@ export const themeConfigSchema = z.object({
 					postTooltip: z.boolean().default(false),
 				})
 				.default({ postTooltip: false }),
-		})
-		.default({
-			onPost: false,
-			widgets: [
-				{ type: "announcement" },
-				{ type: "categories" },
-				{ type: "tags" },
-				{ type: "friends" },
-				{ type: "calendar" },
-				{ type: "toc", postOnly: true },
-				{ type: "siteInfo" },
-				{ type: "advertisement" },
-			],
-			friends: { count: 3, random: false },
-			calendar: { postTooltip: false },
-		}),
+	})
+	.default({
+		onPost: false,
+		widgets: [
+			{ type: "announcement" },
+			{ type: "categories" },
+			{ type: "tags" },
+			{ type: "friends" },
+			{ type: "calendar", hideOnMobile: true },
+			{ type: "toc", postOnly: true, hideOnMobile: true },
+			{ type: "siteInfo" },
+			{ type: "advertisement" },
+		],
+		friends: { count: 3, random: false },
+		tags: { count: 12 },
+		calendar: { postTooltip: false },
+	}),
 	/** 打赏页（收款码 image 与跳转 link 至少配一个；均为空渲染占位框） */
 	sponsor: z
 		.object({

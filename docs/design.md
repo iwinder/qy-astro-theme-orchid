@@ -894,6 +894,39 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.46）**：`node -e fs.rmSync` 清 dist + rebuild 通过；preview 4322（navigate 带 `Cache-Control: no-cache`）注入桌面模拟样式 `.home-layout{grid-template-columns:minmax(0,1fr) 280px !important; gap:16px !important}` 后 computed 断言 9/9 通过——`.shell` padding 16px、`.home-layout` gap 16px、`.sidebar` 280px、`.side-card` padding 16px / 圆角 16px、h3 16px + 竖条 4px `rgb(73,156,142)`（accent）、`.chip`/`.cat-list a` font-weight 600；CSSOM 复核构建产物 @media 内规则：`.post-layout{…280px; max-width:1180px}`、≤640px `.side-card{padding:16px}` 均在。截图通道本轮被渲染器节流（浏览器窗口离屏），以量化断言 + CSSOM 双重复核替代；**排查新教训：该浏览器 evaluate 引擎对含 `function` 关键字的脚本静默返回 undefined，箭头函数可用**。biome 复查 global.css 0 新增 error（历史遗留 L1/L83 除外）。
 
+### 4.47 日历头部改造：标题移除 + 年月可点选 + 回当月按钮（✅ 2026-10-16 完成）
+
+用户诉求：删「日历」标题；年月日期栏加粗且可点击选择年、月；非当月时年月旁出现按钮，点击恢复当月。实现（Calendar.astro + global.css + i18n）：
+
+- **标题移除**：`<section>` 内 h3「日历」删除，年月标签即卡片头部
+- **年月标签按钮化**：`fmtMonth.format(cur)` 包进 `<button class="cal-month" aria-expanded title>`，加粗（700）；点击切换 `pickOpen` 开合年月选择器，打开时同步选择器年份为当前浏览年份；aria-expanded 与 `.open` class 随动
+- **年月选择器**（`.cal-picker`）：上行年步进（`.cal-py` ‹ ›，范围 `minYear`（数据最早文章年份，无文章则当年）~今年，边界 disabled）+ 年 label `.cal-py-label`；下行 12 月网格（`.cal-pm`，未来月 disabled、当前浏览月 `.on` 高亮）；点月跳转 `cur` 并收起选择器、取消日期选中
+- **回当月按钮**（`.cal-home` ↺）：仅非当月渲染于 `.cal-head` 右侧；点击回当月 + 收起选择器 + 取消日期选中
+- **i18n**：zh-CN/en 新增 `calendarHome`（回到本月/This month）、`calendarPick`（选择年月/Pick year & month）
+- **修复（var 提升陷阱）**：minYear 统计块曾被误插在 `var today` 声明之前 → var 提升 `today=undefined` → `TypeError` 崩掉整个渲染回调（月视图/热力图/列表全不渲染且无红屏，易误判组件未注册）；移回 `var cur` 声明之后
+
+**验证（§4.47）**：rebuild 通过；preview 4322 断言——标题已删、年月 font-weight 700；JS 派发 click 交互链全绿：点年月 → `aria-expanded=true` + picker 渲染（年 label 2026、12 个月按钮、当月 `.on`、未来月 10/11 disabled）→ 年步进 ‹ → 2025 → 点 9 月 → 跳 2025年9月 + picker 收起 + `.cal-home` 出现 → 点 home → 回 2026年10月 + home 消失 → 再点年月开/合正常。**排查新教训：browser_click（CDP 命中测试）对 `display:none` 元素（移动视口下 side-hide-m）无法命中；evaluate 引擎对含块语句（try/if/多语句 IIFE body）的脚本静默返回 undefined、正则反斜杠被剥一层——用单表达式（逗号运算符箭头）+ 位置选择器（`querySelectorAll(...)[n]`）绕过**。
+
+### 4.48 标签卡部分展示 + 「…更多」入口（✅ 2026-10-16 完成）
+
+用户诉求：标签组件不全部展示，展示一部分，增加「…更多」，点击进入标签页面。实现（Sidebar.astro + schema）：
+
+- **schema**：`sidebar.tags.count`（int ≥0，默认 12；0 = 全部展示）
+- **Sidebar.astro**：collectTags 已按文章数降序，`shownTags = count > 0 ? tags.slice(0, count) : tags`；余量 `tagHidden > 0` 时渲染 `<a class="chip chip-more" href="/tags/">…更多</a>`（i18n `tagsMore`）
+
+**验证（§4.48）**：preview 4322 首页断言 12 个 chips + 1 个 chip-more（href=/tags/）。
+
+### 4.49 移动端/PC 端差异化侧栏组件（✅ 2026-10-16 完成）
+
+用户诉求：参照 orchid-blog 的侧边栏设置，让移动端与 PC 端展示不同的侧边栏组件。参考站为 widget 级响应式显隐；本主题落地方案：
+
+- **schema**：widgets 数组 item 增加 `hideOnMobile: z.boolean().default(false)`；主题默认 widgets 中 `calendar`/`toc` 默认 `hideOnMobile: true`（移动端信息密度低，日历/目录收益最小）
+- **CSS**：global.css 新增 `.side-hide-m`——`@media (width <= 767px)` 与 `@media (max-width: 767px)` 双写法 `display: none`
+- **Sidebar.astro**：9 类 widget section 全部接 `class:list={..., { "side-hide-m": w.hideOnMobile }}`；calendar 特例经 `hideMobile` prop 传入 Calendar.astro（section 在组件内部渲染）
+- **site 覆写陷阱（重要）**：site/config/sidebarConfig.ts 自带 widgets 数组 → 元素走 item schema 的 `default(false)`，主题内层 widgets 默认值（`hideOnMobile: true`）不生效 → site 配置必须显式写 `hideOnMobile: true`（calendar/toc 两项已补）
+
+**验证（§4.49）**：rebuild 后 dist 断言首页 `<section class="... calendar-widget side-hide-m">`、文章页 `.toc-widget` 同含 side-hide-m；preview 4322 移动视口（492px）computed：首页日历 `display:none`、文章页 toc `display:none`；注入桌面模拟样式 `@media(max-width:767px){.side-hide-m{display:revert !important}}` 后两者恢复 `display:block`（PC 端正常显示）；CSSOM 复核两条媒体规则（`width <= 767px` / `max-width: 767px`）均在构建产物中。biome 复查 0 新增（唯一 error 为继承遗留 global.css:83 重复属性；warnings 均为 .astro frontmatter 误报与 noImportantStyles 历史遗留）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

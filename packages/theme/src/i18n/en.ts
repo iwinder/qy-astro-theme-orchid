@@ -44,9 +44,12 @@ const en: Record<UiKey, string> = {
 	posts: "Posts",
 	running: "Running for",
 	daysCount: "{n} days",
-	calendarTitle: "Calendar",
 	dayPostsCount: "{n} posts",
 	heatWeekTip: "Week {w} of {m} · {n}",
+	/* §4.47 calendar head / §4.48 tags more entry */
+	tagsMore: "… more",
+	calendarHome: "This month",
+	calendarPick: "Pick year & month",
 	recentPosts: "Recent posts",
 	layoutSwitch: "Switch list / grid view",
 	layoutList: "List view",

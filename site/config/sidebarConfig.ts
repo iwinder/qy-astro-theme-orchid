@@ -17,9 +17,10 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 		{ type: "categories", enabled: true },
 		{ type: "tags", enabled: true },
 		{ type: "friends", enabled: true },
-		{ type: "calendar", enabled: true },
+		// calendar/toc 移动端（<768px）隐藏（§4.49，与主题默认一致）
+		{ type: "calendar", enabled: true, hideOnMobile: true },
 		// toc 仅文章页侧栏渲染（列表页无目录可展示）
-		{ type: "toc", postOnly: true, enabled: true },
+		{ type: "toc", postOnly: true, enabled: true, hideOnMobile: true },
 		{ type: "siteInfo", enabled: true },
 		{ type: "advertisement", enabled: true },
 	],

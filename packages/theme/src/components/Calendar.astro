@@ -3,6 +3,7 @@
  * 侧栏日历 + 活跃度热力图（P2 侧栏改造）。
  * 月视图（周一起始，当月有文章日高亮）+ 近 12 个月热力图（每月 4 段，透明度 5 档）：
  *   顶部月份标签（§4.43），整列可点击跳转对应月份，单元悬停提示月份第几周 · 几篇。
+ * 年月标签可点击展开年月选择器（§4.47：年步进 + 12 月网格、未来月置灰），非当月时头部出现「回到本月」按钮。
  * 数据复用 /api/allPostMeta.json（加密文章已在端点侧排除）。
  * 热力图下方文章列表（§4.40，§4.43 移至热力图下）：默认当月全部，点选有文章日期过滤当日，再点取消；
  *   按时间倒序，左侧标题右侧日期；条目悬停全文 title 可经 sidebar.calendar.postTooltip 开启（§4.41），默认关。
@@ -16,18 +17,22 @@ interface Props {
 	lang?: string;
 	/** 日历下方文章列表条目悬停显示全文 title（§4.41）；默认关 */
 	postTooltip?: boolean;
+	/** 移动端（<768px）隐藏整个 widget（§4.49）；默认否 */
+	hideMobile?: boolean;
 }
 
-const { lang = "zh-CN", postTooltip = false } = Astro.props;
+const { lang = "zh-CN", postTooltip = false, hideMobile = false } = Astro.props;
 ---
 
-<section class="side-card card reveal calendar-widget">
-  <h3>{t('calendarTitle')}</h3>
+<section class:list={["side-card", "card", "reveal", "calendar-widget", { "side-hide-m": hideMobile }]}>
+  <!-- §4.47：「日历」标题移除，年月标签即卡片头部（加粗、可点选年月） -->
   <qy-calendar
     data-lang={lang}
     data-api-url="/api/allPostMeta.json"
     data-label-posts={t('dayPostsCount')}
     data-label-heat-week={t('heatWeekTip')}
+    data-label-home={t('calendarHome')}
+    data-label-pick={t('calendarPick')}
     data-post-tooltip={postTooltip ? '1' : '0'}
   ></qy-calendar>
 </section>
@@ -73,9 +78,18 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
             var postsLabel = self.dataset.labelPosts || '{n}';
             // 热力图单元悬停模板（§4.43）：{m}=月份短文案、{w}=第几周、{n}=篇数
             var weekTip = self.dataset.labelHeatWeek || '{m}第{w}周 · {n}';
+            // 「回到本月」按钮与年月标签按钮的 title/aria 文案（§4.47）
+            var homeLabel = self.dataset.labelHome || '';
+            var pickLabel = self.dataset.labelPick || '';
             var today = new Date();
             var thisMonth = new Date(today.getFullYear(), today.getMonth(), 1);
             var cur = new Date(thisMonth);
+            // 年月选择器年份下界（§4.47）：数据最早文章年份，无文章则为当年（须在 today 声明后）
+            var minYear = today.getFullYear();
+            meta.forEach(function (p) {
+              var y = new Date(p.published).getFullYear();
+              if (y < minYear) minYear = y;
+            });
             var fmtMonth = new Intl.DateTimeFormat(locale, {
               year: 'numeric',
               month: 'long',
@@ -113,18 +127,62 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
             var selKey = null;
             // 文章列表条目悬停显示全文 title（§4.41），默认关
             var postTip = self.dataset.postTooltip === '1';
+            // 年月选择器状态（§4.47）：展开态 + 选择器年份（打开时同步为当前浏览年份）
+            var pickOpen = false;
+            var pickYear = today.getFullYear();
+
+            // 年月选择器（§4.47）：年步进行（minYear~今年，边界置灰）+ 12 月网格（未来月置灰、当前浏览月高亮）
+            var pickerHtml = function () {
+              if (!pickOpen) return '';
+              var cy = cur.getFullYear();
+              var cm = cur.getMonth();
+              var thisYear = today.getFullYear();
+              var html =
+                '<div class="cal-picker" role="group" aria-label="' + esc(pickLabel) + '">' +
+                '<div class="cal-picker-row">' +
+                '<button type="button" class="cal-py" data-dir="-1" aria-label="prev year"' +
+                (pickYear <= minYear ? ' disabled' : '') +
+                '>&#8249;</button>' +
+                '<b class="cal-py-label">' + pickYear + '</b>' +
+                '<button type="button" class="cal-py" data-dir="1" aria-label="next year"' +
+                (pickYear >= thisYear ? ' disabled' : '') +
+                '>&#8250;</button>' +
+                '</div><div class="cal-picker-months">';
+              for (var m = 0; m < 12; m++) {
+                var d = new Date(pickYear, m, 1);
+                var future = d > thisMonth;
+                var on = pickYear === cy && m === cm;
+                html +=
+                  '<button type="button" class="cal-pm' + (on ? ' on' : '') +
+                  '" data-m="' + m + '"' + (future ? ' disabled' : '') + '>' +
+                  fmtMonthShort.format(d) + '</button>';
+              }
+              return html + '</div></div>';
+            };
 
             var monthHtml = function () {
               var y = cur.getFullYear();
               var m = cur.getMonth();
               var lead = (new Date(y, m, 1).getDay() + 6) % 7;
               var days = new Date(y, m + 1, 0).getDate();
+              // 是否当前月（§4.47）：非当月才渲染「回到本月」按钮
+              var isThisMonth = y === thisMonth.getFullYear() && m === thisMonth.getMonth();
               var html =
                 '<div class="cal-head">' +
                 '<button type="button" class="cal-nav" data-dir="-1" aria-label="prev">&#8249;</button>' +
-                '<span class="cal-month">' + fmtMonth.format(cur) + '</span>' +
+                // 年月标签改为可点按钮（§4.47）：点击开合年月选择器
+                '<button type="button" class="cal-month' + (pickOpen ? ' open' : '') +
+                '" aria-expanded="' + pickOpen + '" title="' + esc(pickLabel) + '">' +
+                fmtMonth.format(cur) + '</button>' +
+                '<span class="cal-head-r">' +
                 '<button type="button" class="cal-nav" data-dir="1" aria-label="next">&#8250;</button>' +
+                (isThisMonth
+                  ? ''
+                  : '<button type="button" class="cal-home" title="' + esc(homeLabel) +
+                    '" aria-label="' + esc(homeLabel) + '">&#8634;</button>') +
+                '</span>' +
                 '</div>' +
+                pickerHtml() +
                 '<div class="cal-grid">';
               for (var i = 0; i < 7; i++) {
                 html += '<span class="cal-week">' + weekHeads[i] + '</span>';
@@ -232,7 +290,7 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
               // 渲染顺序（§4.43）：月视图 → 热力图 → 文章列表
               self.innerHTML =
                 monthHtml() + '<div class="cal-heat">' + heatHtml() + '</div>' + dayListHtml();
-              self.querySelectorAll('.cal-nav').forEach(function (btn) {
+              self.querySelectorAll('.cal-nav[data-dir]').forEach(function (btn) {
                 btn.addEventListener('click', function () {
                   var dir = parseInt(btn.dataset.dir, 10);
                   var next = new Date(cur.getFullYear(), cur.getMonth() + dir, 1);
@@ -240,6 +298,41 @@ const { lang = "zh-CN", postTooltip = false } = Astro.props;
                   if (next > thisMonth) return;
                   cur = next;
                   selKey = null; // 翻月取消日期选中，列表回到当月全部
+                  build();
+                });
+              });
+              // 年月标签开合选择器（§4.47）：打开时同步选择器年份为当前浏览年份
+              var monthBtn = self.querySelector('.cal-month');
+              if (monthBtn) {
+                monthBtn.addEventListener('click', function () {
+                  pickOpen = !pickOpen;
+                  if (pickOpen) pickYear = cur.getFullYear();
+                  build();
+                });
+              }
+              // 回到本月（§4.47）：仅非当月渲染；同时收起选择器、取消日期选中
+              var homeBtn = self.querySelector('.cal-home');
+              if (homeBtn) {
+                homeBtn.addEventListener('click', function () {
+                  cur = new Date(thisMonth.getFullYear(), thisMonth.getMonth(), 1);
+                  selKey = null;
+                  pickOpen = false;
+                  build();
+                });
+              }
+              // 选择器年步进（§4.47）：边界按钮已置灰，无需额外钳制
+              self.querySelectorAll('.cal-py').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                  pickYear += parseInt(btn.dataset.dir, 10);
+                  build();
+                });
+              });
+              // 选择器月份点击（§4.47）：跳月并收起选择器
+              self.querySelectorAll('.cal-pm:not([disabled])').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                  cur = new Date(pickYear, parseInt(btn.dataset.m, 10), 1);
+                  selKey = null;
+                  pickOpen = false;
                   build();
                 });
               });

@@ -24,11 +24,19 @@ const isPost = variant === "post";
 const tocItems = headings.filter((h) => h.depth >= 2 && h.depth <= 4);
 const cats = [...collectCategories(posts).entries()];
 const tags = [...collectTags(posts).keys()];
+
+// 标签 widget（§4.48）：仅展示前 count 个热门标签（collectTags 已按文章数降序），
+// 其余收进「…更多」入口跳转 /tags/；count=0 表示全部展示
+const tagCount = config.sidebar.tags.count;
+const shownTags = tagCount > 0 ? tags.slice(0, tagCount) : tags;
+const tagHidden = tags.length - shownTags.length;
+
 const runDays = config.since ? daysSince(config.since) : null;
 
 // widget 开关与顺序（P2 侧栏改造）：config.sidebar.widgets 数组即渲染顺序；
 // 两个方向的显隐（对齐参考模板 showOnPostPage/hideOnNonPostPage）：
 // showOnPost=false 仅列表页显示；postOnly=true 仅文章页侧栏显示；文章页整体开关由路由层 onPost 把关
+// hideOnMobile=true 的 widget 在 <768px 隐藏（§4.49 移动端差异化，CSS .side-hide-m）
 const widgets = config.sidebar.widgets.filter((w) =>
 	w.enabled && (isPost ? w.showOnPost : !w.postOnly),
 );
@@ -70,7 +78,7 @@ if (widgets.some((w) => w.type === "friends")) {
     widgets.map((w) => (
       <>
         {w.type === 'profile' && showProfile && (
-          <section class="side-card card reveal profile-card">
+          <section class:list={["side-card", "card", "reveal", "profile-card", { "side-hide-m": w.hideOnMobile }]}>
             <div class="profile-head">
               {profile.url ? (
                 <a class="profile-avatar-link" href={profile.url} aria-label={profile.name}>
@@ -116,7 +124,7 @@ if (widgets.some((w) => w.type === "friends")) {
           </section>
         )}
         {w.type === 'announcement' && showAnnouncement && (
-          <section class="side-card card reveal" id="announcement">
+          <section class:list={["side-card", "card", "reveal", { "side-hide-m": w.hideOnMobile }]} id="announcement">
             <h3>{ann.title}</h3>
             <p class="side-announcement">{ann.content}</p>
             {(annLink || ann.closable) && (
@@ -146,7 +154,7 @@ if (widgets.some((w) => w.type === "friends")) {
           </section>
         )}
         {w.type === 'categories' && cats.length > 0 && (
-          <section class="side-card card reveal">
+          <section class:list={["side-card", "card", "reveal", { "side-hide-m": w.hideOnMobile }]}>
             <h3>{t('categories')}</h3>
             <div class="cat-list">
               {cats.map(([name, list]) => (
@@ -159,19 +167,22 @@ if (widgets.some((w) => w.type === "friends")) {
           </section>
         )}
         {w.type === 'tags' && tags.length > 0 && (
-          <section class="side-card card reveal">
+          <section class:list={["side-card", "card", "reveal", { "side-hide-m": w.hideOnMobile }]}>
             <h3>{t('tags')}</h3>
             <div class="side-tags">
-              {tags.map((tag) => (
+              {shownTags.map((tag) => (
                 <a class="chip" href={`/tags/${encodeURIComponent(tag)}/`}>
                   {tag}
                 </a>
               ))}
+              {tagHidden > 0 && (
+                <a class="chip chip-more" href="/tags/">{t('tagsMore')}</a>
+              )}
             </div>
           </section>
         )}
         {w.type === 'friends' && sideFriends.length > 0 && (
-          <section class="side-card card reveal">
+          <section class:list={["side-card", "card", "reveal", { "side-hide-m": w.hideOnMobile }]}>
             <h3>{t('friendLinks')}</h3>
             <div class="side-friends">
               {sideFriends.map((f) => (
@@ -188,10 +199,14 @@ if (widgets.some((w) => w.type === "friends")) {
           </section>
         )}
         {w.type === 'calendar' && (
-          <Calendar lang={config.lang} postTooltip={config.sidebar.calendar?.postTooltip ?? false} />
+          <Calendar
+            lang={config.lang}
+            postTooltip={config.sidebar.calendar?.postTooltip ?? false}
+            hideMobile={w.hideOnMobile}
+          />
         )}
         {w.type === 'toc' && isPost && config.toc.enabled && tocItems.length > 0 && (
-          <section class="side-card card reveal toc-widget">
+          <section class:list={["side-card", "card", "reveal", "toc-widget", { "side-hide-m": w.hideOnMobile }]}>
             <h3>{t('tocTitle')}</h3>
             <nav class="side-toc">
               {tocItems.map((h) => (
@@ -203,7 +218,7 @@ if (widgets.some((w) => w.type === "friends")) {
           </section>
         )}
         {w.type === 'siteInfo' && (
-          <section class="side-card card reveal">
+          <section class:list={["side-card", "card", "reveal", { "side-hide-m": w.hideOnMobile }]}>
             <h3>{t('siteInfo')}</h3>
             <div class="site-info">
               <div class="row"><span>{t('posts')}</span><b>{posts.length}</b></div>
@@ -214,7 +229,7 @@ if (widgets.some((w) => w.type === "friends")) {
           </section>
         )}
         {w.type === 'advertisement' && showAd && (
-          <section class="side-card card reveal advertisement-widget" id="advertisement">
+          <section class:list={["side-card", "card", "reveal", "advertisement-widget", { "side-hide-m": w.hideOnMobile }]} id="advertisement">
             <h3>{ad.title}</h3>
             {ad.closable && (
               <button
