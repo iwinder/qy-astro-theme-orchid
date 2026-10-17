@@ -173,6 +173,7 @@ site/
 |---|---|---|---|
 | `sakura` | `{enabled, density}` | `false` / `24` | 樱花飘落（全站 canvas 粒子，零贴图）；`prefers-reduced-motion` 自动停用 |
 | `music` | `{enabled, position, volume, playMode, showLyrics, playlist[]}` | `false` / `"left"` / `0.7` / `"list"` / `true` / `[]` | 音乐播放器（local 模式，`transition:persist` 跨页不断播）。`playlist[]`: `{name, artist?, url, cover?, lrc?}`；`lrc` 支持 `.lrc` 文件路径或内联歌词文本；`playMode`: `list`/`one`/`random`；音量访客调整后记忆。`enabled` 且歌单非空才渲染 |
+| `fonts` | `{name, cssVariable, provider, weights?, styles?, subsets?, fallbacks?, display?, preload?, role?, options?}[]` | `[]` | 字体（Astro Fonts API 标准方案，§4.66）：声明式接入，构建期产出 @font-face 与变量，`<head>` 渲染 `<Font>` 组件；`role` 映射主题三角色变量。详见下方「fonts 详细配置」 |
 | `live2d` | 见下 | `enabled: false` | Live2D 看板娘（基于 [l2d-widget](https://l2d-widget.hacxy.cn)），`transition:persist` 跨页常驻 |
 
 #### live2d 详细配置
@@ -190,6 +191,40 @@ site/
 | `tips` | `{enable, welcomeMessage[], messages[], duration, interval, offset{x,y}, typing?}` | — | 提示气泡：欢迎语与循环提示文案（站点个性化内容，自行配置）；`duration` 显示时长 / `interval` 轮换间隔（ms）；不配置用库默认，`enable: false` 关闭 |
 | `responsive` | `{hideOnMobile, mobileBreakpoint}` | `true` / `768` | 移动端按断点隐藏 |
 | `zIndex` | `number` | `240` | 容器层级（返回顶部 250 / 音乐播放器 255，默认放其下避免按钮被挡） |
+
+#### fonts 详细配置
+
+| 子项 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `name` | `string` | （必填） | 字体族名（provider 侧标识，如 `"Inter"`；`local` 为自定义名） |
+| `cssVariable` | `string` | （必填） | CSS 变量名（`--` 开头，如 `"--font-inter"`），Font 组件据此产出变量 |
+| `provider` | `"google" \| "fontsource" \| "local" \| "bunny" \| "fontshare" \| "npm"` | （必填） | 字体来源。`google`/`fontsource`/`bunny`/`fontshare` 构建期联网拉取；`local` 配合 `options.variants` 声明本地文件；`npm` 从已装字体包读取 |
+| `weights` | `number[]` | `[400]` | 字重档位（Astro 只下载列出的字重） |
+| `styles` | `("normal" \| "italic" \| "oblique")[]` | `["normal", "italic"]` | 字形 |
+| `subsets` | `string[]` | `["latin"]` | 语言子集 |
+| `fallbacks` | `string[]` | `["sans-serif"]` | 回退字体族（Astro 自动产出 size-adjust 优化 fallback @font-face，减少布局抖动） |
+| `display` | `"auto" \| "swap" \| "block" \| "metadata" \| "fallback"` | Astro 默认 | font-display 行为 |
+| `preload` | `boolean` | `false` | `<link rel=preload>` 首屏预载字体文件（正文字体建议开启） |
+| `role` | `"body" \| "display" \| "mono"` | — | 角色映射（主题层字段）：`<head>` 产出 `html:root` 高优先级规则，把 `--font-body` / `--font-display` / `--font-mono` 重定向为 `var(<cssVariable>), <原角色回退栈>`——字体未覆盖的字形（如 Inter 只有 latin，中文）自然回落原栈 |
+| `options.variants` | `{src, weight?, style?}[]` | — | `provider: "local"` 专属：本地字体文件声明（相对站点项目根） |
+
+示例（demo 站即此配置）：
+
+```ts
+// site/config/appearanceConfig.ts
+export const fonts: ThemeConfig["fonts"] = [
+  {
+    name: "Inter",
+    cssVariable: "--font-inter",
+    provider: "fontsource",
+    weights: [400, 700],
+    preload: true,
+    role: "body",
+  },
+];
+```
+
+与字体子集化管线（§4.5）的边界：`site/subset-fonts.json` 面向 `public/` 下自托管字体文件（构建后子集化 + URL 重写）；`fonts` 走 Astro Fonts API，产物在 `dist/_astro/fonts/`、由 `<Font>` 直接产出引用。两条管线互不相交，可并存。
 
 ## 文章 frontmatter
 

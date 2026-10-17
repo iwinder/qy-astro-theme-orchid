@@ -1087,6 +1087,78 @@ export const themeConfigSchema = z.object({
 			responsive: { hideOnMobile: true, mobileBreakpoint: 768 },
 			zIndex: 240,
 		}),
+	/**
+	 * 字体（§4.66，Astro Fonts API 标准方案）：声明式接入字体，主题负责把
+	 * 本段映射进 astro 顶层 fonts 配置（provider 字符串经 fontProviders 工厂
+	 * 转为 provider 对象）并在 <head> 渲染 <Font> 组件产出 @font-face 与变量。
+	 * role 把字体变量映射到主题三角色（--font-body/--font-display/--font-mono）。
+	 * 留空数组不注入不渲染，零开销。
+	 */
+	fonts: z
+		.array(
+			z.object({
+				/** 字体族名（provider 侧标识，如 "Inter"；local 为自定义名） */
+				name: z.string(),
+				/** CSS 变量名（如 "--font-inter"）：Font 组件据此产出变量与 @font-face */
+				cssVariable: z
+					.string()
+					.regex(/^--[a-zA-Z0-9-]+$/, "必须以 -- 开头且仅含字母/数字/连字符"),
+				/** provider：六种标准来源 */
+				provider: z.enum([
+					"google",
+					"fontsource",
+					"local",
+					"bunny",
+					"fontshare",
+					"npm",
+				]),
+				/** 字重（默认 [400]；Astro 只下载列出的字重档） */
+				weights: z
+					.array(z.number().int().min(1).max(1000))
+					.min(1)
+					.default([400]),
+				/** 字形（默认 normal + italic） */
+				styles: z
+					.array(z.enum(["normal", "italic", "oblique"]))
+					.min(1)
+					.default(["normal", "italic"]),
+				/** 语言子集（按子集拆分字体文件，默认 latin） */
+				subsets: z.array(z.string()).min(1).default(["latin"]),
+				/** 回退字体族（Astro 据此产出优化的 fallback @font-face） */
+				fallbacks: z.array(z.string()).default(["sans-serif"]),
+				/** font-display 行为，不传用 Astro 默认 */
+				display: z
+					.enum(["auto", "swap", "block", "metadata", "fallback"])
+					.optional(),
+				/** 是否 <link rel=preload> 预载（主题层字段，正文首屏字体建议开启） */
+				preload: z.boolean().default(false),
+				/**
+				 * 角色映射（主题层字段）：body 正文 / display 标题 / mono 代码。
+				 * 配置后 <head> 产出 html:root 高优先级规则，把对应角色变量
+				 * 重定向为 var(本字体变量), 原角色回退栈（中文等未覆盖字形自然回落）。
+				 */
+				role: z.enum(["body", "display", "mono"]).optional(),
+				/** provider=local 专属：本地字体文件声明 */
+				options: z
+					.object({
+						variants: z
+							.array(
+								z.object({
+									/** 字体文件路径（woff2 等，相对站点项目根或包内路径） */
+									src: z.string(),
+									/** 该文件的字重（如 "400"） */
+									weight: z.string().optional(),
+									/** 该文件的字形（normal/italic） */
+									style: z.string().optional(),
+								}),
+							)
+							.min(1)
+							.optional(),
+					})
+					.optional(),
+			}),
+		)
+		.default([]),
 });
 
 export type ThemeConfig = z.input<typeof themeConfigSchema>;

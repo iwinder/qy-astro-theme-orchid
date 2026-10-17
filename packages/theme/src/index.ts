@@ -11,6 +11,9 @@ import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-s
 import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers";
 import tailwindcss from "@tailwindcss/vite";
 import type { AstroIntegration } from "astro";
+// Astro Fonts API（§4.66）官方 provider 工厂：google/fontsource/local/bunny/
+// fontshare/npm 六种，全部支持无参调用（local 的文件声明走 family options.variants）
+import { fontProviders } from "astro/config";
 // astro-icon（§4.65）：Iconify 标准图标生态的官方 Astro integration，
 // 供 Sidebar 资料卡等组件以 <Icon name="集:名"> 构建期内联渲染图标
 import icon from "astro-icon";
@@ -267,6 +270,32 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 				// 仅在站点未显式配置 image.layout 时注入，不覆盖用户选择
 				if (!astroConfig.image.layout) {
 					updateConfig({ image: { layout: "constrained" } });
+				}
+				// 字体（§4.66，Astro Fonts API 标准方案）：schema 声明 → astro 顶层
+				// fonts 配置。站点自有 fonts 在前、主题配置追加在后；preload/role 是
+				// 主题层字段（分别由 BaseLayout 的 <Font> 与角色映射 CSS 消费），
+				// 显式挑字段映射即天然剥离；provider 字符串经官方工厂转 provider 对象。
+				// 未配置时完全不注入，零开销
+				if (config.fonts.length > 0) {
+					const themeFonts = config.fonts.map((f) => {
+						const font: Record<string, unknown> = {
+							name: f.name,
+							cssVariable: f.cssVariable,
+							weights: f.weights,
+							styles: f.styles,
+							subsets: f.subsets,
+							fallbacks: f.fallbacks,
+							provider: fontProviders[f.provider](),
+						};
+						if (f.display) font.display = f.display;
+						if (f.options?.variants) {
+							font.options = { variants: f.options.variants };
+						}
+						return font;
+					});
+					updateConfig({
+						fonts: [...(astroConfig.fonts ?? []), ...themeFonts],
+					});
 				}
 
 				const routes: [pattern: string, file: string][] = [

@@ -8,7 +8,7 @@ import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 import { advertisementConfig } from "./advertisementConfig";
 import { analyticsConfig } from "./analyticsConfig";
 import { announcementConfig } from "./announcementConfig";
-import { banner, live2d, music, sakura } from "./appearanceConfig";
+import { banner, fonts, live2d, music, sakura } from "./appearanceConfig";
 import { commentConfig } from "./commentConfig";
 import {
 	codeTheme,
@@ -64,6 +64,7 @@ export const themeConfig = {
 	sakura,
 	music,
 	live2d,
+	fonts,
 	// 独立功能模块：各同名配置文件
 	nav: navBarConfig,
 	sidebar: sidebarConfig,
@@ -88,6 +89,7 @@ export {
 	commentConfig,
 	diagram,
 	emailProtection,
+	fonts,
 	friendsConfig,
 	galleryConfig,
 	latex,

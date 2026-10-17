@@ -1,4 +1,7 @@
 ---
+// 字体（§4.66）：Astro Fonts API 官方组件，按 cssVariable 渲染 @font-face
+// 与变量定义（preload 开启时附带 <link rel=preload>）
+import { Font } from "astro:assets";
 import { ClientRouter } from "astro:transitions";
 import Analytics from "virtual:theme/components/Analytics.astro";
 import Footer from "virtual:theme/components/Footer.astro";
@@ -45,6 +48,23 @@ const showBanner =
 /* hero 文案（§4.42）：quote 留空不渲染；有 banner 时叠加其上，否则渲染为列表上方独立区块 */
 const heroEnabled = config.banner.enabled && Boolean(config.banner.quote);
 const heroOnBanner = heroEnabled && showBanner && page === "home";
+/* 字体角色映射（§4.66）：配置了 role 的字体生成 html:root 规则，把主题三角色
+   变量重定向为 var(字体变量), 原角色回退栈（取自 global.css :root 默认值，
+   字体未覆盖的字形如中文自然回落）。html:root Specificity (0,1,1) 高于
+   :root (0,1,0)，稳定覆盖不赌样式顺序；CSS 自定义属性引用是惰性求值，
+   与 <Font> 产出的变量定义先后无关 */
+const fontRoleFallback: Record<string, string> = {
+	display: '"Noto Serif SC", "Songti SC", "STSong", "SimSun", serif',
+	body: '-apple-system, "PingFang SC", "Segoe UI", "Microsoft YaHei", sans-serif',
+	mono: 'ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", monospace',
+};
+const fontRoleCss = config.fonts
+	.filter((f) => f.role)
+	.map(
+		(f) =>
+			`html:root{--font-${f.role}:var(${f.cssVariable}),${fontRoleFallback[f.role]};}`,
+	)
+	.join("");
 ---
 
 <!doctype html>
@@ -85,6 +105,16 @@ const heroOnBanner = heroEnabled && showBanner && page === "home";
     {ogImage && Astro.site && <meta property="og:image" content={new URL(ogImage, Astro.site).href} />}
     <meta name="twitter:card" content={ogImage ? 'summary_large_image' : 'summary'} />
     <ClientRouter />
+    {/* 字体（§4.66）：Astro Fonts API 标准方案。每个 <Font> 按注入配置产出
+        @font-face + 变量定义（preload 时附带预载链接）；角色映射规则随后输出 */}
+    {config.fonts.length > 0 && (
+      <>
+        {config.fonts.map((f) => (
+          <Font cssVariable={f.cssVariable} preload={f.preload} />
+        ))}
+        <style is:global set:html={fontRoleCss} />
+      </>
+    )}
     <!-- 深浅模式 boot：先于首帧执行防 FOUC；is:inline 在 VT swap 时不重复执行。
          默认模式读 html[data-color-mode]（§4.16 colorMode），用户选择以 localStorage('qy-mode') 优先 -->
     <script is:inline>

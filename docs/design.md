@@ -1186,6 +1186,31 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.65）**：biome 0 error（2 warnings 为存量 noExplicitAny）；organizeImports 2 error 经 `--write` 安全修复（import 排序，注释随行迁移）；清 dist rebuild 成功（Pagefind 63 页）。产物断言：全站 `data-icon` 8 种内联成功——`lucide:github`（stroke 线性）/`lucide:mail`/`lucide:rss` + `simple-icons:qq`/`simple-icons:wechat`/`simple-icons:sinaweibo`/`simple-icons:bilibili`/`simple-icons:xiaohongshu`（fill 品牌形），每页 profile-links 的 svg 带 `width/height="1em"` 与原视觉等价，`.profile-link-icon svg` 现有 CSS 直接约束无需改；douyin 兜底分支由 resolveThemeIcon 逻辑覆盖（demo 未引用）。
 
+### 4.66 字体接入标准化：Astro Fonts API（schema fonts 段 + Font 组件 + 角色映射）（✅ 2026-10-17 完成）
+
+**背景**：参考站用 Astro 官方 Fonts API（顶层 `fonts:` 配置 + `<Font>` 组件）声明式接入字体（Zen Maru Gothic/Inter/JetBrains Mono 走 fontsource，GreatVibes 走 local），并有 enable/selected/区域映射等三层自研编排。主题此前无任何字体接入能力（global.css 三角色变量写死系统栈）。用户口径延续 §4.65：有标准化推荐的一律优先推荐方案。
+
+**方案**：schema 新增顶层 `fonts` 数组段（name/cssVariable/provider/weights/styles/subsets/fallbacks/display/preload/role/options.variants），provider 收敛为官方六种字符串枚举（google/fontsource/local/bunny/fontshare/npm）；integration 把它映射进 astro 顶层 `fonts` 配置（同 §4.63 sitemap/§4.64 image.layout 注入模式），BaseLayout 按 cssVariable 渲染 `<Font>` 组件；`role`（主题层字段）产出 `html:root` 角色映射规则，衔接主题既有 `--font-body/--font-display/--font-mono` 变量体系。参考站的三层编排（enable 短路/selected 过滤/区域变量）收敛为一个数组：不配置即零开销，配置即生效。
+
+**前置验证**：Astro 7 移除了 `astro/font` exports 入口——`fontProviders` 从 `astro/config` 导出（对齐参考站）；读 `site/node_modules/astro/dist/assets/fonts/` 确认六种 provider 工厂全部支持无参调用（local 的文件声明走 family `options.variants`，npm 可选 options）；网络实测 api.fontsource.org / fonts.googleapis.com 均 200，构建期联网拉字体可行。
+
+**设计决策**：
+- **`html:root` 高 Specificity 覆盖（核心决策）**：角色映射规则用 `html:root{--font-body:var(--font-inter),<原回退栈>}`——Specificity (0,1,1) 稳定高于 global.css `:root` (0,1,0)，不赌 `<Font>` 产出的 style 与样式表 link 的先后顺序；CSS 自定义属性引用是惰性求值，变量定义顺序无关。回退栈取 global.css 现值（display: Noto Serif SC 系 serif / body: PingFang SC 系 sans-serif / mono: ui-monospace 系），字体未覆盖的字形（如 Inter 只有 latin，中文）自然回落，**西文/数字上新字体、中文走原栈**正是中英混排的标准做法
+- **preload/role 是主题层字段**：Astro FontFamily 无此二者——preload 由 BaseLayout `<Font preload>` 消费、role 由角色映射 CSS 消费；integration 显式挑字段映射（name/cssVariable/weights/styles/subsets/fallbacks/provider/display/options），二者天然剥离，optional 字段的 undefined 值键天然不进入
+- **站点自有 fonts 优先**：`updateConfig({ fonts: [...(astroConfig.fonts ?? []), ...主题映射] })`，站点在 astro.config.ts 顶层声明的字体排前面，主题配置追加在后
+- **与 §4.5 字体子集化管线不冲突**：subset-fonts.mjs（构建后子集化 + URL 重写）面向 `public/` 自托管字体（清单 site/subset-fonts.json）；Fonts API 字体不经过 public（产物 `dist/_astro/fonts/`、`<Font>` 直接引用），两条管线互不相交，README 已说明边界
+- **cssVariable schema 正则约束**（`^--[a-zA-Z0-9-]+$`）：既是 CSS ident 合法性校验，也防 set:html 注入
+
+**改动**：
+- `packages/theme/src/schema.ts`：新增顶层 `fonts` 段（数组项九字段 + options.variants，全中文 JSDoc，`.default([])` 兜底）
+- `packages/theme/src/index.ts`：import `fontProviders`（astro/config）；`astro:config:setup` 中 fonts 非空时映射注入 astro 顶层 fonts 配置
+- `packages/theme/src/components/BaseLayout.astro`：import `<Font>`（astro:assets）；head 内渲染 `<Font cssVariable preload>` × N + `<style is:global set:html>` 角色映射规则（fontRoleCss 构建期拼装，回退栈三角色查表）
+- `site/config/appearanceConfig.ts`：新增 fonts 演示段（Inter/fontsource/400+700/preload/role body）
+- `site/config/index.ts`：fonts 加入组装与再导出
+- 文档同步：`packages/theme/README.md`「悬浮组件与特效」表新增 fonts 主行 + `#### fonts 详细配置` 子节（11 字段表 + 示例 + 与 §4.5 子集化管线边界说明）
+
+**验证（§4.66）**：biome 0 error（5 改动文件 + 全仓 106 文件复扫，仅存量 2 warnings）；清 dist rebuild 成功（115 页，fontsource 构建期拉取 Inter 无超时）。产物断言全 PASS：①`dist/_astro/fonts/` 产出 Inter woff2 文件；②head 内 3 条 `<link rel="preload" as="font">`；③`<style>` 产出 `@font-face{font-family:Inter-d35c32c9bc0917d1;...font-display:swap;unicode-range:latin}`（含 size-adjust 优化 fallback 面）；④变量链路完整——`--font-inter:Inter-d35c32c9bc0917d1,"…fallback: Arial","…fallback: Arial Bold",sans-serif` → `html:root{--font-body:var(--font-inter),-apple-system,"PingFang SC","Segoe UI","Microsoft YaHei",sans-serif}`，全站 body 经 `var(--font-body)` 生效。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
