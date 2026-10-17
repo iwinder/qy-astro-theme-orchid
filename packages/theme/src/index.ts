@@ -11,6 +11,9 @@ import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-s
 import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers";
 import tailwindcss from "@tailwindcss/vite";
 import type { AstroIntegration } from "astro";
+// astro-icon（§4.65）：Iconify 标准图标生态的官方 Astro integration，
+// 供 Sidebar 资料卡等组件以 <Icon name="集:名"> 构建期内联渲染图标
+import icon from "astro-icon";
 // mhchem 化学宏：import 时刻把 \ce{...} 等宏注册进 katex 实例。
 // pnpm-workspace.yaml overrides 已把 rehype-katex 等统一到同一 katex 版本，
 // 共享单实例，故 mhchem 宏对 rehype-katex 的渲染直接生效
@@ -360,6 +363,10 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 				return !pathname.startsWith("/og/") && !pathname.startsWith("/api/");
 			},
 		}),
+		// astro-icon（§4.65）：不配 include，保持开放——静态站图标数据由 vite 插件
+		// 按需从已装 @iconify-json/* 读取、实际只内联用到的 SVG，无产物膨胀；
+		// 站点补装任意 @iconify-json/* 集合包即可在 icon 字段直接填 "集:名" 扩展
+		icon(),
 	];
 	return integrations;
 }

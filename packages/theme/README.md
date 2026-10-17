@@ -128,12 +128,12 @@ site/
 
 #### 社交图标
 
-`profile.links[].icon` 两种写法：**内置图标名**（推荐，构建期查表内联渲染，无运行时请求与 JS 开销）或**内联 SVG 字符串**（以 `<` 开头，向后兼容）。名字 trim + 转小写后解析，未命中跳过图标只渲染文字，不报错。品牌图标 `fill: currentColor`、线性图标 `stroke: currentColor`，颜色随文字继承。
+`profile.links[].icon` 三种写法：**内置简名**（推荐，构建期映射到 Iconify 标准集合内联渲染，无运行时请求与 JS 开销）、**Iconify 全名**（`"集:名"`，如 `"simple-icons:bilibili"`；站点补装任意 `@iconify-json/*` 集合包即可使用，无需改主题）或**内联 SVG 字符串**（以 `<` 开头，向后兼容）。名字 trim + 转小写后解析，未命中跳过图标只渲染文字，不报错。品牌图标 `fill: currentColor`、线性图标 `stroke: currentColor`，颜色随文字继承。
 
-内置图标 20 枚（主题包 `src/icons.ts`）：
+基于 [astro-icon](https://docs.astro.build/en/guides/integrations-guide/icon/) + Iconify 生态（§4.65 标准化方案），内置简名 20 枚：
 
-- 线性描边（lucide 风格 stroke 1.75）：`github` `email` `rss`
-- 品牌填充（simple-icons CC0 / mdi Apache-2.0）：`qq` `wechat`（别名 `weixin`） `weibo` `bilibili` `xiaohongshu` `x`（别名 `twitter`） `telegram` `youtube` `instagram` `linkedin` `discord` `steam` `zhihu` `gitee` `juejin` `csdn` `douyin`
+- 线性描边（lucide，ISC）：`github` `email` `rss`
+- 品牌填充（simple-icons，CC0）：`qq` `wechat`（别名 `weixin`） `weibo` `bilibili` `xiaohongshu` `x`（别名 `twitter`） `telegram` `youtube` `instagram` `linkedin` `discord` `steam` `zhihu` `gitee` `juejin` `csdn` `douyin`（simple-icons 未收录抖音官方形，暂以内联 SVG 兜底）
 
 图文示例见 demo 站「主题使用指南」专题的《社交图标配置》一文。
 

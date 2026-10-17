@@ -182,8 +182,10 @@ export const themeConfigSchema = z.object({
 						name: z.string(),
 						url: z.string(),
 						/**
-						 * 图标（§4.59）：内置图标名（主题 icons.ts 表，如 "github"/"qq"/"wechat"/
-						 * "weibo"/"bilibili"/"xiaohongshu"）或内联 SVG 字符串（以 "<" 开头，兼容旧写法）；
+						 * 图标（§4.65）：内置简名（如 "github"/"qq"/"wechat"/"weibo"/"bilibili"/
+						 * "xiaohongshu"，完整清单见主题 README「社交图标」）、Iconify 全名
+						 *（"集:名"，如 "simple-icons:bilibili"，站点装对应 @iconify-json/* 即可扩展）
+						 * 或内联 SVG 字符串（以 "<" 开头，兼容旧写法）；
 						 * 名字未命中时不渲染图标、只渲染文字。构建期内联，无运行时请求
 						 */
 						icon: z.string().default(""),

@@ -11,6 +11,8 @@
 		"lqip": "node ../packages/theme/scripts/generate-lqips.mjs"
 	},
 	"dependencies": {
+		"@iconify-json/lucide": "^1.2.145",
+		"@iconify-json/simple-icons": "^1.2.100",
 		"@windcoder/astro-theme-orchid": "workspace:*",
 		"astro": "^7.0.7",
 		"satori": "^0.47.1",

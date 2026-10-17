@@ -1,5 +1,7 @@
 ---
 import config from "virtual:theme/config";
+// Icon（§4.65）：Iconify 标准图标组件，构建期内联渲染
+import { Icon } from "astro-icon/components";
 import { t } from "../i18n/index.js";
 import { resolveThemeIcon } from "../icons.js";
 import {
@@ -125,11 +127,12 @@ if (fw?.type === "friends") {
               <div class="profile-links">
                 {profile.links.map((lk) => {
                   const external = /^https?:\/\//.test(lk.url);
-                  // icon 兼容两种写法（§4.59）："<" 开头为内联 SVG（向后兼容），
-                  // 否则按内置图标名查表（icons.ts，未命中跳过图标只渲染文字）
-                  const iconHtml = lk.icon
+                  // icon 兼容三种写法（§4.65）："<" 开头为内联 SVG（向后兼容）；
+                  // 其余经 icons.ts 解析——Iconify 全名（"集:名"）或内置简名映射；
+                  // 未命中跳过图标只渲染文字
+                  const icon = lk.icon
                     ? lk.icon.startsWith("<")
-                      ? lk.icon
+                      ? { html: lk.icon }
                       : resolveThemeIcon(lk.icon)
                     : null;
                   return (
@@ -139,7 +142,12 @@ if (fw?.type === "friends") {
                       rel={external ? 'noopener noreferrer' : undefined}
                       title={lk.name}
                     >
-                      {iconHtml && <span class="profile-link-icon" set:html={iconHtml} />}
+                      {icon?.name && (
+                        <span class="profile-link-icon">
+                          <Icon name={icon.name} />
+                        </span>
+                      )}
+                      {icon?.html && <span class="profile-link-icon" set:html={icon.html} />}
                       {lk.showName && <span class="profile-link-name">{lk.name}</span>}
                     </a>
                   );

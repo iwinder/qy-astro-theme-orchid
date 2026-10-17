@@ -1161,6 +1161,31 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.64）**：造临时文章引用本地图（1600×900 jpg，`./相对路径`）清 dist rebuild 成功。产物断言：文章页 img 带 `srcset` 6 档（640/750/828/1080/1280/1600w）+ `sizes` + `loading="lazy"` + `decoding="async"` + `width/height` + `data-astro-image="constrained"`；`_astro/` 下产出 6 个 webp 尺寸变体；独立段落单图仍被 `<figure data-lightbox>` 包裹且 title 落入 `<figcaption>`；行内图同走管线。验证后临时样本已删，biome 0 error 过门禁。
 
+### 4.65 社交图标标准化：自研 SVG 表退役，迁移 astro-icon + Iconify（✅ 2026-10-17 完成）
+
+**背景**：参考站用 astro-icon（Iconify 生态官方 Astro integration）渲染社交图标；主题原自研 18 枚内联 SVG 表（icons.ts）。用户拍板：有标准化推荐的一律优先推荐方案、可扩展、不优先自研。
+
+**方案**：astro-icon 1.2.0 integration + 两套 Iconify 集合——`@iconify-json/lucide`（线性图标，ISC）+ `@iconify-json/simple-icons`（品牌图标，CC0）。视觉零变化：原自研表与 lucide/simple-icons 数据同源。
+
+**前置验证（iconify 数据存在性实测，simple-icons 1.2.100 / 3739 枚）**：github→lucide（线性，保原视觉）；qq 在新版 simple-icons 已收录（弃 mdi:qqchat 统一品牌库）；weibo 规范名为 `sinaweibo`；xiaohongshu/juejin/csdn/gitee/bilibili/zhihu/x/telegram/youtube/instagram/linkedin/discord/steam/wechat 全 YES；**douyin 无**（仅国际版 tiktok）→ 唯一保留内联 SVG 兜底的图标。
+
+**设计决策**：
+- **icons.ts 重写为五级解析映射层**（`resolveThemeIcon`）：① `<` 开头内联 SVG 直出（向后兼容）→ ② 含 `:` 的 Iconify 全名透传（**扩展点**：站点补装任意 `@iconify-json/*` 即可用 `"集:名"`）→ ③ 内置简名映射（20 枚）→ ④ 兜底表（douyin）→ ⑤ null（跳过图标只渲染文字）；别名 weixin→wechat、twitter→x 保留
+- **不配 include（与参考站相反的决策）**：参考站 include `"*"` 全量内联；本主题保持开放——静态构建只内联实际用到的 SVG 无产物膨胀，站点装任意集合包即可扩展，主题不锁死集合清单
+- **集合包走 peerDependencies（踩坑定案）**：首轮构建报 `Unable to locate the "lucide" icon set!`——astro-icon 从构建 root（site）解析 `@iconify-json/*`，pnpm 严格布局下 theme dependencies 里的集合装在 `packages/theme/node_modules`，宿主站点不可见。修正：theme 的 `@iconify-json/lucide`/`@iconify-json/simple-icons` 移入 peerDependencies（宿主必须提供图标数据的生态标准语义；mdi 实际未用一并移除），site demo 显式 add 两集合
+- **范围收敛**：satori/OG 图不引用 icons.ts 不动；Live2DWidget 默认菜单的 `mdi:home` 等是传给 l2d-widget 第三方库的 API 约定（库内部客户端渲染），不属主题图标体系不动
+
+**改动**：
+- `packages/theme/src/icons.ts`：自研 SVG 表退役，重写为映射层（NAMED_ICONS 20 枚 + ALIASES + FALLBACK_ICONS + resolveThemeIcon）
+- `packages/theme/src/index.ts`：integrations 注入 `icon()`（AstroIntegration[] 返回值，不检测重复注入，与 sitemap 同口径）
+- `packages/theme/src/components/Sidebar.astro`：profile.links 渲染改 `<Icon name="集:名">` 组件（构建期内联），`icon?.html` 分支保留兜底直出
+- `packages/theme/src/schema.ts`：profile.links[].icon JSDoc 同步三种写法
+- `packages/theme/package.json`：dependencies 增 astro-icon；`@iconify-json/lucide`/`@iconify-json/simple-icons` 入 peerDependencies
+- `site/package.json`：add `@iconify-json/lucide` + `@iconify-json/simple-icons`
+- 文档同步：`packages/theme/README.md`「社交图标」段重写（三种写法 + 20 枚简名清单 + 宿主装集合说明）；`site/src/content/posts/social-icons.md` 全文重写
+
+**验证（§4.65）**：biome 0 error（2 warnings 为存量 noExplicitAny）；organizeImports 2 error 经 `--write` 安全修复（import 排序，注释随行迁移）；清 dist rebuild 成功（Pagefind 63 页）。产物断言：全站 `data-icon` 8 种内联成功——`lucide:github`（stroke 线性）/`lucide:mail`/`lucide:rss` + `simple-icons:qq`/`simple-icons:wechat`/`simple-icons:sinaweibo`/`simple-icons:bilibili`/`simple-icons:xiaohongshu`（fill 品牌形），每页 profile-links 的 svg 带 `width/height="1em"` 与原视觉等价，`.profile-link-icon svg` 现有 CSS 直接约束无需改；douyin 兜底分支由 resolveThemeIcon 逻辑覆盖（demo 未引用）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
