@@ -1,7 +1,7 @@
 /* 清言集 · Theme Orchid — 全局交互脚本
    移植自 design/prototype/app.js（冻结），改造为 View Transitions 兼容版：
    - document/window 级一次性委托监听（VT 换页不失联）
-   - astro:page-load 时重初始化页面级状态（nav active / reveal / TOC spy / 灯箱 Fancybox / 调色面板）
+   - astro:page-load 时重初始化页面级状态（nav active / reveal / TOC spy / 灯箱 PhotoSwipe / 调色面板）
    - astro:after-swap 时重应用暗色 class 与持久化 hue（VT swap 会替换 <html> 属性）
    - 搜索浮层（M3b-b6）：Pagefind 构建期索引，运行时惰性加载
    - 加密文章（M3b-b7）：Web Crypto 解密 + sessionStorage 密码缓存 */
@@ -30,10 +30,11 @@ function applyPreferredDark() {
 }
 applyPreferredDark();
 doc.addEventListener("astro:after-swap", applyPreferredDark);
-/* 灯箱（§4.68）：Fancybox 实例/容器挂在旧 body 上，VT swap 后立即销毁；
+/* 灯箱（§4.69）：PhotoSwipeLightbox 实例挂在旧 body 的元素上，VT swap 后立即销毁；
    新 body 的委托绑定由 astro:page-load 的 initPage → initLightbox 重建 */
 doc.addEventListener("astro:after-swap", () => {
-	Fancybox?.destroy();
+	pswpLightbox?.destroy();
+	pswpLightbox = null;
 });
 
 /* ---------- 客户端动态文案（构建期经 BaseLayout #qy-ui-labels 注入，读一次缓存） ---------- */
@@ -137,55 +138,52 @@ function initPalette() {
 	syncPaletteUI(currentHue());
 }
 
-/* ---------- 通用灯箱（Fancybox，§4.68，标准化迁移） ---------- */
+/* ---------- 通用灯箱（PhotoSwipe，§4.69，MIT 替换 Fancybox） ---------- */
 /* 主题公共 API 保持 data-lightbox（单图）与 data-lightbox-group/data-lightbox-item（组浏览）；
-   绑定前把属性翻译为 Fancybox 约定：data-fancybox 组名 + data-src 大图地址（rehypeFigure 与
-   文章封面产物均为 figure 包 img，无 href）。Fancybox v6 依赖默认值即可：keyboard/拖拽关闭/
-   Toolbar/Thumbs(≥2 张)/箭头均已内置。单图给独立组名以保持「点击单图只看单图」的原行为。 */
-type FancyboxAPI = typeof import("@fancyapps/ui")["Fancybox"];
-let Fancybox: FancyboxAPI | null = null;
-const LB_SELECTOR = "[data-lightbox], [data-lightbox-item]";
+   绑定前把属性翻译为 PhotoSwipe 约定：在容器内 img 上写 data-pswp-src 大图地址（rehypeFigure
+   与文章封面产物均为 figure 包 img，无 href；img 已加载时顺带写 naturalWidth/Height，避免
+   打开时布局跳动）。gallery selector 一次匹配所有容器、children 取容器内 img：单图 figure
+   容器内仅 1 img 天然独组，组容器内多个 img 同组——无需组名计数器。PhotoSwipe v5 内置
+   键盘/滑动/箭头/计数/关闭，wheelToZoom 对齐桌面滚轮缩放；pswp core 经 pswpModule 动态
+   加载，保持代码分割。点击须落在 img 上（children 只匹配后代，figure 空白处不触发）。 */
+type PswpLightbox = typeof import("photoswipe/lightbox")["PhotoSwipeLightbox"];
+let pswpLightbox: PswpLightbox | null = null;
+const LB_SELECTOR = "[data-lightbox], [data-lightbox-group]";
 
 function prepLightbox() {
-	let n = 0;
-	const toFancy = (el: HTMLElement, group: string) => {
+	const mark = (el: HTMLElement) => {
 		const img =
 			el.tagName === "IMG" ? (el as HTMLImageElement) : el.querySelector("img");
 		if (!img) return;
-		el.setAttribute("data-fancybox", group);
-		el.setAttribute("data-src", img.currentSrc || img.src);
+		img.setAttribute("data-pswp-src", img.currentSrc || img.src);
+		if (img.naturalWidth > 0) {
+			img.setAttribute("data-pswp-width", String(img.naturalWidth));
+			img.setAttribute("data-pswp-height", String(img.naturalHeight));
+		}
 	};
-	doc.querySelectorAll<HTMLElement>("[data-lightbox]").forEach((el) => {
-		if (el.closest("[data-lightbox-group]")) return;
-		toFancy(el, `qy-solo-${n++}`);
-	});
-	doc
-		.querySelectorAll<HTMLElement>("[data-lightbox-group]")
-		.forEach((group) => {
-			const name = `qy-group-${n++}`;
-			group
-				.querySelectorAll<HTMLElement>("[data-lightbox-item]")
-				.forEach((item) => {
-					toFancy(item, name);
-				});
-		});
+	doc.querySelectorAll<HTMLElement>("[data-lightbox]").forEach(mark);
+	doc.querySelectorAll<HTMLElement>("[data-lightbox-item]").forEach(mark);
 }
 
 async function initLightbox() {
 	if (!doc.querySelector(LB_SELECTOR)) return;
-	if (!Fancybox) {
-		Fancybox = (await import("@fancyapps/ui")).Fancybox;
-	}
+	/* destroy 防御：showDecrypted → initLightbox 重跑时旧实例仍在监听，否则双开 */
+	pswpLightbox?.destroy();
+	pswpLightbox = null;
 	prepLightbox();
-	/* bind 以 selector 为键覆盖注册（幂等）；unbind 防御未来 selector 变更残留 */
-	Fancybox.unbind(LB_SELECTOR);
-	Fancybox.bind(LB_SELECTOR, {
+	const { PhotoSwipeLightbox } = await import("photoswipe/lightbox");
+	pswpLightbox = new PhotoSwipeLightbox({
+		gallery: LB_SELECTOR,
+		children: "img",
+		wheelToZoom: true,
+		pswpModule: () => import("photoswipe"),
 		l10n: {
-			CLOSE: ui("close"),
-			PREV: ui("prevImage"),
-			NEXT: ui("nextImage"),
+			closeTitle: ui("close"),
+			arrowPrevTitle: ui("prevImage"),
+			arrowNextTitle: ui("nextImage"),
 		},
 	});
+	pswpLightbox.init();
 }
 
 /* ---------- 页面级初始化（每次导航执行） ---------- */
@@ -681,55 +679,6 @@ doc.addEventListener("click", (e) => {
 		return;
 	}
 
-	/* 灯箱控制按钮 */
-	if (target.closest(".lb-close")) {
-		closeLb();
-		return;
-	}
-	if (target.closest(".lb-prev")) {
-		e.stopPropagation();
-		lbShow(lbIdx - 1);
-		return;
-	}
-	if (target.closest(".lb-next")) {
-		e.stopPropagation();
-		lbShow(lbIdx + 1);
-		return;
-	}
-	if (lb?.classList.contains("open") && target === lb) {
-		closeLb();
-		return;
-	}
-
-	/* 相册组绑定（b8）：data-lightbox-group 容器内点 data-lightbox-item，整组浏览 */
-	const group = target.closest("[data-lightbox-group]");
-	if (group) {
-		const cards = Array.from(group.querySelectorAll("[data-lightbox-item]"));
-		const card = target.closest("[data-lightbox-item]");
-		if (card) {
-			const items = cards
-				.map((c) => c.querySelector("img"))
-				.filter((img): img is HTMLImageElement => !!img)
-				.map((img) => ({ src: img.src, cap: img.getAttribute("alt") || "" }));
-			openLb(items, Math.max(0, cards.indexOf(card)));
-		}
-		return;
-	}
-
-	/* 单图绑定：figure[data-lightbox] / [data-lightbox]（含 rehypeFigure 产物） */
-	const holder = target.closest("[data-lightbox]");
-	if (holder) {
-		const img =
-			holder.tagName === "IMG"
-				? (holder as HTMLImageElement)
-				: holder.querySelector("img");
-		if (img) {
-			e.preventDefault();
-			openLb([{ src: img.src, cap: img.getAttribute("alt") || "" }], 0);
-		}
-		return;
-	}
-
 	/* 分享海报（b9.6）：文章页「生成分享海报」按钮 */
 	const shareBtn = target.closest("#qy-share-btn");
 	if (shareBtn) {
@@ -786,7 +735,7 @@ doc.addEventListener("keydown", (e) => {
 			return;
 		}
 	}
-	/* 搜索快捷键（§4.12）：/ 或 ⌘/Ctrl+K；输入中、灯箱（Fancybox）打开时不触发 */
+	/* 搜索快捷键（§4.12）：/ 或 ⌘/Ctrl+K；输入中、灯箱（PhotoSwipe）打开时不触发 */
 	if (
 		e.key === "/" ||
 		((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k")
@@ -796,7 +745,7 @@ doc.addEventListener("keydown", (e) => {
 		const typing =
 			!!el &&
 			(el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
-		if (!typing && !Fancybox?.getInstance()) {
+		if (!typing && !pswpLightbox?.pswp) {
 			e.preventDefault();
 			openSearch();
 		}

@@ -34,9 +34,6 @@ importers:
       '@expressive-code/plugin-line-numbers':
         specifier: ^0.44.2
         version: 0.44.2
-      '@fancyapps/ui':
-        specifier: ^6.1.14
-        version: 6.1.15
       '@iconify-json/lucide':
         specifier: ^1.2.0
         version: 1.2.145
@@ -73,6 +70,9 @@ importers:
       pako:
         specifier: ^3.0.2
         version: 3.0.2
+      photoswipe:
+        specifier: ^5.4.4
+        version: 5.4.4
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -490,9 +490,6 @@ packages:
 
   '@expressive-code/plugin-text-markers@0.44.2':
     resolution: {integrity: sha512-SNI7EgUSiADqbqUzzMbj1ZeC/r2pa5eg3KyFOGAd3a7EsIA4qzjXQLp+ODWQtHVDKFCdGs4J3ovSJUqvKIK96g==}
-
-  '@fancyapps/ui@6.1.15':
-    resolution: {integrity: sha512-J1w/ZLhkXzMSHZ7Bg1iX7GFA/YkH/Ka+r2HIX4pchwu6PNalfyzzgxghhP92CWlbH4ssV8qYPJ/KQcdRW5TVVw==}
 
   '@iconify-json/lucide@1.2.145':
     resolution: {integrity: sha512-eYBZipY6g4bbJNyKBAEq1wBy3mJ2jKtI4O2K30ArO2lMpVDOEuQfu5aDZhiimj1+Q/mIrn3ZxnDeX1BbILxkwQ==}
@@ -2196,6 +2193,10 @@ packages:
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
+  photoswipe@5.4.4:
+    resolution: {integrity: sha512-WNFHoKrkZNnvFFhbHL93WDkW3ifwVOXSW3w1UuZZelSmgXpIGiZSNlZJq37rR8YejqME2rHs9EhH9ZvlvFH2NA==}
+    engines: {node: '>= 0.12.0'}
+
   piccolore@0.1.3:
     resolution: {integrity: sha512-o8bTeDWjE086iwKrROaDf31K0qC/BENdm15/uH9usSC/uZjJOKb2YGiVHfLY4GhwsERiPI1jmwI2XrA7ACOxVw==}
 
@@ -3303,8 +3304,6 @@ snapshots:
   '@expressive-code/plugin-text-markers@0.44.2':
     dependencies:
       '@expressive-code/core': 0.44.2
-
-  '@fancyapps/ui@6.1.15': {}
 
   '@iconify-json/lucide@1.2.145':
     dependencies:
@@ -5331,6 +5330,8 @@ snapshots:
   path-expression-matcher@1.6.2: {}
 
   pathe@2.0.3: {}
+
+  photoswipe@5.4.4: {}
 
   piccolore@0.1.3: {}
 

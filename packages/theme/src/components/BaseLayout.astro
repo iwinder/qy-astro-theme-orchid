@@ -13,8 +13,8 @@ import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
 import { hexToHsl } from "../utils.js";
 import "@windcoder/astro-theme-orchid/styles/global.css";
-/* 灯箱（§4.68）：Fancybox 样式随页面 CSS 一起打包，JS 由 app.ts 惰性动态加载 */
-import "@fancyapps/ui/dist/fancybox/fancybox.css";
+/* 灯箱（§4.69）：PhotoSwipe 样式随页面 CSS 一起打包，JS 由 app.ts 惰性动态加载 */
+import "photoswipe/photoswipe.css";
 
 interface Props {
 	title?: string;

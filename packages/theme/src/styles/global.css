@@ -3200,7 +3200,7 @@ gallery-filter {
 	transform: scale(1.025);
 }
 
-/* 灯箱（§4.68）：样式由 @fancyapps/ui/dist/fancybox/fancybox.css 提供（BaseLayout 引入） */
+/* 灯箱（§4.69）：样式由 photoswipe/photoswipe.css 提供（BaseLayout 引入） */
 
 /* modal（加密相册，M3b） */
 .modal {

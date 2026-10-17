@@ -1278,6 +1278,37 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.68）**：biome 全量 0 error（改动文件 0 新警告；global.css 警告为存量基线 90 → 89 净减 1）；`pnpm check`（astro check 首跑）0 errors / 0 warnings / 20 files；清 dist rebuild 成功——116 页不回退、pagefind 索引 64 页、og PNG 正常。冒烟断言全 PASS：fancybox CSS 并入 `_astro/BaseLayout.*.css`、Fancybox 动态 chunk 生成（代码分割生效）、产物 HTML 含 data-lightbox 与 data-fancybox 契约串。遗留：expressive-code-language-badge 的 peer 版本错位警告为存量问题（与本次无关）。**许可提示**：@fancyapps/ui 为 GPL-3.0-or-later / 商业授权双许可，主题 npm 包依赖引入后，不开源使用主题的下游站点需自行评估购买商业授权。
 
+### 4.69 灯箱引擎再替换：Fancybox → PhotoSwipe v5（✅ 2026-10-18 完成）
+
+**背景**：§4.68 引入的 @fancyapps/ui 为 GPL-3.0-or-later / 商业授权双许可（其留痕段已有许可提示）。主题 npm 包为 MIT 再分发，GPL 依赖在「闭源使用 + 打包再分发」场景存在许可合规顾虑。经平替调研（PhotoSwipe v5 / GLightbox / lightGallery 对比：许可、维护活跃度、体积、分组委托、内置 UI、ESM+TS 支持），用户拍板按首选方案迁移 **PhotoSwipe v5.4.4（MIT）**。自研已按既定口径排除（有标准化轮子优先用轮子）。
+
+**方案**：主题公共 API 三度不变——`data-lightbox`（单图）/ `data-lightbox-group` + `data-lightbox-item`（组浏览）；引擎由 Fancybox 静态委托 API 换为 `PhotoSwipeLightbox` 单实例委托方案。
+
+**前置验证**（photoswipe 5.4.4 实装实读）：
+- 官方包 `exports` 结构核实：`.` → core（`dist/photoswipe.esm.js`）、`./lightbox` → `PhotoSwipeLightbox`（`dist/photoswipe-lightbox.esm.js`）、`./photoswipe.css` → 样式，三子路径均可用且自带 TS 类型（`dist/types/`），license: MIT
+- 架构核实：Lightbox（委托监听，小体积）+ core（经 `pswpModule: () => import('photoswipe')` 动态加载）天然代码分割；`gallery` 接受匹配多元素的 selector，点击时 `closest(gallery)` 取容器、容器内 `children` 元素作为同组项——单容器即单组
+- l10n 选项键核实：`closeTitle` / `arrowPrevTitle` / `arrowNextTitle` / `zoomTitle` / `errorMsg`（与 Fancybox 的 CLOSE/PREV/NEXT 键名不同源）
+
+**设计决策**：
+- **单实例多 gallery 容器替代组名计数器**：`gallery: '[data-lightbox], [data-lightbox-group]'` + `children: 'img'`——单图 figure 容器内仅 1 img 天然独组（保持「点单图只看单图」原行为），组容器内多个 img 同组，无需 `qy-solo-N` / `qy-group-N` 组名
+- **翻译层改设在 img 上**：`data-pswp-src` = `img.currentSrc || src`（rehypeFigure 与文章封面产物均为 figure 包 img、无 href）；img 已加载时顺带写 `data-pswp-width/height` = naturalWidth/Height，避免打开时布局跳动（PhotoSwipe 必须显式尺寸或打开后自行纠正）
+- **行为差异（接受并留痕）**：点击必须落在 img 上（children 只匹配后代，figure 空白处不触发，与 Fancybox 绑 figure 略有差异）；PhotoSwipe v5 无内置缩略图条/全屏/自动播放/静态 caption——核心交互（键盘/滑动关闭/箭头/计数/关闭按钮）齐备，`wheelToZoom: true` 对齐桌面滚轮缩放体验
+- **重复初始化防御**：showDecrypted → initLightbox 重跑前先 `pswpLightbox?.destroy()` 再置 null，否则双监听双开（PhotoSwipeLightbox 构造即 init，无 Fancybox bind 的按 selector 覆盖幂等性）
+- **VT 生命周期不变**：`astro:after-swap` destroy + 置 null；`astro:page-load` 的 initPage → initLightbox 在新 body 重建
+- **勘误（§4.68 遗留死引用补删）**：§4.68 留痕声称退役「点击委托灯箱分支」，实际只删了 QyLightbox 定义与 .lb-* 样式，全局 click 委托中引用 `openLb/lbShow/closeLb/lb` 的分支段（约 50 行）漏删——这些标识符无任何声明（仅存在于冻结原型 design/prototype/app.js），运行时任意点击命中即抛 ReferenceError，且非灯箱区域的 `lb?.classList` 判断会中断后续分享海报等委托逻辑（构建期不查未定义标识符，故未被 biome/astro check 抓出）。本次随 PhotoSwipe 委托接管一并补删
+- keydown 灯箱判断：`Fancybox?.getInstance()` → `!pswpLightbox?.pswp`（开启态时 pswp 指向 core 实例）
+
+**改动**：
+- `packages/theme/package.json`：dependencies 去 `@fancyapps/ui`，增 `photoswipe` ^5.4.4（字母序插 pako/qrcode 之间）
+- `packages/theme/src/scripts/app.ts`：灯箱块重写——FancyboxAPI/prepLightbox(组名计数器版)/initLightbox(bind 版) → PswpLightbox 类型 + prepLightbox(data-pswp-* 翻译层) + initLightbox(destroy 防御 + PhotoSwipeLightbox 单实例多容器)；after-swap `Fancybox?.destroy()` → `pswpLightbox?.destroy(); pswpLightbox = null`；keydown 判断换 pswp；补删自研灯箱 click 委托死引用段约 50 行；头注释同步
+- `packages/theme/src/components/BaseLayout.astro`：`import "@fancyapps/ui/dist/fancybox/fancybox.css"` → `import "photoswipe/photoswipe.css"`
+- `packages/theme/src/styles/global.css`：灯箱注释指向 photoswipe.css
+- `packages/theme/src/components/PhotoCard.astro`：头注释同步
+- `packages/theme/src/i18n/zh-CN.ts`：l10n 注释同步（close/prevImage/nextImage 三键语义不变）
+- pnpm-lock.yaml 随动
+
+**验证（§4.69）**：biome 改动文件 0 error / 0 警告（global.css 存量基线不变）；`pnpm check` 0 errors / 0 warnings / 20 files；清 dist rebuild 成功——116 页不回退、pagefind 索引 64 页、og PNG 正常。冒烟断言全 PASS：pswp CSS 并入 `_astro/BaseLayout.*.css`（`pswp__button--close` 特征串命中）、两个动态 chunk 生成（`photoswipe-lightbox.esm.*.js` + `photoswipe.esm.*.js`，代码分割生效）、主脚本 chunk 含 `data-pswp-src` 翻译层与 `wheelToZoom` 配置、产物 HTML 含 data-lightbox 契约串、dist 全量 fancybox 残留 0。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
