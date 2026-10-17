@@ -13,26 +13,80 @@ interface Props {
 const { page, total, basePath } = Astro.props;
 const hrefFor = (p: number) =>
 	p === 1 ? basePath : `${basePath.replace(/\/$/, "")}/page/${p}/`;
+
+/**
+ * 页码序列（§4.53 PC 页码翻页）：恒含首页/末页/当前页及其前后一页，
+ * 间隙以省略号占位——如 total=12、page=5 → 1 … 4 5 6 … 12
+ */
+const pageNums = (): (number | "ellipsis")[] => {
+	const kept = new Set(
+		[1, total, page - 1, page, page + 1].filter((p) => p >= 1 && p <= total),
+	);
+	const sorted = [...kept].sort((a, b) => a - b);
+	const out: (number | "ellipsis")[] = [];
+	let prev = 0;
+	for (const p of sorted) {
+		if (p - prev > 1) out.push("ellipsis");
+		out.push(p);
+		prev = p;
+	}
+	return out;
+};
 ---
 
 <nav class="pagination reveal" aria-label={t('pagination')}>
-  {
-    page > 1 ? (
-      <a class="page-item" href={hrefFor(page - 1)}>
-        {t('prevPage')}
-      </a>
-    ) : (
-      <span class="page-item disabled">{t('prevPage')}</span>
-    )
-  }
-  <span>{t('pageOf', { current: page, total })}</span>
-  {
-    page < total ? (
-      <a class="page-item" href={hrefFor(page + 1)}>
-        {t('nextPage')}
-      </a>
-    ) : (
-      <span class="page-item disabled">{t('nextPage')}</span>
-    )
-  }
+  {/* PC（≥768px）：页码条，两端箭头翻页 */}
+  <div class="pg-nums">
+    {
+      page > 1 ? (
+        <a class="page-item pg-arrow" href={hrefFor(page - 1)} aria-label={t('prevPage')}>
+          ‹
+        </a>
+      ) : (
+        <span class="page-item disabled pg-arrow">‹</span>
+      )
+    }
+    {
+      pageNums().map((n) =>
+        n === "ellipsis" ? (
+          <span class="pg-gap">…</span>
+        ) : n === page ? (
+          <span class="page-item current" aria-current="page">{n}</span>
+        ) : (
+          <a class="page-item" href={hrefFor(n)}>{n}</a>
+        ),
+      )
+    }
+    {
+      page < total ? (
+        <a class="page-item pg-arrow" href={hrefFor(page + 1)} aria-label={t('nextPage')}>
+          ›
+        </a>
+      ) : (
+        <span class="page-item disabled pg-arrow">›</span>
+      )
+    }
+  </div>
+  {/* 移动端（<768px）：上一页 / 第 x / N 页 / 下一页 */}
+  <div class="pg-adj">
+    {
+      page > 1 ? (
+        <a class="page-item" href={hrefFor(page - 1)}>
+          {t('prevPage')}
+        </a>
+      ) : (
+        <span class="page-item disabled">{t('prevPage')}</span>
+      )
+    }
+    <span>{t('pageOf', { current: page, total })}</span>
+    {
+      page < total ? (
+        <a class="page-item" href={hrefFor(page + 1)}>
+          {t('nextPage')}
+        </a>
+      ) : (
+        <span class="page-item disabled">{t('nextPage')}</span>
+      )
+    }
+  </div>
 </nav>

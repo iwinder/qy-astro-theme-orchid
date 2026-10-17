@@ -1800,7 +1800,7 @@ html.dark .side-toc a:hover {
 	padding-left: 30px;
 }
 
-/* pagination */
+/* pagination（§4.53 双模式）：PC 页码条 .pg-nums，移动端上下页 .pg-adj */
 .pagination {
 	margin-top: 32px;
 	display: flex;
@@ -1825,6 +1825,40 @@ a.page-item:hover {
 	color: var(--muted);
 	opacity: 0.55;
 	cursor: not-allowed;
+}
+.pg-nums {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+	justify-content: center;
+}
+.pg-arrow {
+	padding: 6px 12px;
+	line-height: 1;
+}
+.page-item.current {
+	border-color: var(--accent);
+	background: var(--accent-soft);
+	color: var(--accent-ink);
+	font-weight: 600;
+}
+.pg-gap {
+	color: var(--muted);
+	padding: 0 2px;
+}
+.pg-adj {
+	display: none;
+	align-items: center;
+	gap: 14px;
+}
+@media (max-width: 767px) {
+	.pg-nums {
+		display: none;
+	}
+	.pg-adj {
+		display: flex;
+	}
 }
 
 /* ---------- 6. 文章页 ---------- */
@@ -3510,22 +3544,6 @@ html.dark .friend-card:hover .friend-name {
 .footer-inner {
 	padding: 36px 24px 40px;
 	text-align: center;
-}
-.footer-seal {
-	width: 44px;
-	height: 44px;
-	margin: 0 auto 14px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	border-radius: 50%;
-	background: var(--accent-soft);
-	color: var(--accent-ink);
-	font-family: var(--font-display);
-	font-size: 15px;
-	font-weight: 700;
-	letter-spacing: 0.05em;
-	border: 1px solid var(--border);
 }
 .footer-line {
 	font-size: 14px;

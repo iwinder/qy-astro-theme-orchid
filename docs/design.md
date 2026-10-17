@@ -964,6 +964,16 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.52）**：rebuild 后 dist 断言首页 aside 骨架与 §4.51 基线一致（top 4 sections、sticky 3 sections + qy-calendar inline SCRIPT、tagLinks 13、友链卡 3 条、calendar 存在）；preview 4322 首页 top=4/sticky 3 sections/tags 13/友链 3 条（青青山不改·拾拾光者·码农手记）/calendar 2 命中，文章页 features-demo top=4、sticky 4 sections（categories/tags/calendar-widget/toc-widget，toc 仅文章页）、tocLinks=9，均与 §4.51 基线一致。biome 复查 4 改动文件：1 format error（site 配置 tags/friends 行超长），`--write` 修复后 0 error（18 warnings 继承口径内）。
 
+### 4.53 分页双模式（PC 页码 / 移动端上下页）+ 移除页脚印章徽标（✅ 2026-10-17 完成）
+
+用户提出两点：① 分页在 PC 等宽分辨率下应使用页码翻页，移动端保留原有上一页/下一页效果；② 页脚那个占满一行的「清言」是什么——即 Footer 的 `.footer-seal` 印章徽标（站名前两字放入 44px 圆形色块），用户认为其与整体设计感不符，按意图移除。
+
+- **Pagination.astro**：整体重写为双模式，同一 `<nav class="pagination">` 内两组 DOM 纯 CSS media query 切换显隐。PC 组 `.pg-nums` 页码条：‹/› 箭头（page>1 为链接否则 disabled span）+ 页码序列——算法恒含 `{1, total, page-1, page, page+1}` 排序去重，间隙插省略号（total=12、page=5 → 1 … 4 5 6 … 12）；当前页渲染 `<span class="page-item current" aria-current="page">`，其余为链接。移动端组 `.pg-adj` 原三元素结构原样保留（上一页 / 第 x / N 页 / 下一页），i18n 键复用无新增。调用方 routes/index.astro 与 routes/page/[page].astro 无需改动
+- **global.css**：分页段保留 .pagination/.page-item 原规则，新增 `.pg-nums`（flex 居中换行）、`.pg-arrow`、`.page-item.current`（accent 边框 + accent-soft 底 + accent-ink 字色加粗）、`.pg-gap`（省略号灰字）及断点规则——默认 `.pg-adj` display:none，`@media (max-width: 767px)` 下切 `.pg-nums` 隐 / `.pg-adj` 显（断点口径沿用项目 min-width:768px/max-width:767px 先例）；Footer 段删除 `.footer-seal` 整条规则
+- **Footer.astro**：移除 `<div class="footer-seal">{title.slice(0, 2)}</div>` 印章元素，结构保留 footer-inner > footer-line（© 年份 作者 footerText）+ footer-sub（Powered by Astro · Theme Orchid · RSS/Sitemap）+ footer.customHtml（§4.16）
+
+**验证（§4.53）**：rebuild 后 dist 静态断言——首页/第 2 页页码序列正确（page1：‹ 1 2 … 7 › current=1；page2：‹ 1 2 3 … 7 › current=2）、总页数 7、footer-seal 不存在、CSS 含 .pg-nums/.pg-adj/.page-item.current 且断点压缩为 range 语法 `@media (width<=767px){.pg-nums{display:none}.pg-adj{display:flex}}`；preview 4322 移动端实测（492px 视口）：pgNums=none / pgAdj=flex / 文案「上一页 第 1 / 7 页 下一页」/ seal=false / footerText 正常。biome 复查 3 改动文件：唯一 error 为继承遗留 global.css:83 noDuplicateProperties（§4.13 overflow-x hidden/clip 兜底有意为之，口径内放行），97 warnings 均为 .astro frontmatter noUnused* 误报与 global.css 历史 noImportantStyles/noDescendingSpecificity，无本次新引入问题。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
