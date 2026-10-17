@@ -288,8 +288,11 @@ export const themeConfigSchema = z.object({
 	 */
 	colorMode: z.enum(["light", "dark", "system"]).default("system"),
 	/**
-	 * 代码高亮双主题（§4.17）：值为 Shiki 内置主题名，light/dark 跟随站点深浅模式切换。
-	 * fold（§4.37）：代码块折叠——行数超过 threshold 折叠为 previewLines 行预览。
+	 * 代码高亮（§4.61）：Expressive Code（Astro 生态标准方案）接管代码块渲染，
+	 * 替代 §4.17 自研 shiki 管线与 §4.37 自研折叠。light/dark 为 EC 支持的 Shiki
+	 * 主题名（EC 约定 [dark, light] 顺序加载），跟随站点深浅模式切换。
+	 * fold：行数超过 lineThreshold 自动折叠为 previewLines 行预览；
+	 * lineNumbers 行号 / languageBadge 语言徽章 / wrap 长行换行为 EC 插件与渲染开关。
 	 * 注意 default 必须写显式完整字面量：Zod v4 的 .default(x) 在输入缺失时直接取 x、
 	 * 不做二次 parse，内层字段默认值不会补齐。
 	 */
@@ -300,26 +303,32 @@ export const themeConfigSchema = z.object({
 			fold: z
 				.object({
 					enabled: z.boolean().default(false),
-					threshold: z.number().int().min(1).default(15),
+					lineThreshold: z.number().int().min(1).default(15),
 					previewLines: z.number().int().min(1).default(8),
 					defaultCollapsed: z.boolean().default(true),
 				})
 				.default({
 					enabled: false,
-					threshold: 15,
+					lineThreshold: 15,
 					previewLines: 8,
 					defaultCollapsed: true,
 				}),
+			lineNumbers: z.boolean().default(true),
+			languageBadge: z.boolean().default(false),
+			wrap: z.boolean().default(false),
 		})
 		.default({
 			light: "github-light",
 			dark: "github-dark",
 			fold: {
 				enabled: false,
-				threshold: 15,
+				lineThreshold: 15,
 				previewLines: 8,
 				defaultCollapsed: true,
 			},
+			lineNumbers: true,
+			languageBadge: false,
+			wrap: false,
 		}),
 	/** 独立页开关：关闭后主题不注入对应路由（路由完全不生成） */
 	pages: z

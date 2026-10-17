@@ -4,21 +4,31 @@
 // 元组；绝不能 push 已调用的 transformer（如 remarkMermaid()），否则 unified freeze
 // 时会把它当 attacher 二次调用（tree=undefined）导致渲染崩溃，详见下方装配区注释
 import { unified } from "@astrojs/markdown-remark";
+import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections";
+import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers";
 import tailwindcss from "@tailwindcss/vite";
 import type { AstroIntegration } from "astro";
 // mhchem 化学宏：import 时刻把 \ce{...} 等宏注册进 katex 实例。
 // pnpm-workspace.yaml overrides 已把 rehype-katex 等统一到同一 katex 版本，
 // 共享单实例，故 mhchem 宏对 rehype-katex 的渲染直接生效
 import "katex/dist/contrib/mhchem.mjs";
+// EC 社区插件：超长代码块自动折叠（fold.enabled 开启时挂载）
+import pluginCollapsible from "expressive-code-collapsible";
+import { pluginLanguageBadge } from "expressive-code-language-badge";
+// Expressive Code（§4.61，Astro 生态标准方案）：rehype 内核层接入。
+// 注意不能用 astro-expressive-code integration：其 updateConfig append 的
+// rehype 插件会被本主题 unified processor 的插件数组覆盖（processor 优先级
+// 高于 config 层），必须直接 push 进主题自己的插件数组（与 katex/mermaid 同模式）
+import rehypeExpressiveCode from "rehype-expressive-code";
 import rehypeKatex from "rehype-katex";
 // 官方解析器：把 :::container / ::leaf / :text 语法解析为 directive 节点，
 // 供 remarkDirectives 后处理（缺它则指令按字面文本渲染，卡片/容器全部失效）
 import remarkDirective from "remark-directive";
 import remarkMath from "remark-math";
+import { resolveLabel } from "./i18n/resolve.js";
 import {
 	rehypeAnchor,
 	rehypeCallouts,
-	rehypeCodeBlock,
 	rehypeExternalLinks,
 	rehypeFigure,
 	rehypeFirstImage,
@@ -65,7 +75,9 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 				// LaTeX（b4）：remark-math 识别公式 → rehype-katex 构建期渲染（无客户端运行时）
 				// Mermaid/PlantUML（b4）：remark 标记代码块 → rehype 构建期产出（静态 SVG / 外链 img）
 				// 邮箱防爬（b4）：mailto 构建期编码 + 点击时内联解码
-				// rehype 顺序：内容变换在前 → katex → 图表 → pan-zoom 兜底 → 邮箱防爬最后
+				// rehype 顺序：内容变换在前 → katex → 图表 → pan-zoom 兜底 → 邮箱防爬 →
+				// Expressive Code 代码块渲染最后（math/mermaid/plantuml pre 已被前面的
+				// 插件整体替换，EC 只接管剩余普通代码块）
 				// Astro 7 接线方式：
 				//   - 默认 Sätteri 处理器不执行 JS 插件，须显式 processor: unified({...})
 				//     （integration 更新 processor 后 content store 不自动清除，
@@ -75,10 +87,9 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 				//     千万不能 push remarkMermaid() 这种"已调用的 transformer"——unified freeze 时
 				//     会把数组元素当 attacher 再调用一次（第一参数 tree=undefined），
 				//     报 "Cannot read properties of undefined (reading 'children')"，且与文档内容无关
-				// shiki：代码高亮双主题（§4.17，codeTheme 配置），替代 Expressive Code（零新依赖）
-				// 顶层 shikiConfig 由 Astro 传入 createRenderer(shikiConfig)，与 unified 处理器兼容。
-				// defaultColor: false → token 色不写死，输出 var(--shiki-light/-dark) CSS 变量，
-				// 由 global.css 按 html.dark 切换（与站点深浅模式同源，无 FOUC）
+				// 代码高亮（§4.61）：Expressive Code 接管（Astro 生态标准方案），
+				// markdown.syntaxHighlight 必须置 false——Astro 原生 shiki 高亮先于用户
+				// rehype 插件执行，不关掉会出现 shiki + EC 双重高亮冲突
 				const remarkPlugins: any[] = [
 					remarkReadingTime,
 					remarkExcerpt,
@@ -100,11 +111,6 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 					rehypeFigure,
 					rehypeFirstImage,
 					rehypeAnchor,
-					// 复制/折叠按钮文案跟随站点语言（node 侧无 virtual 模块，显式传 config.lang）
-					[
-						rehypeCodeBlock,
-						{ uiLang: config.lang, fold: config.codeTheme.fold },
-					],
 				];
 				if (config.latex.enabled) {
 					remarkPlugins.push(remarkMath);
@@ -143,19 +149,90 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 						{ method: config.emailProtection.method },
 					]);
 				}
+				// Expressive Code（§4.61）：必须最后 push——math/mermaid/plantuml pre 已被
+				// 前面的插件整体替换，EC 只接管剩余普通代码块。
+				// 双主题：EC 约定 themes [dark, light] 顺序；useDarkModeMediaQuery 关掉系统
+				// 媒体查询，改用 themeCssSelector 映射站点深浅类（html.dark，与 app.ts 切换同源）。
+				// 插件组合对齐参考站：collapsible-sections（meta collapse={} 标记折叠）恒挂、
+				// line-numbers 恒挂（defaultProps.showLineNumbers 控制显隐）、社区 collapsible
+				// 自动折叠按 fold.enabled、语言徽章按 languageBadge。
+				// 复制按钮文案（copyButtonTooltip 等）走 EC 内置 texts，仅 en/de 内置翻译、
+				// 无公开 zh 注册入口，保持 EC 默认（对齐参考站做法）。
+				rehypePlugins.push([
+					rehypeExpressiveCode,
+					{
+						themes: [config.codeTheme.dark, config.codeTheme.light],
+						useDarkModeMediaQuery: false,
+						themeCssSelector: (theme: { type: string }) =>
+							theme.type === "dark" ? "html.dark" : "html:not(.dark)",
+						defaultLocale: config.lang,
+						plugins: [
+							...(config.codeTheme.languageBadge
+								? [pluginLanguageBadge()]
+								: []),
+							pluginCollapsibleSections(),
+							pluginLineNumbers(),
+							...(config.codeTheme.fold.enabled
+								? [
+										pluginCollapsible({
+											lineThreshold: config.codeTheme.fold.lineThreshold,
+											previewLines: config.codeTheme.fold.previewLines,
+											defaultCollapsed: config.codeTheme.fold.defaultCollapsed,
+											// 折叠按钮与读屏公告文案跟随站点语言
+											expandButtonText: resolveLabel(
+												config.lang,
+												"codeFoldExpand",
+											),
+											collapseButtonText: resolveLabel(
+												config.lang,
+												"codeFoldCollapse",
+											),
+											expandedAnnouncement: resolveLabel(
+												config.lang,
+												"codeFoldExpanded",
+											),
+											collapsedAnnouncement: resolveLabel(
+												config.lang,
+												"codeFoldCollapsed",
+											),
+										}),
+									]
+								: []),
+						],
+						defaultProps: {
+							showLineNumbers: config.codeTheme.lineNumbers,
+							wrap: config.codeTheme.wrap,
+							// 终端会话块不显示行号（对齐参考站）
+							overridesByLang: { shellsession: { showLineNumbers: false } },
+						},
+						// 站点级视觉对齐参考站：字体变量用本主题的 --font-mono
+						styleOverrides: {
+							borderRadius: "0.75rem",
+							codeFontSize: "0.875rem",
+							codeFontFamily:
+								"var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+							codeLineHeight: "1.5rem",
+							textMarkers: { delHue: 0, insHue: 180, markHue: 250 },
+							languageBadge: {
+								fontSize: "0.75rem",
+								fontWeight: "bold",
+								borderRadius: "0.25rem",
+								opacity: "1",
+								borderWidth: "0px",
+								borderColor: "transparent",
+							},
+						},
+						frames: { showCopyToClipboardButton: true },
+					},
+				]);
 				updateConfig({
 					vite: {
 						plugins: [tailwindcss()],
 					},
 					markdown: {
 						processor: unified({ remarkPlugins, rehypePlugins }),
-						shikiConfig: {
-							themes: {
-								light: config.codeTheme.light,
-								dark: config.codeTheme.dark,
-							},
-							defaultColor: false,
-						},
+						// 关掉 Astro 原生 shiki：高亮由 EC 独占（原生 shiki 先于用户 rehype 插件执行）
+						syntaxHighlight: false,
 					},
 				});
 

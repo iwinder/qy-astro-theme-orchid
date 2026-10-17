@@ -5,7 +5,7 @@
 ## 特性一览
 
 - **页面**：首页（featured/cover/compact/text 四种卡片混排）、文章页（TOC/相关推荐/分享海报/打赏入口）、归档（按年折叠）、分类、标签、专题、画廊（含加密相册）、友链、留言板、打赏、关于
-- **写作增强**：LaTeX（KaTeX + mhchem）、Mermaid 双主题、PlantUML、Callouts、GitHub 卡片、图语法（figure/九宫格）、代码块双主题 + 折叠、邮箱防爬
+- **写作增强**：LaTeX（KaTeX + mhchem）、Mermaid 双主题、PlantUML、Callouts、GitHub 卡片、图语法（figure/九宫格）、Expressive Code 代码块（双主题/行号/折叠/复制/语言徽标）、邮箱防爬
 - **互动系统**：评论五套（Artalk / Twikoo / Waline / Giscus / Disqus）、文章加密、过时提醒、公告、广告位
 - **个性化**：深浅模式、hue 动态调色、樱花飘落、背景壁纸、音乐播放器（跨页不断播）、Live2D 看板娘、i18n（zh-CN / en）
 - **工程化**：配置启动即校验（Zod）、OG 分享图、LQIP 占位、字体子集化、站点统计四件套（GA / Clarity / Umami / 51.la）、RSS / sitemap
@@ -141,8 +141,11 @@ site/
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `codeTheme.light` / `codeTheme.dark` | `string` | `"github-light"` / `"github-dark"` | Shiki 双主题名，跟随站点深浅模式 |
-| `codeTheme.fold` | `{enabled, threshold, previewLines, defaultCollapsed}` | `false` / `15` / `8` / `true` | 代码块折叠：行数超过 `threshold` 折叠为 `previewLines` 行预览，头部按钮展开/收起；math/mermaid/plantuml 块不参与 |
+| `codeTheme.light` / `codeTheme.dark` | `string` | `"github-light"` / `"github-dark"` | Expressive Code 双主题（Shiki 主题名），按站点深浅模式切换 |
+| `codeTheme.fold` | `{enabled, lineThreshold, previewLines, defaultCollapsed}` | `false` / `15` / `8` / `true` | 长代码自动折叠（pluginCollapsible）：行数超过 `lineThreshold` 折叠为 `previewLines` 行预览；meta 标 `collapse` 的块恒可手动折叠；math/mermaid/plantuml 块不参与 |
+| `codeTheme.lineNumbers` | `boolean` | `true` | 代码块显示行号（EC pluginLineNumbers，shell 会话块自动关闭） |
+| `codeTheme.languageBadge` | `boolean` | `false` | 代码块右上角显示语言徽标（EC pluginLanguageBadge） |
+| `codeTheme.wrap` | `boolean` | `false` | 长行自动换行（false 时横向滚动） |
 | `latex.enabled` | `boolean` | `false` | `$...$` / `$$...$$` 数学公式（KaTeX，含 mhchem 化学宏） |
 | `diagram.mermaid` | `{enabled, lightTheme, darkTheme}` | `false` / `"github-light"` / `"github-dark"` | Mermaid 构建期双主题静态渲染（` ```mermaid ` 代码块） |
 | `diagram.plantuml` | `{enabled, server, lightTheme, darkTheme}` | `false` / 官方服务 / `""` / `""` | PlantUML（` ```plantuml ` 代码块），图片由浏览器访问渲染服务加载 |

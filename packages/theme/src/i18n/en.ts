@@ -111,7 +111,6 @@ const en: Record<UiKey, string> = {
 	close: "Close",
 	prevImage: "Previous image",
 	nextImage: "Next image",
-	copy: "Copy",
 	copied: "Copied",
 	sharePoster: "Generate share poster",
 	generatingPoster: "Generating poster…",
@@ -153,8 +152,11 @@ const en: Record<UiKey, string> = {
 	l2dScrollTop: "Back to top",
 	l2dSleep: "Take a nap",
 	l2dSwitchModel: "Switch model",
+	/* Code folding (§4.61): Expressive Code pluginCollapsible option texts (node-side) */
 	codeFoldExpand: "Expand code",
 	codeFoldCollapse: "Collapse code",
+	codeFoldExpanded: "Code block expanded",
+	codeFoldCollapsed: "Code block collapsed",
 };
 
 export default en;

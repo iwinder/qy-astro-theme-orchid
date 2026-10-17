@@ -127,7 +127,6 @@ const zhCN = {
 	close: "关闭",
 	prevImage: "上一张",
 	nextImage: "下一张",
-	copy: "复制",
 	copied: "已复制",
 	/* 分享海报（M3b-b9.6） */
 	sharePoster: "生成分享海报",
@@ -172,8 +171,11 @@ const zhCN = {
 	l2dScrollTop: "回到顶部",
 	l2dSleep: "休息一下",
 	l2dSwitchModel: "换个模型",
+	/* 代码折叠（§4.61）：Expressive Code pluginCollapsible 选项文案（node 侧消费） */
 	codeFoldExpand: "展开代码",
 	codeFoldCollapse: "收起代码",
+	codeFoldExpanded: "代码已展开",
+	codeFoldCollapsed: "代码已收起",
 } as const;
 
 export type UiKey = keyof typeof zhCN;

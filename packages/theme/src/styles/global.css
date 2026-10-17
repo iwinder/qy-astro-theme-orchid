@@ -4,8 +4,8 @@
    1. accent 三变量化：--accent-h/s/l 由构建期 accentColor 注入，
       派生色用 calc 公式（与原型 #4a9d8f 硬编码值数学等价）
    2. 搜索浮层 / 调色面板 / 评论 / 画廊 modal 的 CSS 先行就位（M3b 启用对应 DOM）
-   3. 补充：shiki pre 背景适配（.code-block 内透明化）、callout tip/important/danger、
-      .h-anchor 标题锚点
+   3. 补充：callout tip/important/danger、.h-anchor 标题锚点
+      （代码块样式自 §4.61 起由 Expressive Code 内联输出接管，本文件不再维护）
    ========================================================================== */
 
 @import "tailwindcss";
@@ -2073,122 +2073,9 @@ html.dark .prose blockquote {
 	border: 1px solid var(--border);
 	color: var(--accent-ink);
 }
-.prose .code-block {
-	border-radius: var(--radius-sm);
-	overflow: hidden;
-	border: 1px solid var(--border);
-	/* 双主题（§4.17）：亮色浅底配 github-light，暗色深底配 github-dark */
-	background: #f6f8fa;
-}
-html.dark .prose .code-block {
-	background: #101314;
-}
-.code-head {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	padding: 8px 14px;
-	font-size: 12.5px;
-	font-family: var(--font-mono);
-	color: #57606a;
-	background: #eaeef2;
-}
-html.dark .code-head {
-	color: #9da5ab;
-	background: #171a1b;
-}
-.code-head .lang {
-	letter-spacing: 0.06em;
-}
-.code-head .file {
-	color: #24292e;
-}
-html.dark .code-head .file {
-	color: #c4cad0;
-}
-.copy-btn {
-	display: inline-flex;
-	align-items: center;
-	gap: 5px;
-	padding: 2px 10px;
-	border-radius: 6px;
-	font-size: 12px;
-	color: #57606a;
-	border: 1px solid #d0d7de;
-	transition:
-		color 0.15s,
-		border-color 0.15s;
-}
-.copy-btn:hover {
-	color: #24292e;
-	border-color: #afb8c1;
-}
-.copy-btn.copied {
-	color: #1a7f37;
-	border-color: #4d7c5f;
-}
-html.dark .copy-btn {
-	color: #c4cad0;
-	border-color: #3a4146;
-}
-html.dark .copy-btn:hover {
-	color: #fff;
-	border-color: #59636a;
-}
-html.dark .copy-btn.copied {
-	color: #7ecbb0;
-	border-color: #3d5a50;
-}
-/* 代码块折叠（§4.37）：折叠态限制高度为预览行数，底部渐隐提示
-   max-height 口径 = 行数 × (13.5px × 1.7) + pre 上下 padding 28px，
-   若调整 .prose pre code 字号/行高需同步此 calc */
-.code-block.code-foldable {
-	position: relative;
-}
-.code-block.folded pre {
-	max-height: calc(var(--preview-n, 8) * 22.95px + 28px);
-	overflow: hidden;
-}
-.code-block.folded::after {
-	content: "";
-	position: absolute;
-	inset: auto 0 0 0;
-	height: 64px;
-	background: linear-gradient(to bottom, transparent, #f6f8fa);
-	pointer-events: none;
-}
-html.dark .code-block.folded::after {
-	background: linear-gradient(to bottom, transparent, #101314);
-}
-.prose pre {
-	margin: 0;
-	padding: 14px 16px;
-	overflow-x: auto;
-}
-.prose pre code {
-	font-family: var(--font-mono);
-	font-size: 13.5px;
-	line-height: 1.7;
-	color: #24292e;
-}
-html.dark .prose pre code {
-	color: #d6dbdf;
-}
-/* shiki 适配（§4.17 双主题）：defaultColor:false → shiki inline 只写 --shiki-light/-dark
-   变量定义、不写 color，由这里按主题取值；pre 自带背景强制透明回容器底 */
-.prose .code-block pre span {
-	color: var(--shiki-light);
-}
-.prose .code-block pre {
-	background: transparent !important;
-	color: #24292e;
-}
-html.dark .prose .code-block pre {
-	color: #d6dbdf;
-}
-html.dark .prose .code-block pre span {
-	color: var(--shiki-dark) !important;
-}
+/* 代码块（§4.61 起由 Expressive Code 接管）：EC 自带完整样式（useStyleReset
+   all:revert 防站点样式干扰）与复制/折叠/行号交互，双主题选择器为
+   html.dark / html:not(.dark)，随 codeTheme 配置内联进首个代码块输出 */
 /* 宽表滚动容器化（§4.13）：display:block + overflow-x:auto，多列宽表窄屏内滚不撑破页面 */
 .prose table {
 	display: block;
@@ -4063,14 +3950,8 @@ html.dark .diagram-fs-controls {
 	overflow-y: hidden;
 	padding: 4px 0;
 }
-/* math 块保留代码块容器底（rehypeCodeBlock 包装 language-math），KaTeX 取
-   currentColor——色值随 §4.17 双主题：亮色浅底配深字，暗色深底配浅字 */
-.prose .code-block .katex-display {
-	color: #24292e;
-}
-html.dark .prose .code-block .katex-display {
-	color: #d6dbdf;
-}
+/* math 块（§4.61 起）：rehype-katex 先于 EC 执行，产物直接落入 .prose，
+   KaTeX 取 currentColor 随 .prose 的 var(--ink) 自动适配双主题 */
 
 /* 邮箱防爬：href 已置 '#'，保持可点击的视觉暗示 */
 a[data-encoded-email] {

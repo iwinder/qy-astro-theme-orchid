@@ -1087,6 +1087,28 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.60）**：biome 对两文件 0 error；清 dist + rebuild 成功（配置为启动即校验，build 通过即 schema parse 通过）。结论口径：能力面与参考项目对齐（除 fontConfig/语言徽章为待议新功能），展示面经本次展开后 site/config 即「全字段可见可改」。
 
+### 4.61 代码高亮切换 Expressive Code，整体退役自研管线（✅ 2026-10-17 完成）
+
+§4.60 比对参考项目后用户拍板：「全部使用推荐的标准开发，不是实现能力就算完成功能了」→ 代码高亮从自研 shiki 管线（§4.17 rehypeCodeBlock 包装 + 自研复制/折叠按钮 + §4.37 自研折叠 + global.css 适配层）整体切换到 Astro 生态标准方案 **Expressive Code**，完整替换而非能力等价：旧实现全部退役、配置面全量展开。
+
+**关键勘查结论（决定接线方式）**：
+- **processor 覆盖机制**：`@astrojs/markdown-remark` 在 `createRenderer(shared)` 时用 `processor.options.rehypePlugins` 覆盖 shared——`astro-expressive-code` integration 封装走 updateConfig append，其 rehype 插件会被主题自己的 unified processor 数组丢弃 → 正确接线 = `rehype-expressive-code`（EC 官方 rehype 内核，default export）直接 push 进主题插件数组尾部（index.ts 注释留痕）
+- **高亮执行顺序**：`createMarkdownProcessor` 中 Astro 原生 shiki（syntaxHighlight）先于用户 rehype 插件执行 → 必须 `syntaxHighlight: false`，高亮由 EC 独占，否则双重高亮
+- **双主题**：EC 约定 themes 首位为默认 → `[dark, light]`；`useDarkModeMediaQuery: false` + `themeCssSelector: html.dark / html:not(.dark)` 与 app.ts `root.classList.toggle("dark")` 同源
+- **插件组合**（对齐参考站 orchid-blog）：`pluginCollapsibleSections()` 恒挂（meta `collapse={}` 手动折叠标记）、`pluginLineNumbers()` 恒挂（`defaultProps.showLineNumbers` 控显隐）、`pluginCollapsible`（社区 expressive-code-collapsible，行数自动折叠）按 `fold.enabled`、`pluginLanguageBadge` 按 `languageBadge`
+- **i18n 边界**：frames 复制按钮文案（"Copy to clipboard"/"Copied!"）走 EC 内置 PluginTexts，仅 en/de 内置；`PluginTexts.addLocale` 公开但 frames 实例模块内部不可达 → **无公开 zh 注册入口，保持 EC 默认英文 tooltip**（参考站同款）；社区折叠 4 文案为插件选项 → `resolveLabel` 本地化（新增 codeFoldExpanded/codeFoldCollapsed 两键）
+- **与 math/mermaid/plantuml 共存**：rehype 顺序链保证 katex/mermaid/plantuml 先整体替换各自 pre，EC 最后只接管剩余普通代码块
+- **版本**：rehype-expressive-code 与 @expressive-code/* 均 0.44.2（^0.44.0）
+
+**改动**：
+- **依赖**（packages/theme）：rehype-expressive-code、@expressive-code/plugin-collapsible-sections、@expressive-code/plugin-line-numbers、@expressive-code/plugin-language-badge、expressive-code-collapsible
+- **schema.ts**：codeTheme 重构为 9 字段——light/dark + fold（enabled/lineThreshold/previewLines/defaultCollapsed，`threshold` 改名 `lineThreshold` 对齐 EC 选项名）+ lineNumbers/languageBadge/wrap；外层 default 显式完整字面量（Zod v4 短路语义）
+- **index.ts**：EC push 完整配置——themes/useDarkModeMediaQuery/themeCssSelector、`defaultLocale: config.lang`、plugins 组合、defaultProps（showLineNumbers/wrap + `overridesByLang: { shellsession: { showLineNumbers: false } }` shell 会话块关行号）、styleOverrides（圆角 0.75rem/字号 0.875rem/行高 1.5rem、等宽字体对接 `var(--font-mono)`、textMarkers del/ins/mark 色相、languageBadge 样式）、frames 复制按钮恒开；updateConfig 增 `syntaxHighlight: false`
+- **退役清单**：rehype.ts 删 countCodeLines + rehypeCodeBlock（墓碑注释，文件回归零 import）；app.ts 删 handleCopy + fold-btn/copy-btn 事件委托段 + UI_FALLBACK 四个死键（保留 copied 供 share-poster）；global.css 删 `.prose .code-block`/`.code-head`/`.copy-btn`/折叠 max-height/渐隐/shiki 适配整段（约 115 行）+ KaTeX 选择器退役（math 产物直接落 .prose，KaTeX 取 currentColor 随 `var(--ink)` 自动适配双主题，不再需要按代码块底色硬编码）；BaseLayout `#qy-ui-labels` 删 copy/codeFoldExpand/codeFoldCollapse；zh-CN/en 删 `copy` 键、增 codeFoldExpanded/codeFoldCollapsed
+- **样板与文档**：site/config/contentConfig.ts codeTheme 9 字段全量样板 + EC 表述注释；packages/theme/README.md「写作增强」表 5 行（双主题/折叠参数改名与自动折叠语义/行号/语言徽标/wrap）+ 特性一览改为「Expressive Code 代码块（双主题/行号/折叠/复制/语言徽标）」
+
+**验证（§4.61）**：biome 0 error（仅存量 warnings）；清 dist + rebuild 成功（Pagefind 正常）。产物断言：hello-world/theme-override 两页 `div.expressive-code` 包裹 + `figcaption.header` + 复制按钮（class="copy"）在场、行号结构（ec-line）在场；`html:not(.dark)`/`html.dark` 双主题选择器内联样式在场；hello-world 16 行代码块（> lineThreshold 15）自动折叠生效——`ec-collapse__toggle` aria-expanded="false"（defaultCollapsed）+ 「展开代码/收起代码」resolveLabel 本地化文案 + `ec-collapse__gradient` 渐隐层；features-demo `katex-display` 4 处直接落 .prose 无 code-block 包装；全站 HTML 0 处 `.code-block` 残留。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

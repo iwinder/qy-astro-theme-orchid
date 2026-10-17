@@ -37,10 +37,7 @@ const UI_FALLBACK: Record<string, string> = {
 	close: "关闭",
 	prevImage: "上一张",
 	nextImage: "下一张",
-	copy: "复制",
 	copied: "已复制",
-	codeFoldExpand: "展开代码",
-	codeFoldCollapse: "收起代码",
 };
 let uiLabels: Record<string, string> | null = null;
 function ui(key: string): string {
@@ -329,40 +326,6 @@ window.addEventListener(
 	{ passive: true },
 );
 window.addEventListener("resize", updateReadProgress, { passive: true });
-
-/* ---------- 代码块复制（原型 post.html 同款：clipboard 优先 + execCommand 兜底） ---------- */
-function handleCopy(btn: Element) {
-	const block = btn.closest(".code-block");
-	const code = block ? block.querySelector("pre code") : null;
-	if (!code) return;
-	const text = (code as HTMLElement).innerText;
-	const done = () => {
-		btn.textContent = ui("copied");
-		btn.classList.add("copied");
-		setTimeout(() => {
-			btn.textContent = ui("copy");
-			btn.classList.remove("copied");
-		}, 1200);
-	};
-	const fallback = () => {
-		const ta = doc.createElement("textarea");
-		ta.value = text;
-		doc.body.appendChild(ta);
-		ta.select();
-		try {
-			doc.execCommand("copy");
-		} catch {
-			/* ignore */
-		}
-		doc.body.removeChild(ta);
-		done();
-	};
-	if (navigator.clipboard && navigator.clipboard.writeText) {
-		navigator.clipboard.writeText(text).then(done, fallback);
-	} else {
-		fallback();
-	}
-}
 
 /* ---------- 搜索浮层（M3b-b6）：Pagefind 构建期索引，运行时惰性加载 ---------- */
 type PagefindResultData = {
@@ -794,25 +757,6 @@ doc.addEventListener("click", (e) => {
 			e.preventDefault();
 			openLb([{ src: img.src, cap: img.getAttribute("alt") || "" }], 0);
 		}
-		return;
-	}
-
-	/* 代码块折叠切换（§4.37）：须在 copy 分支之前——fold-btn 复用 copy-btn 配色 */
-	const foldBtn = target.closest(".fold-btn");
-	if (foldBtn) {
-		const wrap = foldBtn.closest(".code-block");
-		if (wrap) {
-			const folded = wrap.classList.toggle("folded");
-			foldBtn.setAttribute("aria-expanded", folded ? "false" : "true");
-			foldBtn.textContent = ui(folded ? "codeFoldExpand" : "codeFoldCollapse");
-		}
-		return;
-	}
-
-	/* 代码块复制 */
-	const copyBtn = target.closest(".copy-btn");
-	if (copyBtn) {
-		handleCopy(copyBtn);
 		return;
 	}
 

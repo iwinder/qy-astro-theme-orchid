@@ -25,18 +25,22 @@ export const postList: ThemeConfig["postList"] = {
 // ---------- 文章页目录（独立悬浮 TOC；sidebar.onPost 开启后由侧栏 toc widget 承担） ----------
 export const toc: ThemeConfig["toc"] = { enabled: true };
 
-// ---------- 代码高亮与折叠 ----------
-// light/dark 为 Shiki 内置主题名，跟随站点深浅模式切换；
-// fold：行数超过 threshold 折叠为 previewLines 行预览，defaultCollapsed 控制初始态
+// ---------- 代码高亮（§4.61：Expressive Code，Astro 生态标准方案） ----------
+// light/dark 为 Shiki 内置主题名（EC 双主题：dark 优先），按站点深浅模式经
+// html.dark / html:not(.dark) 选择器切换；复制按钮/行号/折叠均由 EC 插件承担，
+// math/mermaid/plantuml 块由各自插件先渲染，不经过 EC。
 export const codeTheme: ThemeConfig["codeTheme"] = {
 	light: "github-light",
 	dark: "github-dark",
 	fold: {
 		enabled: true,
-		threshold: 15,
+		lineThreshold: 15,
 		previewLines: 8,
 		defaultCollapsed: true,
 	},
+	lineNumbers: true,
+	languageBadge: false,
+	wrap: false,
 };
 
 // ---------- 文章页相关/随机推荐 ----------
