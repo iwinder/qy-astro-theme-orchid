@@ -2,7 +2,7 @@
 import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
 import { getLqipStyle } from "../utils/lqip.js";
-import { formatDate, resolveCover, type PostLike } from "../utils.js";
+import { formatDate, type PostLike, resolveCover } from "../utils.js";
 
 interface Props {
 	post: PostLike;
@@ -15,14 +15,16 @@ const d = post.data;
 
 /* 形态判定：frontmatter.cardStyle 按篇覆盖 > 全局 postList.style；无图可降级为纯文字 */
 const style = d.cardStyle ?? config.postList.style;
-/* 封面（§4.33）：image:"api" 时经图源解析出确定性随机图，并携带客户端重试列表 */
-const { cover, retries } = resolveCover(
+/* 封面（§4.33）：image:"api" 时经图源解析出确定性随机图，并携带客户端重试列表；
+   §4.55 showCover=false 时整体关闭列表封面（classes/模板自动降级纯文字形态） */
+const { cover: rawCover, retries } = resolveCover(
 	d.image,
 	d.firstImage,
 	config.postList.fallbackCover,
 	config.postList.randomCover.apis,
 	post.id,
 );
+const cover = config.postList.showCover ? rawCover : null;
 const classes = [
 	"post-card",
 	featured ? "featured" : "",

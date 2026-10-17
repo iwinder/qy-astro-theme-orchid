@@ -226,9 +226,9 @@ function closeLb() {
 function initNavActive() {
 	const page = doc.body.getAttribute("data-page");
 	if (!page) return;
-	doc
-		.querySelectorAll<HTMLElement>(".nav-item.is-active")
-		.forEach((n) => n.classList.remove("is-active"));
+	doc.querySelectorAll<HTMLElement>(".nav-item.is-active").forEach((n) => {
+		n.classList.remove("is-active");
+	});
 	doc
 		.querySelectorAll<HTMLElement>(
 			".nav-link[data-nav], .nav-sub-link[data-nav]",
@@ -320,10 +320,14 @@ function updateReadProgress() {
 	bar.hidden = false;
 	bar.style.transform = `scaleX(${Math.min((window.scrollY || 0) / max, 1)})`;
 }
-window.addEventListener("scroll", () => {
-	updateBackTop();
-	updateReadProgress();
-}, { passive: true });
+window.addEventListener(
+	"scroll",
+	() => {
+		updateBackTop();
+		updateReadProgress();
+	},
+	{ passive: true },
+);
 window.addEventListener("resize", updateReadProgress, { passive: true });
 
 /* ---------- 代码块复制（原型 post.html 同款：clipboard 优先 + execCommand 兜底） ---------- */
@@ -855,10 +859,15 @@ doc.addEventListener("keydown", (e) => {
 		}
 	}
 	/* 搜索快捷键（§4.12）：/ 或 ⌘/Ctrl+K；输入中、灯箱打开时不触发 */
-	if (e.key === "/" || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k")) {
+	if (
+		e.key === "/" ||
+		((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k")
+	) {
 		if (e.altKey || e.shiftKey) return;
 		const el = e.target as HTMLElement | null;
-		const typing = !!el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
+		const typing =
+			!!el &&
+			(el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
 		if (!typing && !lb?.classList.contains("open")) {
 			e.preventDefault();
 			openSearch();
@@ -910,16 +919,20 @@ function initCategoryBar() {
 	window.addEventListener("resize", measure, { passive: true });
 }
 
-/* ---------- 列表形态恢复（§4.34） ---------- */
-/* VT 换页后内联 boot 脚本不重执行，由这里按 localStorage 恢复 grid-mode */
+/* ---------- 列表形态恢复（§4.34→§4.55） ---------- */
+/* VT 换页后内联 boot 脚本不重执行，由这里按 localStorage > defaultLayout 恢复 grid-mode。
+   defaultLayout 无论 allowSwitch 开关均生效（allowSwitch 仅控制访客切换按钮） */
 function initPostListLayout() {
 	const list = doc.getElementById("postList");
-	if (!list || list.dataset.allowSwitch !== "true") return;
-	let mode = "list";
+	if (!list) return;
+	let mode: string;
 	try {
-		mode = localStorage.getItem("qy-postList") || "list";
+		mode =
+			localStorage.getItem("qy-postList") ||
+			list.dataset.defaultLayout ||
+			"list";
 	} catch {
-		/* ignore */
+		mode = list.dataset.defaultLayout || "list";
 	}
 	list.classList.toggle("grid-mode", mode === "grid");
 	list.style.setProperty("--col-w", `${list.dataset.gridCol || "320"}px`);

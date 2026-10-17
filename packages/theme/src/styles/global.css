@@ -917,19 +917,28 @@ html.dark .post-enter {
 .post-card.compact .post-enter {
 	display: none;
 }
+/* 置顶卡（featured，§4.55）：列表形态下与普通卡同构同高——封面左置内缩圆角块，
+   样式镜像普通卡右置封面（同 30% 宽 + 16px 边距 + 12px 圆角，图文间隔一致），
+   不再使用贴边大图 + 加大标题的特化形态 */
 @media (min-width: 641px) {
-	.post-card.featured {
-		grid-template-columns: 7fr 6fr;
-	}
-	.post-card.featured .post-cover {
+	.post-list:not(.grid-mode) .post-card.featured.has-cover .post-cover {
+		position: absolute;
+		top: 16px;
+		left: 16px;
+		bottom: 16px;
+		right: auto;
+		width: 30%;
 		aspect-ratio: auto;
-		min-height: 260px;
+		min-height: 0;
+		border-radius: 12px;
 	}
-	.post-card.featured .post-body {
-		padding: 28px 30px;
-	}
-	.post-card.featured .post-title {
-		font-size: 24px;
+	.post-list:not(.grid-mode) .post-card.featured.has-cover .post-body {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+		min-height: 196px;
+		/* 左留：封面 30% + 左偏 16px + 图文间隙 16px */
+		padding: 28px calc(30% + 32px) 28px 32px;
 	}
 }
 .post-card.text-only .post-cover {
@@ -966,47 +975,21 @@ html.dark .post-enter {
 	grid-template-columns: 1fr;
 }
 
-/* 列表形态切换（§4.34）：grid-mode 类由内联 boot 脚本 / app.ts 切换 */
-.list-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 12px;
-}
+/* 列表形态切换（§4.34→§4.55）：按钮移至导航栏 actions 区（复用 .icon-btn 形态），
+   仅首页/列表页显示（body[data-page="home"] 显隐，无闪烁）；图标由按钮 aria-pressed 驱动 */
 .layout-switch {
+	display: none;
+}
+body[data-page="home"] .layout-switch {
 	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	width: 34px;
-	height: 34px;
-	flex: none;
-	border: 1px solid var(--border);
-	border-radius: 8px;
-	background: var(--surface);
-	color: var(--ink-2);
-	cursor: pointer;
-	transition:
-		color 0.15s,
-		border-color 0.15s;
-}
-.layout-switch:hover {
-	color: var(--accent-deep);
-	border-color: var(--border-2);
-}
-html.dark .layout-switch:hover {
-	color: var(--accent);
-}
-.layout-switch svg {
-	width: 18px;
-	height: 18px;
 }
 .layout-switch .ic-grid {
 	display: none;
 }
-.post-list.grid-mode .layout-switch .ic-list {
+.layout-switch[aria-pressed="true"] .ic-list {
 	display: none;
 }
-.post-list.grid-mode .layout-switch .ic-grid {
+.layout-switch[aria-pressed="true"] .ic-grid {
 	display: block;
 }
 .post-list.grid-mode {
@@ -1069,10 +1052,13 @@ html.dark .layout-switch:hover {
 .post-card .post-cover img.cover-broken {
 	visibility: hidden;
 }
-@media (max-width: 399px) {
-	/* 极窄屏网格最小列宽放不下两列，强制单列 */
+/* 移动端小屏（§4.55）：布局开关对移动端不生效——网格强制还原单列上下布局
+   （卡片本就 flex column：封面在上、标题/简介等文字在下） */
+@media (max-width: 767px) {
 	.post-list.grid-mode {
-		grid-template-columns: 1fr;
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
 	}
 }
 /* 列表形态（非网格）普通 cover 卡桌面：封面右浮为内缩圆角块，正文居左铺满，
@@ -1270,31 +1256,42 @@ html.dark .layout-switch:hover {
 	color: var(--muted);
 	font-variant-numeric: tabular-nums;
 }
-/* 个人资料卡（§4.15）：头像 + 昵称 + 装饰条 + 简介 + 社交链接行 */
-.profile-card .profile-head {
-	display: flex;
-	align-items: center;
-	gap: 14px;
-}
+/* 个人资料卡（§4.55）：对齐参考项目——全宽大头像 + hover 遮罩 + 居中名字/装饰条/简介 + 居中按钮组 */
 .profile-avatar-link {
-	flex: none;
+	display: block;
+	position: relative;
+	overflow: hidden;
+	border-radius: 12px;
+}
+.profile-avatar-link::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0);
+	transition: background 0.2s;
+}
+.profile-avatar-link:hover::after {
+	background: rgba(0, 0, 0, 0.25);
 }
 .profile-avatar {
-	width: 56px;
-	height: 56px;
-	border-radius: 50%;
+	display: block;
+	width: 100%;
+	aspect-ratio: 1 / 1;
 	object-fit: cover;
 	border: 1px solid var(--border);
+	border-radius: 12px;
 }
 .profile-id {
 	display: grid;
 	gap: 7px;
-	min-width: 0;
+	justify-items: center;
+	margin-top: 14px;
 }
 .profile-name {
 	font-family: var(--font-display);
-	font-size: 17px;
+	font-size: 20px;
 	font-weight: 700;
+	text-align: center;
 	color: var(--ink);
 }
 a.profile-name:hover {
@@ -1310,34 +1307,42 @@ html.dark a.profile-name:hover {
 	background: var(--accent);
 }
 .profile-bio {
-	margin-top: 12px;
+	margin-top: 10px;
 	font-size: 13.5px;
 	line-height: 1.7;
-	color: var(--ink-2);
+	text-align: center;
+	color: var(--muted);
 }
 .profile-links {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 6px 14px;
-	margin-top: 12px;
-	padding-top: 12px;
-	border-top: 1px dashed var(--border);
+	justify-content: center;
+	gap: 8px;
+	margin-top: 14px;
 }
 .profile-links a {
 	display: inline-flex;
 	align-items: center;
-	gap: 5px;
+	justify-content: center;
+	gap: 6px;
+	height: 40px;
+	padding: 0 12px;
+	border-radius: 10px;
+	background: var(--bg-soft);
 	font-size: 13px;
-	color: var(--muted);
-	transition: color 0.15s;
+	color: var(--ink-2);
+	transition:
+		color 0.15s,
+		background 0.15s;
 }
 .profile-links a:hover {
 	color: var(--accent-ink);
+	background: var(--accent-soft);
 }
 .profile-link-icon {
 	display: inline-flex;
-	width: 16px;
-	height: 16px;
+	width: 20px;
+	height: 20px;
 }
 .profile-link-icon svg {
 	width: 100%;
@@ -1827,6 +1832,8 @@ html.dark .side-toc a:hover {
 	color: var(--ink-2);
 	background: var(--surface);
 	text-align: center;
+	/* 显式行高（§4.55）：箭头与数字页码完全同尺寸 */
+	line-height: 1.5;
 }
 a.page-item:hover {
 	border-color: var(--accent);
@@ -1843,9 +1850,6 @@ a.page-item:hover {
 	gap: 6px;
 	flex-wrap: wrap;
 	justify-content: center;
-}
-.pg-arrow {
-	line-height: 1;
 }
 .page-item.current {
 	border-color: var(--accent);

@@ -50,7 +50,6 @@ const en: Record<UiKey, string> = {
 	tagsMore: "… more",
 	calendarHome: "This month",
 	calendarPick: "Pick year & month",
-	recentPosts: "Recent posts",
 	layoutSwitch: "Switch list / grid view",
 	layoutList: "List view",
 	layoutGrid: "Grid view",

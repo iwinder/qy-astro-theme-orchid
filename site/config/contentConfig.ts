@@ -5,11 +5,16 @@ import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 // 文章列表：cover 图卡 / compact 紧凑行，每页 6 篇
 export const postList: ThemeConfig["postList"] = {
 	style: "cover",
+	// 列表封面开关（§4.55）：false 时所有列表卡不渲染封面（降级纯文字形态）
+	showCover: true,
 	pageSize: 10,
 	// 随机封面（§4.33）：frontmatter 显式 image: "api" 的文章按 slug 确定性取图，
 	// {slug} 占位符会被替换为文章 slug（末尾自动追加 ?v=<hash>）
 	randomCover: { apis: ["https://picsum.photos/seed/{slug}/540/304"] },
-	// 列表 / 网格切换（§4.34）：开启后列表头部出现切换按钮，访客选择存 localStorage
+	// 默认列表形态（§4.55）：访客未手动切换过时的初始形态（list 上下列表 / grid 网格）
+	defaultLayout: "list",
+	// 列表 / 网格切换（§4.34→§4.55）：开启后导航栏右上出现切换按钮（仅首页/列表页显示），
+	// 访客选择存 localStorage；移动端小屏不生效（恒为单列上下布局）
 	allowSwitch: true,
 	gridColumnWidth: 320,
 };

@@ -60,7 +60,6 @@ const zhCN = {
 	calendarHome: "回到本月",
 	calendarPick: "选择年月",
 	/* 列表 / 聚合页 */
-	recentPosts: "近期文章",
 	/* 列表形态切换（§4.34） */
 	layoutSwitch: "切换列表 / 网格视图",
 	layoutList: "列表视图",

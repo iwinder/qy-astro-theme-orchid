@@ -10,14 +10,25 @@ interface Props {
 	live2d: {
 		model?:
 			| { path: string; volume: number; scale: number; x: number; y: number }
-			| Array<{ path: string; volume: number; scale: number; x: number; y: number }>;
+			| Array<{
+					path: string;
+					volume: number;
+					scale: number;
+					x: number;
+					y: number;
+			  }>;
 		position: "bottom-left" | "bottom-right";
 		size: number | { width: number; height: number };
 		primaryColor: string;
 		transitionDuration?: number;
 		transitionType?: "slide" | "fade";
 		menus?: {
-			items: Array<{ icon: string; label: string; action: string; url?: string }>;
+			items: Array<{
+				icon: string;
+				label: string;
+				action: string;
+				url?: string;
+			}>;
 			align: "left" | "right";
 		};
 		tips?: {
@@ -34,9 +45,14 @@ interface Props {
 }
 
 const { live2d } = Astro.props;
+
 import { t } from "../i18n/index.js";
 
-const modelList = Array.isArray(live2d.model) ? live2d.model : live2d.model ? [live2d.model] : [];
+const modelList = Array.isArray(live2d.model)
+	? live2d.model
+	: live2d.model
+		? [live2d.model]
+		: [];
 
 // 未配置菜单时的默认三键（多模型自动追加「切换模型」）；自定义 menus 覆盖默认
 const menus = live2d.menus ?? {
@@ -45,7 +61,13 @@ const menus = live2d.menus ?? {
 		{ icon: "mdi:arrow-up", label: t("l2dScrollTop"), action: "scrollToTop" },
 		{ icon: "mdi:bed", label: t("l2dSleep"), action: "sleep" },
 		...(modelList.length > 1
-			? [{ icon: "mdi:swap-horizontal", label: t("l2dSwitchModel"), action: "switchModel" }]
+			? [
+					{
+						icon: "mdi:swap-horizontal",
+						label: t("l2dSwitchModel"),
+						action: "switchModel",
+					},
+				]
 			: []),
 	],
 	align: "right" as const,

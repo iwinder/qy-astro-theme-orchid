@@ -120,6 +120,8 @@ export const themeConfigSchema = z.object({
 		.object({
 			/** 默认卡片形态：cover 图卡 / compact 紧凑行；文章 frontmatter.cardStyle 可按篇覆盖 */
 			style: z.enum(["cover", "compact"]).default("cover"),
+			/** 列表封面开关（§4.55）：false 时列表卡不渲染封面（整体降级纯文字形态） */
+			showCover: z.boolean().default(true),
 			/** 每页文章数（首页分页） */
 			pageSize: z.number().int().min(1).default(10),
 			/** 无图文章的兜底封面图（可选；不配置则降级为纯文字卡） */
@@ -136,10 +138,12 @@ export const themeConfigSchema = z.object({
 				})
 				.default({ apis: [] }),
 			/**
-			 * 列表形态切换（§4.34）：true 时首页/分页列表标题旁出现列表/网格切换按钮，
-			 * 用户选择持久化 localStorage('qy-postList')。
+			 * 列表形态切换（§4.34→§4.55）：true 时导航栏右侧出现列表/网格切换按钮（仅首页/列表页渲染），
+			 * 访客选择持久化 localStorage('qy-postList')；false 时访客不可切换，仅使用 defaultLayout。
 			 */
 			allowSwitch: z.boolean().default(false),
+			/** 默认列表形态（§4.55）：list 上下列表 / grid 网格；访客未手动切换过时的初始形态 */
+			defaultLayout: z.enum(["list", "grid"]).default("list"),
 			/** 网格模式最小列宽（px），实际列数由容器宽自适应 */
 			gridColumnWidth: z.number().int().min(220).max(600).default(320),
 		})

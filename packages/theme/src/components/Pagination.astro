@@ -41,11 +41,11 @@ const pageNums = (): (number | "ellipsis")[] => {
   <div class="pg-nums">
     {
       page > 1 ? (
-        <a class="page-item pg-arrow" href={hrefFor(page - 1)} aria-label={t('prevPage')}>
+        <a class="page-item" href={hrefFor(page - 1)} aria-label={t('prevPage')}>
           ‹
         </a>
       ) : (
-        <span class="page-item disabled pg-arrow">‹</span>
+        <span class="page-item disabled">‹</span>
       )
     }
     {
@@ -61,11 +61,11 @@ const pageNums = (): (number | "ellipsis")[] => {
     }
     {
       page < total ? (
-        <a class="page-item pg-arrow" href={hrefFor(page + 1)} aria-label={t('nextPage')}>
+        <a class="page-item" href={hrefFor(page + 1)} aria-label={t('nextPage')}>
           ›
         </a>
       ) : (
-        <span class="page-item disabled pg-arrow">›</span>
+        <span class="page-item disabled">›</span>
       )
     }
   </div>

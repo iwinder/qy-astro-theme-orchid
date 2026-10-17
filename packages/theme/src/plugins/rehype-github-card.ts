@@ -87,12 +87,7 @@ function githubCard(properties: any, children: any[]): any {
 		[
 			nTitle,
 			nDescription,
-			h("div", { class: "gc-infobar" }, [
-				nStars,
-				nForks,
-				nLicense,
-				nLanguage,
-			]),
+			h("div", { class: "gc-infobar" }, [nStars, nForks, nLicense, nLanguage]),
 			nScript,
 		],
 	);

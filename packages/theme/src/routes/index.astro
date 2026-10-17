@@ -18,9 +18,7 @@ const all = await getCollection("posts", ({ data }) =>
 const sorted = getSortedPosts(all);
 const total = Math.max(1, Math.ceil(sorted.length / config.postList.pageSize));
 
-const pagePosts = await hydratePosts(
-	sorted.slice(0, config.postList.pageSize),
-);
+const pagePosts = await hydratePosts(sorted.slice(0, config.postList.pageSize));
 ---
 
 <BaseLayout page="home">
@@ -30,28 +28,11 @@ const pagePosts = await hydratePosts(
       class="post-list"
       id="postList"
       data-allow-switch={config.postList.allowSwitch ? "true" : undefined}
+      data-default-layout={config.postList.defaultLayout}
       data-grid-col={config.postList.gridColumnWidth}
     >
       {/* 分类导航栏（§4.15→§4.21）：仅首页、与置顶/近期文章同列宽；「更多」固定跳分类页 */}
       <CategoryBar />
-      <div class="list-head">
-        <h2 class="section-title reveal">{t('recentPosts')}</h2>
-        {
-          config.postList.allowSwitch && (
-            <button
-              class="layout-switch"
-              id="layoutSwitch"
-              type="button"
-              aria-label={t('layoutSwitch')}
-              aria-pressed="false"
-              title={t('layoutSwitch')}
-            >
-              <svg class="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-              <svg class="ic-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-            </button>
-          )
-        }
-      </div>
       {
         pagePosts.length > 0 ? (
           pagePosts.map((post) => <PostCard post={post} featured={post.data.pinned} />)

@@ -96,20 +96,20 @@ if (fw?.type === "friends") {
             <>
         {w.type === 'profile' && showProfile && (
           <section class:list={["side-card", "card", "reveal", "profile-card", { "side-hide-m": w.hideOnMobile }]}>
-            <div class="profile-head">
-              {profile.url ? (
-                <a class="profile-avatar-link" href={profile.url} aria-label={profile.name}>
-                  {profile.avatar ? (
-                    <img class="profile-avatar" src={profile.avatar} alt={profile.name} loading="lazy" />
-                  ) : (
-                    <span class="profile-avatar avatar-fallback">{profileInitial}</span>
-                  )}
-                </a>
-              ) : profile.avatar ? (
-                <img class="profile-avatar" src={profile.avatar} alt={profile.name} loading="lazy" />
-              ) : (
-                <span class="profile-avatar avatar-fallback">{profileInitial}</span>
-              )}
+            {profile.url ? (
+              <a class="profile-avatar-link" href={profile.url} aria-label={profile.name}>
+                {profile.avatar ? (
+                  <img class="profile-avatar" src={profile.avatar} alt={profile.name} loading="lazy" />
+                ) : (
+                  <span class="profile-avatar avatar-fallback">{profileInitial}</span>
+                )}
+              </a>
+            ) : profile.avatar ? (
+              <img class="profile-avatar" src={profile.avatar} alt={profile.name} loading="lazy" />
+            ) : (
+              <span class="profile-avatar avatar-fallback">{profileInitial}</span>
+            )}
+            {profile.name && (
               <div class="profile-id">
                 {profile.url ? (
                   <a class="profile-name" href={profile.url}>{profile.name}</a>
@@ -118,7 +118,7 @@ if (fw?.type === "friends") {
                 )}
                 <span class="profile-bar" aria-hidden="true" />
               </div>
-            </div>
+            )}
             {profile.bio && <p class="profile-bio">{profile.bio}</p>}
             {profile.links.length > 0 && (
               <div class="profile-links">

@@ -11,6 +11,9 @@ import type { AstroIntegration } from "astro";
 // 共享单实例，故 mhchem 宏对 rehype-katex 的渲染直接生效
 import "katex/dist/contrib/mhchem.mjs";
 import rehypeKatex from "rehype-katex";
+// 官方解析器：把 :::container / ::leaf / :text 语法解析为 directive 节点，
+// 供 remarkDirectives 后处理（缺它则指令按字面文本渲染，卡片/容器全部失效）
+import remarkDirective from "remark-directive";
 import remarkMath from "remark-math";
 import {
 	rehypeAnchor,
@@ -25,12 +28,9 @@ import {
 	rehypeMermaid,
 	rehypePlantuml,
 } from "./plugins/rehype-diagram.js";
-import { rehypeGithubCard } from "./plugins/rehype-github-card.js";
 import { rehypeEmailProtection } from "./plugins/rehype-email.js";
+import { rehypeGithubCard } from "./plugins/rehype-github-card.js";
 import { remarkMermaid, remarkPlantuml } from "./plugins/remark-diagram.js";
-// 官方解析器：把 :::container / ::leaf / :text 语法解析为 directive 节点，
-// 供 remarkDirectives 后处理（缺它则指令按字面文本渲染，卡片/容器全部失效）
-import remarkDirective from "remark-directive";
 import { remarkDirectives } from "./plugins/remark-directives.js";
 import { remarkExcerpt } from "./plugins/remark-excerpt.js";
 import { remarkImageGrid } from "./plugins/remark-image-grid.js";

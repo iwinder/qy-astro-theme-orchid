@@ -22,7 +22,13 @@ interface Props {
 	ogImage?: string;
 }
 
-const { title, description = config.description, keywords = config.keywords, page, ogImage } = Astro.props;
+const {
+	title,
+	description = config.description,
+	keywords = config.keywords,
+	page,
+	ogImage,
+} = Astro.props;
 const pageTitle = title ? `${title} · ${config.title}` : config.title;
 const { h, s, l } = hexToHsl(config.accentColor);
 /* 首页 banner（§4.42，hero+壁纸合并单配置）：数组时构建期随机选一张（每页构建各自取，零 JS）；
@@ -33,7 +39,9 @@ const bannerSrc = Array.isArray(config.banner.src)
 		: ""
 	: config.banner.src || "";
 const showBanner =
-	config.banner.enabled && Boolean(bannerSrc) && (!config.banner.homeOnly || page === "home");
+	config.banner.enabled &&
+	Boolean(bannerSrc) &&
+	(!config.banner.homeOnly || page === "home");
 /* hero 文案（§4.42）：quote 留空不渲染；有 banner 时叠加其上，否则渲染为列表上方独立区块 */
 const heroEnabled = config.banner.enabled && Boolean(config.banner.quote);
 const heroOnBanner = heroEnabled && showBanner && page === "home";
@@ -121,10 +129,10 @@ const heroOnBanner = heroEnabled && showBanner && page === "home";
         <slot />
       </div>
     </main>
-    <!-- 列表形态恢复（§4.34）：首帧绘制前应用 localStorage 记忆防闪烁；
+    <!-- 列表形态恢复（§4.34→§4.55）：首帧绘制前按 localStorage > defaultLayout 应用防闪烁；
          is:inline 在 VT 换页不重执行，跨页返回由 app.ts initPage 接管 -->
     <script is:inline>
-      (function(){try{var m=localStorage.getItem('qy-postList');if(m!=='grid')return;var l=document.getElementById('postList');if(!l||l.dataset.allowSwitch!=='true')return;l.classList.add('grid-mode');l.style.setProperty('--col-w',(l.dataset.gridCol||'320')+'px');var b=document.getElementById('layoutSwitch');if(b)b.setAttribute('aria-pressed','true');}catch(e){}})();
+      (function(){try{var l=document.getElementById('postList');var m=localStorage.getItem('qy-postList')||(l&&l.dataset.defaultLayout)||'list';if(m!=='grid'||!l)return;l.classList.add('grid-mode');l.style.setProperty('--col-w',(l.dataset.gridCol||'320')+'px');var b=document.getElementById('layoutSwitch');if(b)b.setAttribute('aria-pressed','true');}catch(e){}})();
     </script>
     <Footer />
     <!-- 站点统计（P1-16）：ID 全空零输出，挂 body 尾与 orchid-blog 口径一致 -->

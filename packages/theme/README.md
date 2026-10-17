@@ -106,10 +106,12 @@ site/
 | 配置项 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
 | `postList.style` | `"cover" \| "compact"` | `"cover"` | 默认卡片形态；frontmatter `cardStyle` 可按篇覆盖、可混排 |
+| `postList.showCover` | `boolean` | `true` | 列表封面开关（§4.55）；`false` 时列表卡不渲染封面（整体降级纯文字形态） |
 | `postList.pageSize` | `number` | `10` | 每页文章数 |
 | `postList.fallbackCover` | `string` | — | 无图文章兜底封面；不配置则降级纯文字卡 |
 | `postList.randomCover.apis` | `string[]` | `[]` | 随机封面图源（URL 支持 `{slug}` 占位符）；frontmatter `image: "api"` 的文章从此取图，客户端失败自动重试降级 |
-| `postList.allowSwitch` | `boolean` | `false` | 列表/网格切换按钮（用户选择持久化 localStorage） |
+| `postList.defaultLayout` | `"list" \| "grid"` | `"list"` | 默认列表形态（§4.55）：访客未手动切换过时的初始形态；移动端小屏不生效（恒为单列上下布局） |
+| `postList.allowSwitch` | `boolean` | `false` | 导航栏右上的列表/网格切换按钮（§4.55 移至 Header，仅首页/列表页显示；访客选择持久化 localStorage） |
 | `postList.gridColumnWidth` | `number` | `320` | 网格模式最小列宽（220-600 px） |
 | `categoryBar.enabled` | `boolean` | `false` | 分类导航栏（首页列表与文章页正文顶部） |
 | `toc.enabled` | `boolean` | `true` | 文章页目录 |
