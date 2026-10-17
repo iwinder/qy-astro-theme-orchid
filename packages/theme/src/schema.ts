@@ -165,7 +165,8 @@ export const themeConfigSchema = z.object({
 		.default({ enabled: false }),
 	/**
 	 * 个人资料卡（§4.15）：sidebar widgets 中 type:"profile" 时渲染。
-	 * 头像 + 昵称 + 简介 + 社交链接行；links[].icon 存内联 SVG 字符串。
+	 * 头像 + 昵称 + 简介 + 社交链接行；links[].icon 填内置图标名（§4.59，如 "bilibili"）
+	 * 或内联 SVG 字符串（以 "<" 开头，向后兼容）。
 	 */
 	profile: z
 		.object({
@@ -180,7 +181,11 @@ export const themeConfigSchema = z.object({
 					z.object({
 						name: z.string(),
 						url: z.string(),
-						/** 内联 SVG 字符串（经 set:html 渲染） */
+						/**
+						 * 图标（§4.59）：内置图标名（主题 icons.ts 表，如 "github"/"qq"/"wechat"/
+						 * "weibo"/"bilibili"/"xiaohongshu"）或内联 SVG 字符串（以 "<" 开头，兼容旧写法）；
+						 * 名字未命中时不渲染图标、只渲染文字。构建期内联，无运行时请求
+						 */
 						icon: z.string().default(""),
 						/** true 时在图标旁显示名称文字 */
 						showName: z.boolean().default(false),

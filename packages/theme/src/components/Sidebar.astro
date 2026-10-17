@@ -1,6 +1,7 @@
 ---
 import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
+import { resolveThemeIcon } from "../icons.js";
 import {
 	collectCategories,
 	collectTags,
@@ -124,6 +125,13 @@ if (fw?.type === "friends") {
               <div class="profile-links">
                 {profile.links.map((lk) => {
                   const external = /^https?:\/\//.test(lk.url);
+                  // icon 兼容两种写法（§4.59）："<" 开头为内联 SVG（向后兼容），
+                  // 否则按内置图标名查表（icons.ts，未命中跳过图标只渲染文字）
+                  const iconHtml = lk.icon
+                    ? lk.icon.startsWith("<")
+                      ? lk.icon
+                      : resolveThemeIcon(lk.icon)
+                    : null;
                   return (
                     <a
                       href={lk.url}
@@ -131,7 +139,7 @@ if (fw?.type === "friends") {
                       rel={external ? 'noopener noreferrer' : undefined}
                       title={lk.name}
                     >
-                      {lk.icon && <span class="profile-link-icon" set:html={lk.icon} />}
+                      {iconHtml && <span class="profile-link-icon" set:html={iconHtml} />}
                       {lk.showName && <span class="profile-link-name">{lk.name}</span>}
                     </a>
                   );

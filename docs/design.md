@@ -1053,6 +1053,23 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.58）**：清 dist + rebuild 成功（Pagefind 62 页）；biome 对改动范围 `app.ts/schema.ts/site/config` 修复后 0 error（10 warnings + 1 info 既有口径：noNonNullAssertion/useOptionalChain 等）；curl `/posts/hello-world/` 产物断言 series-nav 卡完整（`.series-nav card` + head 标题「主题使用指南」+ 进度链接/series/%E4%B8%BB.../ + 计数 2/3 + `.series-nav-item` 列表）；构建产物 `BaseLayout.astro_astro_type_script_index_0_lang.js` 含 `series-nav-item.cur` 选择器与 `scrollTop` 定位逻辑（initSeriesNav 已打包）；node type-stripping 加载 `packages/theme/src/schema.ts` 实测 `parse({})` success 且 title=Orchid Blog、`parse({title:'我的博客'})` success 且 lang 自动补 zh-CN——部分配置覆盖 + 默认值兜底机制实锤。
 
+### 4.59 资料卡社交图标内置化：图标名引用替代手写内联 SVG（✅ 2026-10-17 完成）
+
+用户问题：资料卡直接用 svg 标签作为社交媒体图标会不会太重；能否像参考项目一样集成相关 icon；并补充 qq/weixin/xiaohongshu/bilibili/weibo 等常用社交媒体图标与配置。
+
+**结论与方案**：
+- 「重」的顾虑澄清：内联 SVG 本身并不重——无额外 HTTP 请求、每枚数百字节、随 HTML 一起传输；参考项目 astro-icon + @iconify-json 的本质也是**构建期内联 SVG**，只是把图标来源标准化了。真正的成本是**可维护性**：用户必须自己找 SVG path 手抄进配置，易错且风格不统一
+- 方案：主题内置图标表（零新增依赖，不引入 astro-icon——它是站点级集成，主题 Integration 内使用需用户站点同步安装 peer 依赖，侵入性大）；图标名在**服务端组件内查表解析**，构建期内联输出，客户端零负担
+- 数据来源：品牌图标 simple-icons（CC0）+ mdi（Apache-2.0，simple-icons 因腾讯商标要求无 qq/wechat），线性图标 lucide（ISC）；iconify API 拉取并注入 `fill="currentColor"`
+
+**改动**：
+- **packages/theme/src/icons.ts 新建**：`themeIcons` 表 20 枚——线性 github/email/rss（lucide stroke 1.75，与主题既有风格一致）+ 品牌类 17 枚：qq/wechat/weibo（mdi）、bilibili/xiaohongshu/x/telegram/youtube/instagram/linkedin/discord/steam/zhihu/gitee/juejin/csdn/douyin（simple-icons:tiktok 代 douyin）；`resolveThemeIcon(name)` 做 trim+小写+别名归一（weixin→wechat、twitter→x）后查表，命中返回完整 SVG、未命中返回 null
+- **Sidebar.astro**：profile.links 渲染处 icon 兼容两种写法——`"<"` 开头视为内联 SVG 原样输出（向后兼容），否则按图标名查表；未命中跳过图标只渲染文字链接
+- **schema.ts**：profile.links[].icon 注释更新（图标名或内联 SVG，类型仍为 string 不变）
+- **site/config/profileConfig.ts 重写**：全部改用图标名引用；新增 QQ/微信/微博/哔哩哔哩/小红书五项（URL 占位，注释说明替换方式；微信无主页链接的备注）；GitHub/邮箱/RSS 由手写 SVG 改为名字引用
+
+**验证（§4.59）**：biome 对改动范围 0 error（import 排序自动修复）；清 dist + rebuild 成功（Pagefind 正常）；产物 index.html 断言：profile-links 内 8 个链接（GitHub/QQ/微信/微博/哔哩哔哩/小红书/邮箱/RSS）× 8 个 svg，品牌图标 10 处 `fill="currentColor"`（5 枚品牌 = 外壳 + path 各 5），stroke 图标 `stroke-width="1.75"` 在场（线性三枚正常）；CSS `.profile-link-icon svg` 百分比宽高约束对 fill/stroke 两种外壳均生效。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
