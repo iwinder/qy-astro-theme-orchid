@@ -954,6 +954,19 @@ function initPostListLayout() {
 	if (btn) btn.setAttribute("aria-pressed", mode === "grid" ? "true" : "false");
 }
 
+/* ---------- 专题导航定位（§4.58）：目录 280px 限高滚动，当前篇在可视区外时居中定位 ---------- */
+/* 只滚 .series-nav-list 容器内部（rect 差值计算），不带动页面滚动；已可见时不动作 */
+function initSeriesNav() {
+	const list = doc.querySelector<HTMLElement>(".series-nav-list");
+	const cur = list?.querySelector<HTMLElement>(".series-nav-item.cur");
+	if (!list || !cur) return;
+	const lr = list.getBoundingClientRect();
+	const cr = cur.getBoundingClientRect();
+	if (cr.top < lr.top || cr.bottom > lr.bottom) {
+		list.scrollTop += (cr.top + cr.bottom) / 2 - (lr.top + lr.bottom) / 2;
+	}
+}
+
 /* ---------- 生命周期 ---------- */
 function initPage() {
 	ensureLightbox();
@@ -968,6 +981,7 @@ function initPage() {
 	initLqip();
 	initCategoryBar();
 	initPostListLayout();
+	initSeriesNav();
 }
 initPage();
 doc.addEventListener("astro:page-load", initPage);

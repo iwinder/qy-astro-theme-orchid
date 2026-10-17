@@ -1026,6 +1026,33 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.57）**：biome 0 error（137 warnings + 6 infos 既有口径）；rebuild 成功后 curl 断言产物结构 `footer-custom（某ICP备xxxx号）→ footer-line（© 2024-2026 windcoder / RSS / Sitemap）→ footer-sub（Powered by Astro & Orchid，& 两侧空格恢复）`；内嵌浏览器 492px DOM 断言：order=[footer-custom, footer-line, footer-sub]、customMt=0px、customDisplay=flex、三行相邻 margin-top 恒 6px、custom 链接与 sub 链接同色 rgb(73,156,142)（accent）、custom 链接无下划线；Chrome headless 1440px about 页截图确认三行居中层级清晰（次/主/次字号 12.5/14/12.5px、颜色 muted/ink-2/muted）与相邻行协调。
 
+### 4.58 专题导航定位与配置体系「全量可发现」重组（✅ 2026-10-17 完成）
+
+用户两个问题：① 专题列表放在文章开头，文章很多时怎样？有处理方案吗；② 配置文件应把所有可配置项放出来不让用户猜，不配置时能否走系统默认（约定大于配置），并检查划分是否合理、有无可合并优化。
+
+**诊断**：
+- 专题导航（posts/[...slug].astro 的 `.series-nav` 卡）：`.series-nav-list` 已有 `max-height: 280px; overflow-y: auto`（global.css，注释「目录超 6 项限高滚动」）——文章很多时卡内滚动、页面不被撑长，方案已存在；缺口是打开当前篇时高亮项（`.series-nav-item.cur`）可能落在 280px 滚动区可视范围之外，需手动滚动才能看到
+- 配置体系三层结论：
+  - **约定大于配置机制已存在**：zod schema 字段级 `default` 兜底 + 用户配置覆盖——`defineTheme` 内 `themeConfigSchema.parse(userConfig)`，用户传部分对象时缺失字段自动补默认值（外层键整个缺失时取 `.default()` 字面量不二次 parse，键存在时内层字段级 default 逐个补齐），天然支持部分配置
+  - **「用户猜不到可配什么」实锤三处**：site/config/index.ts 里 5 个键硬编码（huePanel/relatedPosts/og/sharePoster/outdated）不归属任何配置文件；siteConfig.ts 12 类大杂烩（站点身份与 banner/sakura/music/live2d/codeTheme 混在一起）；licenseConfig/commentConfig/analyticsConfig 只列出常用字段、冷门字段（如 giscus mapping、twikoo jsUrl）无展示
+  - **唯一必填项**：`title` 无 default，零配置接-theme 会校验失败
+
+**改动一：专题导航自动定位（packages/theme/src/scripts/app.ts）**
+- 新增 `initSeriesNav()` 并注册进 `initPage()`：读取 `.series-nav-list` 与 `.series-nav-item.cur` 的 getBoundingClientRect，若当前篇顶部/底部超出容器可视区（`cr.top < lr.top || cr.bottom > lr.bottom`），`list.scrollTop += (cr.top + cr.bottom)/2 - (lr.top + lr.bottom)/2` 居中定位；已可见时不动作。只滚容器内部不带动页面滚动，rect 差值计算天然免疫页面偏移
+
+**改动二：schema 真零配置兜底（packages/theme/src/schema.ts）**
+- `title: z.string().default("Orchid Blog")`——最后一个必填项消除，`themeConfigSchema.parse({})` 通过，不配置任何键也能构建（正式接入仍应显式配置站点名，注释已说明）
+
+**改动三：site/config 重组（「能配什么」以配置文件为准，14→15 个文件）**
+- **index.ts 重写为纯组装**：零硬编码，`themeConfig` 全部键来自各模块文件；末尾全量 re-export 各模块配置。5 个硬编码键归位：huePanel→siteConfig、relatedPosts/og/sharePoster/outdated→contentConfig
+- **siteConfig.ts 瘦身三分**：只留站点身份 + 全站开关（siteUrl/title/description/keywords/logo/author/accentColor/lang/since/pages 补上漏掉的 `series: true`/categoryBar/huePanel/colorMode/pageWidth/footer）；banner/sakura/music/live2d 移出，codeTheme 移出
+- **appearanceConfig.ts 新建**：banner（全量 8 字段）/sakura/music（含 3 首演示曲 playlist）/live2d（model + tips）——视觉特效与悬浮组件聚合
+- **contentConfig.ts 扩充**：postList/toc/codeTheme（自 siteConfig 移入）/relatedPosts/og/sharePoster/outdated（自 index.ts 硬编码移入）/latex/diagram/emailProtection 全量字段
+- **licenseConfig/commentConfig/analyticsConfig 全量化**：license 补 prefix/suffix；comment 补 title、artalk locale/visitorCount、冷门字段以注释列默认值指向 schema.ts；analytics GA/Clarity/umami/la51 顶层键全列出带注释
+- 其余配置文件（navBar/profile/friends/gallery/sponsor/announcement/advertisement/sidebar）勘查确认已全量或注释完整，未改动
+
+**验证（§4.58）**：清 dist + rebuild 成功（Pagefind 62 页）；biome 对改动范围 `app.ts/schema.ts/site/config` 修复后 0 error（10 warnings + 1 info 既有口径：noNonNullAssertion/useOptionalChain 等）；curl `/posts/hello-world/` 产物断言 series-nav 卡完整（`.series-nav card` + head 标题「主题使用指南」+ 进度链接/series/%E4%B8%BB.../ + 计数 2/3 + `.series-nav-item` 列表）；构建产物 `BaseLayout.astro_astro_type_script_index_0_lang.js` 含 `series-nav-item.cur` 选择器与 `scrollTop` 定位逻辑（initSeriesNav 已打包）；node type-stripping 加载 `packages/theme/src/schema.ts` 实测 `parse({})` success 且 title=Orchid Blog、`parse({title:'我的博客'})` success 且 lang 自动补 zh-CN——部分配置覆盖 + 默认值兜底机制实锤。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

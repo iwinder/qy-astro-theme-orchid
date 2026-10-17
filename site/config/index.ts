@@ -1,16 +1,25 @@
-// 配置索引：各模块配置在此组装为完整主题入参 themeConfig，
+// 配置索引（§4.58 重组后为纯组装：任何键不再在此硬编码，全部来自本目录各模块配置，
+// 「能配什么」以各配置文件为准；未导出的字段均有主题默认值兜底——约定大于配置，
 // astro.config.ts 只需 import { siteConfig, themeConfig } 即可。
+// 注意：本目录任意配置变更不会触发 dev 热更新（config 构建期为虚拟模块快照），
+// 修改后需重启 dev server 才能生效。
 
 import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 import { advertisementConfig } from "./advertisementConfig";
 import { analyticsConfig } from "./analyticsConfig";
 import { announcementConfig } from "./announcementConfig";
+import { banner, live2d, music, sakura } from "./appearanceConfig";
 import { commentConfig } from "./commentConfig";
 import {
+	codeTheme,
 	diagram,
 	emailProtection,
 	latex,
+	og,
+	outdated,
 	postList,
+	relatedPosts,
+	sharePoster,
 	toc,
 } from "./contentConfig";
 import { friendsConfig } from "./friendsConfig";
@@ -23,38 +32,42 @@ import { siteConfig } from "./siteConfig";
 import { sponsorConfig } from "./sponsorConfig";
 
 // 组装主题完整入参（键与 @windcoder/astro-theme-orchid 的 ThemeConfig 一一对应）
-// 注意：本目录任意配置变更不会触发 dev 热更新（config 构建期为虚拟模块快照），
-// 修改后需重启 dev server 才能生效。
 export const themeConfig = {
-	// 站点语言（<html lang>）
-	lang: "zh-CN",
+	// 站点身份与全站开关：siteConfig.ts
+	lang: siteConfig.lang,
 	title: siteConfig.title,
 	description: siteConfig.description,
 	author: siteConfig.author,
 	accentColor: siteConfig.accentColor,
 	since: siteConfig.since,
-	pages: siteConfig.pages,
-	categoryBar: siteConfig.categoryBar,
 	keywords: siteConfig.keywords,
 	logo: siteConfig.logo,
+	pages: siteConfig.pages,
+	categoryBar: siteConfig.categoryBar,
+	huePanel: siteConfig.huePanel,
 	colorMode: siteConfig.colorMode,
+	pageWidth: siteConfig.pageWidth,
 	footer: siteConfig.footer,
-	codeTheme: siteConfig.codeTheme,
-	// 导航栏 hue 调色面板（b5）：关闭后导航栏不出现调色按钮
-	huePanel: { enabled: true },
-	// 文章页相关/随机推荐栏（默认 5+5 篇）
-	relatedPosts: { enabled: true, count: 5, randomCount: 5 },
-	// OG 分享图（构建期生成 1200x630，meta 注入开关）
-	og: { enabled: true },
-	// 文章页「生成分享海报」按钮（纯客户端 canvas）
-	sharePoster: { enabled: true },
-	// 过时提醒卡：距最后更新超过 30 天显示
-	outdated: { enabled: true, threshold: 30 },
+	// 内容渲染与文章页功能：contentConfig.ts
+	postList,
+	toc,
+	codeTheme,
+	relatedPosts,
+	og,
+	sharePoster,
+	outdated,
+	latex,
+	diagram,
+	emailProtection,
+	// 视觉特效与悬浮组件：appearanceConfig.ts
+	banner,
+	sakura,
+	music,
+	live2d,
+	// 独立功能模块：各同名配置文件
 	nav: navBarConfig,
 	sidebar: sidebarConfig,
 	profile: profileConfig,
-	postList,
-	toc,
 	license: licenseConfig,
 	friends: friendsConfig,
 	gallery: galleryConfig,
@@ -63,24 +76,15 @@ export const themeConfig = {
 	announcement: announcementConfig,
 	advertisement: advertisementConfig,
 	analytics: analyticsConfig,
-	latex,
-	diagram,
-	emailProtection,
-	// 归档按年折叠 / 樱花特效（§4.30）：siteConfig 中配置
-	archive: siteConfig.archive,
-	sakura: siteConfig.sakura,
-	// 页宽变量（§4.32）/ 首页 banner（§4.42）/ 音乐播放器（§4.36）/ Live2D 看板娘（§4.38）：siteConfig 中配置
-	pageWidth: siteConfig.pageWidth,
-	banner: siteConfig.banner,
-	music: siteConfig.music,
-	live2d: siteConfig.live2d,
 } satisfies ThemeConfig;
 
-// 再导出各模块配置，需要单项时可直接从本文件导入
+// 再导出全部模块配置，需要单项时可直接从本文件导入
 export {
 	advertisementConfig,
 	analyticsConfig,
 	announcementConfig,
+	banner,
+	codeTheme,
 	commentConfig,
 	diagram,
 	emailProtection,
@@ -88,9 +92,16 @@ export {
 	galleryConfig,
 	latex,
 	licenseConfig,
+	live2d,
+	music,
 	navBarConfig,
+	og,
+	outdated,
 	postList,
 	profileConfig,
+	relatedPosts,
+	sakura,
+	sharePoster,
 	sidebarConfig,
 	siteConfig,
 	sponsorConfig,

@@ -42,8 +42,11 @@ const sidebarWidgetBase = z.object({
  * 后续新增配置项一律给 default，保证老站点升级后无需改动配置
  */
 export const themeConfigSchema = z.object({
-	/** 站点名 */
-	title: z.string(),
+	/**
+	 * 站点名（§4.58 加默认值）：不配置也能通过校验（真零配置可构建），
+	 * 正式接入时仍应显式配置为自己的站点名
+	 */
+	title: z.string().default("Orchid Blog"),
 	/** 站点描述（首页与 meta description 默认值） */
 	description: z.string().default(""),
 	/**
