@@ -85,7 +85,6 @@ site/
 | `since` | `string` | — | 建站日期 `YYYY-MM-DD`（站点信息卡「已运行」），不配置不显示 |
 | `colorMode` | `"light" \| "dark" \| "system"` | `"system"` | 默认深浅模式（仅初值，用户切换后以 localStorage 为准） |
 | `favicon` | `{src, type?, sizes?, theme?}[]` | `[]` | 数组非空时替换默认 favicon；`theme: "light"/"dark"` 按系统深浅切换 |
-| `footerText` | `string` | `""` | 页脚附加文案 |
 | `footer.customHtml` | `string` | `""` | 页脚自定义 HTML（备案号等），渲染在页脚最底部 |
 
 ### 导航与背景

@@ -12,7 +12,6 @@ export const siteConfig = {
 	accentColor: "#4a9d8f",
 	// 建站日期（站点信息卡「已运行」），占位日期，接入真实站点时自行修改
 	since: "2024-01-01",
-	footerText: "Built with Astro & @windcoder/astro-theme-orchid",
 	// 独立页开关：置 false 后主题不注入对应路由（演示站全部开启）
 	pages: {
 		about: true,
@@ -79,8 +78,19 @@ export const siteConfig = {
 		playMode: "list" as const,
 		showLyrics: true,
 		playlist: [
-			{ name: "晨光序曲", artist: "SoundHelix", url: "/music/a.mp3", cover: "/music/cover-a.jpg", lrc: "/music/a.lrc" },
-			{ name: "午后随想", artist: "SoundHelix", url: "/music/b.mp3", lrc: "[00:00.00]纯音乐，请静静聆听" },
+			{
+				name: "晨光序曲",
+				artist: "SoundHelix",
+				url: "/music/a.mp3",
+				cover: "/music/cover-a.jpg",
+				lrc: "/music/a.lrc",
+			},
+			{
+				name: "午后随想",
+				artist: "SoundHelix",
+				url: "/music/b.mp3",
+				lrc: "[00:00.00]纯音乐，请静静聆听",
+			},
 			{ name: "夜航星", artist: "SoundHelix", url: "/music/c.mp3" },
 		],
 	},

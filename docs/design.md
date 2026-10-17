@@ -974,6 +974,20 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.53）**：rebuild 后 dist 静态断言——首页/第 2 页页码序列正确（page1：‹ 1 2 … 7 › current=1；page2：‹ 1 2 3 … 7 › current=2）、总页数 7、footer-seal 不存在、CSS 含 .pg-nums/.pg-adj/.page-item.current 且断点压缩为 range 语法 `@media (width<=767px){.pg-nums{display:none}.pg-adj{display:flex}}`；preview 4322 移动端实测（492px 视口）：pgNums=none / pgAdj=flex / 文案「上一页 第 1 / 7 页 下一页」/ seal=false / footerText 正常。biome 复查 3 改动文件：唯一 error 为继承遗留 global.css:83 noDuplicateProperties（§4.13 overflow-x hidden/clip 兜底有意为之，口径内放行），97 warnings 均为 .astro frontmatter noUnused* 误报与 global.css 历史 noImportantStyles/noDescendingSpecificity，无本次新引入问题。
 
+### 4.54 分页去胶囊多列页码 + 日历控件放大/重置按钮移位 + 页脚精简对齐参考项目（✅ 2026-10-17 完成）
+
+用户提出三点：① 分页页码不要圆形（胶囊太占地，同样宽度可多列几个页码）；② 极简不等于小家子气——组件整体有「缩着」的感觉，日历的日期与左右箭头等选择控件过小不易看清，且重置按钮应放在日期 ▾ 之后；③ 页脚参考 orchid-blog 的实现，当前版本过于重复啰嗦。
+
+- **Pagination.astro**：页码窗口 ±1 扩至 ±2（恒含 `{1, total, page-2..page+2}` 排序去重，间隙插省略号）——61 篇 ÷ pageSize 10 = 7 页时 page1 → ‹ 1 2 3 … 7 ›、page2 → ‹ 1 2 3 4 … 7 ›；模板结构不变（.pg-nums PC / .pg-adj 移动端）
+- **global.css 分页段**：`.page-item` 由 999px 胶囊改为 6px 圆角方块（min-width:38px + border 1px + text-align:center），当前页样式不变；`.pg-nums` gap 8px→6px；`.pg-arrow` 删 padding 覆写（与页码同宽 38px）
+- **global.css 日历段**：控件整体放大一档——`.cal-month` font-size 15px→17px、padding 4px 12px、radius 8px，`::after`（▾）10px→12px；`.cal-nav/.cal-home/.cal-py` 22x22→28x28、font-size 12px→16px、radius 6px→8px；`.cal-py-label` 13px→14px；新增 `.cal-head-c`（flex 居中 gap:6px）包裹日期与重置按钮成组
+- **Calendar.astro**：monthHtml() 中 cal-home（↺ 回到本月）从 `.cal-head-r`（右端 next 后）移入 `.cal-head-c`，紧跟日期 ▾ 之后；cal-home 仅非当月渲染的既有逻辑与事件绑定不变
+- **Footer.astro**：对齐参考项目 orchid-blog 形态精简——一行版权行「© 年份 作者 / RSS / Sitemap」（.footer-sep 分隔）+ 一行「Powered by Astro & Theme Orchid」（链接 accent 色 target=_blank）+ footer.customHtml（§4.16），不再重复主题/框架名
+- **footerText 字段全链路移除**：schema.ts 删 `footerText` 字段（footer.customHtml 保留）、site/config/index.ts 与 siteConfig.ts 删传值、README 配置表删行
+- **global.css 页脚段**：新增 `.footer-line a/.footer-sub a` accent 色 + hover 下划线、`.footer-sep` 灰色分隔样式
+
+**验证（§4.54）**：rebuild 后 dist 静态断言——61 篇文章 ÷ 10 = 7 页吻合；page1 序列 `‹ 1 2 3 … 7 ›`、page2 `‹ 1 2 3 4 … 7 ›`（current 正确）；`.page-item` 规则含 min-width:38px/border-radius:6px 且无 999px；`.pg-nums` gap:6px；cal-month 17px、cal-nav/home/py 28x28+16px、`.cal-head-c` CSS 与 script 均在；footer 含「© 2024-2026 windcoder / RSS / Sitemap」且 footerText/Built with 已消失。preview 4322 浏览器实测（492px 视口）：monthFs=17px、nav 28x28/16px、cal-head 子结构 `[cal-nav, cal-head-c, cal-head-r]`；翻至 2026年8月 后 `.cal-head-c` 内 = cal-month + cal-home（↺）紧邻、`.cal-head-r` 只剩 next；footerLine 文案与 /rss.xml、/sitemap.xml 链接、subLinks=[Astro, Theme Orchid] 均正确；移动端 pgNums=none/pgAdj=flex 不变。biome 复查：唯一 error 为继承遗留 global.css:83（口径内放行），104 warnings 均为既有口径。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

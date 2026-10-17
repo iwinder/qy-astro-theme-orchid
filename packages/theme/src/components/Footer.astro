@@ -1,7 +1,7 @@
 ---
 import config from "virtual:theme/config";
 
-const { title, author, footerText, since, footer } = config;
+const { title, author, since, footer } = config;
 const now = new Date().getFullYear();
 const startYear = since ? parseInt(since.slice(0, 4), 10) : NaN;
 const yearLabel =
@@ -12,10 +12,18 @@ const yearLabel =
 
 <footer class="site-footer">
   <div class="shell footer-inner">
-    <div class="footer-line">© {yearLabel} {author || title}{footerText ? ` · ${footerText}` : ''}</div>
+    {/* §4.54 对齐参考项目：一行版权 + RSS/Sitemap，一行 Powered by，不再重复主题/框架名 */}
+    <div class="footer-line">
+      © {yearLabel} {author || title}
+      <span class="footer-sep" aria-hidden="true">/</span>
+      <a href="/rss.xml">RSS</a>
+      <span class="footer-sep" aria-hidden="true">/</span>
+      <a href="/sitemap.xml">Sitemap</a>
+    </div>
     <div class="footer-sub">
-      Powered by Astro · Theme Orchid ·
-      <a href="/rss.xml">RSS</a> / <a href="/sitemap.xml">Sitemap</a>
+      Powered by <a href="https://astro.build" target="_blank" rel="noopener">Astro</a>
+      &amp;
+      <a href="https://github.com/windcoder/qy-astro-theme-orchid" target="_blank" rel="noopener">Theme Orchid</a>
     </div>
     {/* 页脚自定义 HTML（§4.16）：备案号等站点自有内容，作者自担内容安全 */}
     {footer.customHtml && <div class="footer-custom" set:html={footer.customHtml} />}

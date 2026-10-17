@@ -15,12 +15,14 @@ const hrefFor = (p: number) =>
 	p === 1 ? basePath : `${basePath.replace(/\/$/, "")}/page/${p}/`;
 
 /**
- * 页码序列（§4.53 PC 页码翻页）：恒含首页/末页/当前页及其前后一页，
- * 间隙以省略号占位——如 total=12、page=5 → 1 … 4 5 6 … 12
+ * 页码序列（§4.53 PC 页码翻页，§4.54 加大窗口）：恒含首页/末页/当前页及前后各两页，
+ * 间隙以省略号占位——如 total=12、page=6 → 1 … 4 5 6 7 8 … 12
  */
 const pageNums = (): (number | "ellipsis")[] => {
 	const kept = new Set(
-		[1, total, page - 1, page, page + 1].filter((p) => p >= 1 && p <= total),
+		[1, total, page - 2, page - 1, page, page + 1, page + 2].filter(
+			(p) => p >= 1 && p <= total,
+		),
 	);
 	const sorted = [...kept].sort((a, b) => a - b);
 	const out: (number | "ellipsis")[] = [];

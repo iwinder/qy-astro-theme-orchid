@@ -264,8 +264,6 @@ export const themeConfigSchema = z.object({
 			}),
 		)
 		.default([]),
-	/** 页脚附加文案 */
-	footerText: z.string().default(""),
 	/** 页脚自定义 HTML（§4.16）：备案号等，经 set:html 渲染在页脚最底部 */
 	footer: z
 		.object({

@@ -2,12 +2,17 @@
 // astro.config.ts 只需 import { siteConfig, themeConfig } 即可。
 
 import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
-
-import { analyticsConfig } from "./analyticsConfig";
 import { advertisementConfig } from "./advertisementConfig";
+import { analyticsConfig } from "./analyticsConfig";
 import { announcementConfig } from "./announcementConfig";
 import { commentConfig } from "./commentConfig";
-import { diagram, emailProtection, latex, postList, toc } from "./contentConfig";
+import {
+	diagram,
+	emailProtection,
+	latex,
+	postList,
+	toc,
+} from "./contentConfig";
 import { friendsConfig } from "./friendsConfig";
 import { galleryConfig } from "./galleryConfig";
 import { licenseConfig } from "./licenseConfig";
@@ -28,7 +33,6 @@ export const themeConfig = {
 	author: siteConfig.author,
 	accentColor: siteConfig.accentColor,
 	since: siteConfig.since,
-	footerText: siteConfig.footerText,
 	pages: siteConfig.pages,
 	categoryBar: siteConfig.categoryBar,
 	keywords: siteConfig.keywords,
@@ -74,8 +78,8 @@ export const themeConfig = {
 
 // 再导出各模块配置，需要单项时可直接从本文件导入
 export {
-	analyticsConfig,
 	advertisementConfig,
+	analyticsConfig,
 	announcementConfig,
 	commentConfig,
 	diagram,

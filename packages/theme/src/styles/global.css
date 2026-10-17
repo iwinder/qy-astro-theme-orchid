@@ -1486,16 +1486,17 @@ qy-calendar {
 	justify-content: space-between;
 	margin-bottom: 10px;
 }
-/* §4.47 年月标签改为可点按钮：加粗加大 + 悬停/展开态，▾ 提示可开合年月选择器 */
+/* §4.47 年月标签改为可点按钮：加粗加大 + 悬停/展开态，▾ 提示可开合年月选择器
+   §4.54 极简不是小家子气：日期与箭头控件整体放大一档，重置按钮移至日期 ▾ 之后 */
 .cal-month {
-	font-size: 15px;
+	font-size: 17px;
 	font-weight: 700;
 	color: var(--ink);
 	font-variant-numeric: tabular-nums;
 	font-family: inherit;
 	background: transparent;
 	border: 0;
-	padding: 3px 10px;
+	padding: 4px 12px;
 	border-radius: 8px;
 	cursor: pointer;
 	user-select: none;
@@ -1506,8 +1507,8 @@ qy-calendar {
 .cal-month::after {
 	content: "▾";
 	display: inline-block;
-	font-size: 10px;
-	margin-left: 5px;
+	font-size: 12px;
+	margin-left: 6px;
 	color: var(--muted);
 	transition: transform 0.15s ease;
 }
@@ -1526,20 +1527,26 @@ qy-calendar {
 	align-items: center;
 	gap: 4px;
 }
-/* §4.47 翻月/回当月/年步进按钮统一外观：
+/* §4.54 日期 + 重置按钮成组居中（重置紧跟日期 ▾ 之后） */
+.cal-head-c {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+}
+/* §4.47 翻月/回当月/年步进按钮统一外观（§4.54 放大一档）：
    结构简化后由「.cal-nav button 后代选择器」改为类直配（.cal-nav/.cal-home/.cal-py） */
 .cal-nav,
 .cal-home,
 .cal-py {
-	width: 22px;
-	height: 22px;
+	width: 28px;
+	height: 28px;
 	display: grid;
 	place-items: center;
 	border: 1px solid var(--border);
-	border-radius: 6px;
+	border-radius: 8px;
 	background: transparent;
 	color: var(--muted);
-	font-size: 12px;
+	font-size: 16px;
 	line-height: 1;
 	font-family: inherit;
 	cursor: pointer;
@@ -1579,7 +1586,7 @@ qy-calendar {
 	margin-bottom: 8px;
 }
 .cal-py-label {
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 700;
 	color: var(--ink);
 	font-variant-numeric: tabular-nums;
@@ -1800,7 +1807,8 @@ html.dark .side-toc a:hover {
 	padding-left: 30px;
 }
 
-/* pagination（§4.53 双模式）：PC 页码条 .pg-nums，移动端上下页 .pg-adj */
+/* pagination（§4.53 双模式，§4.54 去胶囊改方块、统一宽度多列页码）：
+   PC 页码条 .pg-nums，移动端上下页 .pg-adj */
 .pagination {
 	margin-top: 32px;
 	display: flex;
@@ -1811,11 +1819,14 @@ html.dark .side-toc a:hover {
 	color: var(--muted);
 }
 .page-item {
-	padding: 6px 16px;
+	min-width: 38px;
+	padding: 6px 10px;
+	box-sizing: border-box;
 	border: 1px solid var(--border);
-	border-radius: 999px;
+	border-radius: 6px;
 	color: var(--ink-2);
 	background: var(--surface);
+	text-align: center;
 }
 a.page-item:hover {
 	border-color: var(--accent);
@@ -1829,12 +1840,11 @@ a.page-item:hover {
 .pg-nums {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 6px;
 	flex-wrap: wrap;
 	justify-content: center;
 }
 .pg-arrow {
-	padding: 6px 12px;
 	line-height: 1;
 }
 .page-item.current {
@@ -3548,6 +3558,21 @@ html.dark .friend-card:hover .friend-name {
 .footer-line {
 	font-size: 14px;
 	color: var(--ink-2);
+}
+/* §4.54 页脚链接（RSS/Sitemap/Powered by）与分隔符 */
+.footer-line a,
+.footer-sub a {
+	color: var(--accent);
+	text-decoration: none;
+}
+.footer-line a:hover,
+.footer-sub a:hover {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+.footer-sep {
+	margin: 0 6px;
+	color: var(--muted);
 }
 .footer-sub {
 	margin-top: 6px;
