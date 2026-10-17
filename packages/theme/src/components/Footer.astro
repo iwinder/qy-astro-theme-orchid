@@ -12,6 +12,8 @@ const yearLabel =
 
 <footer class="site-footer">
   <div class="shell footer-inner">
+    {/* 页脚自定义 HTML（§4.16→§4.57）：备案号等站点自有内容，置于版权行上方（对齐参考项目），作者自担内容安全 */}
+    {footer.customHtml && <div class="footer-custom" set:html={footer.customHtml} />}
     {/* §4.54 对齐参考项目：一行版权 + RSS/Sitemap，一行 Powered by，不再重复主题/框架名 */}
     <div class="footer-line">
       © {yearLabel} {author || title}
@@ -22,10 +24,8 @@ const yearLabel =
     </div>
     <div class="footer-sub">
       Powered by <a href="https://astro.build" target="_blank" rel="noopener">Astro</a>
-      &amp;
-      <a href="https://github.com/windcoder/qy-astro-theme-orchid" target="_blank" rel="noopener">Theme Orchid</a>
+      {" & "}
+      <a href="https://github.com/iwinder/qy-astro-theme-orchid" target="_blank" rel="noopener">Orchid</a>
     </div>
-    {/* 页脚自定义 HTML（§4.16）：备案号等站点自有内容，作者自担内容安全 */}
-    {footer.customHtml && <div class="footer-custom" set:html={footer.customHtml} />}
   </div>
 </footer>

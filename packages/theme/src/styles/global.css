@@ -3606,18 +3606,24 @@ html.dark .friend-card:hover .friend-name {
 	padding: 36px 24px 40px;
 	text-align: center;
 }
+/* §4.57 行距统一收口：任意行（含自定义行）相邻间距恒定，customHtml 缺省时无多余上边距 */
+.footer-inner > * + * {
+	margin-top: 6px;
+}
 .footer-line {
 	font-size: 14px;
 	color: var(--ink-2);
 }
-/* §4.54 页脚链接（RSS/Sitemap/Powered by）与分隔符 */
+/* §4.57 页脚链接（RSS/Sitemap/Powered by/自定义行）统一 accent 风格，hover 才出下划线 */
 .footer-line a,
-.footer-sub a {
+.footer-sub a,
+.footer-custom a {
 	color: var(--accent);
 	text-decoration: none;
 }
 .footer-line a:hover,
-.footer-sub a:hover {
+.footer-sub a:hover,
+.footer-custom a:hover {
 	text-decoration: underline;
 	text-underline-offset: 2px;
 }
@@ -3626,22 +3632,17 @@ html.dark .friend-card:hover .friend-name {
 	color: var(--muted);
 }
 .footer-sub {
-	margin-top: 6px;
 	font-size: 12.5px;
 	color: var(--muted);
 }
+/* §4.57 自定义行（备案号/统计等多段内容）：flex 换行居中，与相邻行同字号同色 */
 .footer-custom {
-	margin-top: 6px;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 2px 16px;
 	font-size: 12.5px;
 	color: var(--muted);
-}
-.footer-custom a {
-	color: inherit;
-	text-decoration: underline;
-	text-underline-offset: 2px;
-}
-.footer-dim {
-	opacity: 0.75;
 }
 
 /* ---------- 12. 搜索浮层（M3b Pagefind 启用） ---------- */

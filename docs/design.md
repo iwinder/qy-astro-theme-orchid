@@ -1016,6 +1016,16 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.56）**：biome `check src packages` 0 error（新增 useOptionalChain warning 2 条与既有口径一致不修）；rebuild 成功（pagefind 索引正常）；4322 preview（上会话进程存活直接复用，curl 确认产物含 nav-search/nav-search-toggle/searchInputM）。桌面 Chrome headless 1440px 截图确认内联搜索框在 actions 第一位（后跟视图切换/调色/月亮）、置顶卡「你好，清言集」封面左置文字区间隔正常与普通卡一致。内嵌浏览器 492px DOM 断言全过：navSearchHidden=true、searchToggle/navToggle/modeToggle/layoutSwitch 均 visible、header-actions firstChildClass=search-wrap、searchPop 初始 hidden、searchInputM 存在；a11y 树顺序「搜索 → 切换列表/网格视图 → 调色 → 切换深浅模式 → 菜单」。移动端交互链路：点击 searchToggle → popHidden=false + search-bar display:flex + activeElement=searchInputM + aria-expanded=true；输入 "Astro" 防抖后 resultsHidden=false + itemCount=3（第一条「你好，清言集」）。桌面输入即搜与移动共用 runSearch 同一代码路径。
 
+### 4.57 页脚自定义行与固定部分协调化（✅ 2026-10-17 完成）
+
+用户反馈：页脚「自定义展示 + 固定部分」（footer.customHtml 行与版权/Powered by 行）放在一起感觉不协调。勘查确认三处失调：① customHtml 行位于「Powered by」之后，打破「Powered by 收底」惯例且偏离参考项目（orchid-blog Footer.astro 将自定义 HTML 置于版权行上方）；② `.footer-custom a` 为 inherit 色 + 常驻下划线，与页脚其余链接（accent 色、hover 才下划线）风格割裂；③ 行间距靠各行独立 margin-top、自定义行多段内容 inline 排版不可控。
+
+- **Footer.astro**：customHtml 行移至版权行上方（对齐参考项目顺序：自定义行 → 版权行 → Powered by 收底）；`&amp;` 裸文本改 `{" & "}` 表达式（Astro HTML 压缩吃掉跨行空白导致「Astro&Orchid」紧贴）
+- **global.css Footer 段重写**：新增 `.footer-inner > * + * { margin-top: 6px }` 统一行距收口（customHtml 缺省时首行无多余上边距，删 footer-sub/footer-custom 各自 margin-top）；`.footer-custom a` 并入 `.footer-line a, .footer-sub a` 统一 accent 链接组（无下划线、hover 出下划线）；`.footer-custom` 改 `display:flex; flex-wrap:wrap; justify-content:center; gap:2px 16px`（备案号/统计等多段内容换行居中、段间距 16px）；删除主题组件未引用的死代码 `.footer-dim`（仅 design/prototype 静态原型在用）
+- **schema.ts**：footer.customHtml 注释同步「渲染在版权行上方」
+
+**验证（§4.57）**：biome 0 error（137 warnings + 6 infos 既有口径）；rebuild 成功后 curl 断言产物结构 `footer-custom（某ICP备xxxx号）→ footer-line（© 2024-2026 windcoder / RSS / Sitemap）→ footer-sub（Powered by Astro & Orchid，& 两侧空格恢复）`；内嵌浏览器 492px DOM 断言：order=[footer-custom, footer-line, footer-sub]、customMt=0px、customDisplay=flex、三行相邻 margin-top 恒 6px、custom 链接与 sub 链接同色 rgb(73,156,142)（accent）、custom 链接无下划线；Chrome headless 1440px about 页截图确认三行居中层级清晰（次/主/次字号 12.5/14/12.5px、颜色 muted/ink-2/muted）与相邻行协调。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

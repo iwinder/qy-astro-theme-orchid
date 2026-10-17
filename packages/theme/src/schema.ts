@@ -268,7 +268,7 @@ export const themeConfigSchema = z.object({
 			}),
 		)
 		.default([]),
-	/** 页脚自定义 HTML（§4.16）：备案号等，经 set:html 渲染在页脚最底部 */
+	/** 页脚自定义 HTML（§4.16→§4.57）：备案号等，经 set:html 渲染在版权行上方 */
 	footer: z
 		.object({
 			customHtml: z.string().default(""),
