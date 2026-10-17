@@ -1307,7 +1307,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - `packages/theme/src/i18n/zh-CN.ts`：l10n 注释同步（close/prevImage/nextImage 三键语义不变）
 - pnpm-lock.yaml 随动
 
-**验证（§4.69）**：biome 改动文件 0 error / 0 警告（global.css 存量基线不变）；`pnpm check` 0 errors / 0 warnings / 20 files；清 dist rebuild 成功——116 页不回退、pagefind 索引 64 页、og PNG 正常。冒烟断言全 PASS：pswp CSS 并入 `_astro/BaseLayout.*.css`（`pswp__button--close` 特征串命中）、两个动态 chunk 生成（`photoswipe-lightbox.esm.*.js` + `photoswipe.esm.*.js`，代码分割生效）、主脚本 chunk 含 `data-pswp-src` 翻译层与 `wheelToZoom` 配置、产物 HTML 含 data-lightbox 契约串、dist 全量 fancybox 残留 0。
+**验证（§4.69）**：biome 改动文件 0 error / 0 警告（global.css 存量基线不变）；`pnpm check` 0 errors / 0 warnings / 20 files；清 dist rebuild 成功——116 页不回退、pagefind 索引 64 页、og PNG 正常。冒烟断言全 PASS：pswp CSS 并入 `_astro/BaseLayout.*.css`（`pswp__button--close` 特征串命中）、两个动态 chunk 生成（`photoswipe-lightbox.esm.*.js` + `photoswipe.esm.*.js`，代码分割生效）、主脚本 chunk 含 `data-pswp-src` 翻译层与 `wheelToZoom` 配置、产物 HTML 含 data-lightbox 契约串、dist 全量 fancybox 残留 0。**运行时勘误（提交后即修，e535d41）**：dev 首点报 `PhotoSwipeLightbox is not a constructor`——`photoswipe/lightbox` 仅 default 导出（`export { PhotoSwipeLightbox as default }`），动态导入误用解构命名导出拿到 undefined；esbuild 转译不查类型故全部门禁未抓出，实读包源码后改解构 `default` 并修类型别名为 `["default"]`。教训：动态 import 的导出形态必须实读 dist 源码核实，类型别名引用不存在的命名导出在转译链路中静默通过。
 
 ## 5. 里程碑路线
 
