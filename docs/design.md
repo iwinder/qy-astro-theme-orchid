@@ -1072,6 +1072,21 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **文档补充（§4.59 后续，用户要求）**：① demo 站「主题使用指南」专题新增第 3 篇《社交图标配置：内置图标名替代手写 SVG》（site/src/content/posts/social-icons.md，seriesOrder: 3）——两种写法、20 枚内置图标清单（线性/品牌分表）、别名、未命中行为与定制提示；② packages/theme/README.md「配置参考」同步：profile 行改为「icon 填内置图标名或内联 SVG」，新增「社交图标」小节（与 live2d 详细配置同级），指明两种写法、解析规则与图文指南位置。验证：rebuild 成功，/posts/social-icons/ 渲染正常且 series-nav 当前篇高亮，/series/ 专题页含指南。
 
+### 4.60 统计/评论配置冷门字段展开为真实样板（✅ 2026-10-17 完成）
+
+用户对比参考项目 analyticsConfig/expressiveCodeConfig/plantumlConfig，疑问「我们当前配置里东西很少，正常吗？怎么实现这些细粒度配置」。
+
+**诊断结论**：
+- **能力层面早已对齐**：schema.ts 的 analytics 段与参考项目逐字段等价（umami 六字段 + replays 五子字段 sampleRate/maskLevel/maxDuration/blockSelector、la51 六字段 id/sdkUrl/ck/autoTrack/hashMode/screenRecord）；plantuml 完全等价（enabled/server/lightTheme/darkTheme）；expressiveCode 的核心参数（双主题 + 折叠 enabled/lineThreshold/previewLines/defaultCollapsed）与 codeTheme 一一同名同语义，参考项目多出的仅是「语言徽章插件」（可选后续增强）；mermaid 双主题等价；参考项目独有的是 fontConfig（Astro Font API 字体定义 + 区域选择，我们目前只有构建期子集化脚本，属新功能范畴）
+- **展示层面确有缺口**：§4.58 时冷门字段（umami.replays、twikoo/giscus 细节参数）在 site/config 里只以「注释指向 schema.ts」代替真实样板——违背「不让用户猜」原则，这就是用户觉得「东西很少」的原因
+- **样板展开的坑**：显式写键即覆盖 schema 默认，空字符串不等于「用默认」——实锤 twikoo.jsUrl：Twikoo.astro 直接渲染 `src={tw.jsUrl}` 无空值回退，样板写 `""` 会产出 `src=""`；其余展开字段核实均安全（la51.sdkUrl/ck 组件有空值回退、cssUrl 空不渲染、blockSelector 空即无额外屏蔽）
+
+**改动**（site/config 两文件，值与 schema 默认逐字段一致）：
+- **analyticsConfig.ts**：umami 展开六字段 + replays 五子字段、la51 展开六字段，全部真实键值 + 逐行注释（与参考项目 analyticsConfig 一一对应）
+- **commentConfig.ts**：twikoo 补 jsUrl（填真实默认 CDN 地址，注释标明无空值兜底）/cssUrl；giscus 补 mapping/strict/reactionsEnabled/emitMetadata/inputPosition/lang/loading 七参数
+
+**验证（§4.60）**：biome 对两文件 0 error；清 dist + rebuild 成功（配置为启动即校验，build 通过即 schema parse 通过）。结论口径：能力面与参考项目对齐（除 fontConfig/语言徽章为待议新功能），展示面经本次展开后 site/config 即「全字段可见可改」。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
