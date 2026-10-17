@@ -19,8 +19,9 @@ const live2dModelSchema = z.object({
 
 /**
  * 侧栏 widget 共享基字段（§4.51 配置统一）：各 widget 分支 extend 复用。
- * 专属参数（tags.count / friends.count+random / calendar.postTooltip）平铺进
- * 对应分支的数组项上，不再有 sidebar.friends/tags/calendar 独立参数块。
+ * 公共配置（开关/显隐/位置）配置在数组项上；组件专属参数统一收进
+ * specificConfig 入口（§4.52，对齐参考项目形态）：base 默认空对象，
+ * 有专属参数的类型分支覆写为专属形状。
  */
 const sidebarWidgetBase = z.object({
 	enabled: z.boolean().default(true),
@@ -32,6 +33,8 @@ const sidebarWidgetBase = z.object({
 	hideOnMobile: z.boolean().default(false),
 	/** 渲染分组：sticky 组包进粘性容器跟随滚动（≥768px 生效，§4.50）；默认 top 普通流式 */
 	position: z.enum(["top", "sticky"]).default("top"),
+	/** 组件专属配置入口（§4.52）：默认空对象，有专属参数的类型分支覆写为专属形状 */
+	specificConfig: z.object({}).default({}),
 });
 
 /**
@@ -413,8 +416,9 @@ export const themeConfigSchema = z.object({
 	 * 侧栏 widget 体系（P2 侧栏改造）：
 	 * - widgets 数组即渲染顺序，可自由增删/排序/开关；类型：
 	 *   announcement / categories / tags / friends / calendar / toc / siteInfo / advertisement / profile
-	 * - 开关/显隐/专属参数统一配置在数组项上（§4.51）：tags.count、friends.count/random、
-	 *   calendar.postTooltip；无独立参数块
+	 * - 公共配置（开关/显隐/位置）配置在数组项上；组件专属参数统一收进 item 的
+	 *   specificConfig 入口（§4.52，对齐参考项目）：tags.specificConfig.count、
+	 *   friends.specificConfig.count/random、calendar.specificConfig.postTooltip
 	 * - enabled=false 跳过该 widget；两个方向的显隐（对齐参考模板 showOnPostPage/hideOnNonPostPage）：
 	 *   showOnPost=false 仅列表页显示；postOnly=true 仅文章页侧栏显示（如 toc）
 	 * - hideOnMobile=true 移动端（<768px）隐藏该 widget（§4.49 移动端差异化侧栏，默认 toc/calendar 隐藏）
@@ -425,33 +429,43 @@ export const themeConfigSchema = z.object({
 		.object({
 			/** 文章详情页是否启用侧栏 */
 			onPost: z.boolean().default(false),
-			/** widget 渲染顺序 = 数组顺序；开关/显隐/专属参数统一配置在数组项上（§4.51） */
+			/** widget 渲染顺序 = 数组顺序；公共配置在数组项上，专属参数收进 specificConfig（§4.52） */
 			widgets: z
 				.array(
 					z.discriminatedUnion("type", [
 						sidebarWidgetBase.extend({ type: z.literal("announcement") }),
 						sidebarWidgetBase.extend({ type: z.literal("categories") }),
 						/**
-						 * 标签 widget：count 为展示的热门标签数量（0 = 全部展示），
+						 * 标签 widget：specificConfig.count 为展示的热门标签数量（0 = 全部展示），
 						 * 超出部分收进「…更多」入口跳转标签页（§4.48）
 						 */
 						sidebarWidgetBase.extend({
 							type: z.literal("tags"),
-							count: z.number().int().min(0).default(12),
+							specificConfig: z
+								.object({ count: z.number().int().min(0).default(12) })
+								.default({}),
 						}),
 						/**
-						 * 友链 widget：count 展示数量；random=true 构建期随机取样，
+						 * 友链 widget：specificConfig.count 展示数量；random=true 构建期随机取样，
 						 * false 则 featured 优先、其余按 weight 降序取前 count 个
 						 */
 						sidebarWidgetBase.extend({
 							type: z.literal("friends"),
-							count: z.number().int().min(1).default(3),
-							random: z.boolean().default(false),
+							specificConfig: z
+								.object({
+									count: z.number().int().min(1).default(3),
+									random: z.boolean().default(false),
+								})
+								.default({}),
 						}),
 						sidebarWidgetBase.extend({
 							type: z.literal("calendar"),
-							/** 日历下方文章列表条目悬停显示全文 title（§4.41）；默认关 */
-							postTooltip: z.boolean().default(false),
+							specificConfig: z
+								.object({
+									/** 日历下方文章列表条目悬停显示全文 title（§4.41）；默认关 */
+									postTooltip: z.boolean().default(false),
+								})
+								.default({}),
 						}),
 						sidebarWidgetBase.extend({ type: z.literal("toc") }),
 						sidebarWidgetBase.extend({ type: z.literal("siteInfo") }),

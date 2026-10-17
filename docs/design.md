@@ -953,6 +953,17 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.51）**：rebuild 后 dist 断言首页 aside 骨架不变（top 组 4 sections：profile/公告/友链/站点信息；sticky 组 3 sections：categories/tags/calendar-widget side-hide-m）；preview 4322 首页 browser 断言 topChildren=4、friends=3、tagLinks=13（12 tag + 更多入口）、calendar 存在、`.side-sticky` computed static（残留 492px 移动视口 <768 不启用，sticky CSS 未动）；文章页 features-demo topChildren=4、stickyChildren=5（categories/tags/calendar/toc + qy-calendar inline SCRIPT，toc postOnly 生效）、tocLinks=9、calendar 存在（showOnPost 默认 true）。biome 复查 4 改动文件 0 error（18 warnings 均为 .astro frontmatter noUnused* 误报，继承口径内）。
 
+### 4.52 侧栏 widget 专属参数收进 specificConfig 统一入口（✅ 2026-10-17 完成）
+
+用户看到 §4.51 平铺结果后提出方向修正：希望组件这块**有公共配置，也有统一的组件专属配置入口，和参考项目 specificConfig 一样**。对齐参考项目 orchid-blog 形态（`WidgetComponentConfig.specificConfig?: WidgetSpecificConfig`，item 级统一入口）——widget item 保留公共配置字段（enabled/showOnPost/postOnly/hideOnMobile/position），专属参数统一收进 item 的 `specificConfig` 字段。与参考项目的差异：参考项目 specificConfig 是宽松共享袋（通用键 hidden/collapseThreshold + 按类型键 calendar/ad/siteInfo 混排、全可选），本主题用 discriminatedUnion 分支保持类型安全，入口形态对齐。
+
+- **schema.ts**：`sidebarWidgetBase` 增加 `specificConfig: z.object({}).default({})`（统一入口，默认空对象，无参分支继承即用）；tags/friends/calendar 三分支 extend 覆写 specificConfig 为专属形状——tags `specificConfig: z.object({ count: int≥0 default 12 }).default({})`、friends `specificConfig: z.object({ count: int≥1 default 3, random: default false }).default({})`、calendar `specificConfig: z.object({ postTooltip: default false }).default({})`（内层 `.default({})` 使 `specificConfig` 整体缺省合法，内层参数再各自带 default）；`ThemeConfig`（z.input）下 site 侧 specificConfig 可整体缺省由 default 填充；sidebar JSDoc 的 §4.51 平铺描述 bullet 更新为 specificConfig 形态；widgets 两个 `.default([...])` 数组不含参数键，不动
+- **Sidebar.astro**：三处消费点改读 specificConfig——tags `tagWidget.specificConfig.count`（守卫式窄化不变）、friends if 内 `const sc = fw.specificConfig` 后读 `sc.random`/`sc.count`、calendar 模板 `postTooltip={w.specificConfig.postTooltip}`（短路窄化不变）；相关注释 §4.51 平铺措辞更新
+- **site/config/sidebarConfig.ts**：tags/friends/calendar 三项参数收进 specificConfig（`{ type: "tags", enabled: true, position: "sticky", specificConfig: { count: 12 } }` 等）；保留显式写法作 demo 示范（缺省亦合法）；顶部注释 §4.51 措辞更新为「公共配置在数组项上，专属参数统一收进 specificConfig 入口」
+- **文档**：README 配置表 `sidebar.widgets` 行类型补 `specificConfig?`、说明改为「公共配置配在数组项上，专属参数统一收进 specificConfig 入口（§4.52）」，tags/friends/calendar 三行参数路径改 `specificConfig.count` / `specificConfig.count`+`specificConfig.random` / `specificConfig.postTooltip`；Calendar.astro L9 JSDoc 措辞同步；§4.51 属历史留痕不改
+
+**验证（§4.52）**：rebuild 后 dist 断言首页 aside 骨架与 §4.51 基线一致（top 4 sections、sticky 3 sections + qy-calendar inline SCRIPT、tagLinks 13、友链卡 3 条、calendar 存在）；preview 4322 首页 top=4/sticky 3 sections/tags 13/友链 3 条（青青山不改·拾拾光者·码农手记）/calendar 2 命中，文章页 features-demo top=4、sticky 4 sections（categories/tags/calendar-widget/toc-widget，toc 仅文章页）、tocLinks=9，均与 §4.51 基线一致。biome 复查 4 改动文件：1 format error（site 配置 tags/friends 行超长），`--write` 修复后 0 error（18 warnings 继承口径内）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

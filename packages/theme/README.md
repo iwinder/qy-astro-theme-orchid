@@ -117,10 +117,10 @@ site/
 | `archive.fold` | `boolean` | `false` | 归档页按年折叠（最新一年默认展开） |
 | `outdated.enabled` / `outdated.threshold` | `boolean` / `number` | `true` / `30` | 文章过时提醒与阈值（天，按最后更新时间计算） |
 | `sidebar.onPost` | `boolean` | `false` | 文章详情页是否启用侧栏 |
-| `sidebar.widgets` | `{type, enabled?, showOnPost?, postOnly?, hideOnMobile?, position?, ...专属参数}[]` | 公告/分类/标签/友链/日历/TOC/站点信息/广告 | widget 顺序即渲染顺序，开关/显隐/专属参数均配在数组项上（§4.51）。类型：`announcement` `categories` `tags` `friends` `calendar` `toc` `siteInfo` `advertisement` `profile`；`showOnPost: false` 仅列表页显示，`postOnly: true` 仅文章页显示，`hideOnMobile: true` 移动端隐藏，`position: "sticky"` ≥768px 跟随滚动 |
-| `sidebar.widgets` tags 项 `.count` | `number` | `12` | 展示的热门标签数量（0 = 全部展示），超出收进「…更多」入口 |
-| `sidebar.widgets` friends 项 `.count` / `.random` | `number` / `boolean` | `3` / `false` | 友链展示数量；`random: true` 构建期随机取样 |
-| `sidebar.widgets` calendar 项 `.postTooltip` | `boolean` | `false` | `true` 时日历下方文章列表条目悬停显示全文 title |
+| `sidebar.widgets` | `{type, enabled?, showOnPost?, postOnly?, hideOnMobile?, position?, specificConfig?}[]` | 公告/分类/标签/友链/日历/TOC/站点信息/广告 | widget 顺序即渲染顺序，公共配置（开关/显隐/位置）配在数组项上，专属参数统一收进 `specificConfig` 入口（§4.52）。类型：`announcement` `categories` `tags` `friends` `calendar` `toc` `siteInfo` `advertisement` `profile`；`showOnPost: false` 仅列表页显示，`postOnly: true` 仅文章页显示，`hideOnMobile: true` 移动端隐藏，`position: "sticky"` ≥768px 跟随滚动 |
+| `sidebar.widgets` tags 项 `specificConfig.count` | `number` | `12` | 展示的热门标签数量（0 = 全部展示），超出收进「…更多」入口 |
+| `sidebar.widgets` friends 项 `specificConfig.count` / `specificConfig.random` | `number` / `boolean` | `3` / `false` | 友链展示数量；`random: true` 构建期随机取样 |
+| `sidebar.widgets` calendar 项 `specificConfig.postTooltip` | `boolean` | `false` | `true` 时日历下方文章列表条目悬停显示全文 title |
 | `announcement` | `{title, content, link{text,url,external}, closable}` | content 空 | 侧栏公告卡；`content` 留空整卡不渲染 |
 | `advertisement` | `{enabled, title, image, imageLink, imageAlt, content, link{text,url,external}, closable, displayCount, expireDate?}` | `enabled: false` | 侧栏广告位；`displayCount` 按 localStorage 计数限次（-1 不限），`expireDate` 过期不渲染 |
 | `profile` | `{avatar, name, bio, url, links[{name,url,icon,showName}]}` | 全空 | 侧栏个人资料卡（`sidebar.widgets` 含 `profile` 时渲染）；icon 为内联 SVG 字符串 |
