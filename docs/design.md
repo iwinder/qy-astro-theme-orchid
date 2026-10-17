@@ -1144,6 +1144,23 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.63）**：biome 0 error（190 warnings 均存量）；清 dist rebuild 成功（Pagefind 63 页正常索引）。产物断言：`sitemap-index.xml`（→ sitemap-0.xml）+ `sitemap-0.xml` 生成，独立页（/about/ 等）与中文标签/分类百分号编码收录、无 /og/ 与 /api/ 条目、`sitemap.xml` 不再生成；robots.txt 指向 sitemap-index.xml；rss.xml 官方结构 + `xmlns:atom` + atom:link self + `<language>zh-CN</language>` + 尾斜杠链接；Footer 链接已随更。
 
+### 4.64 响应式图像：启用 Astro 原生 image.layout（✅ 2026-10-17 完成）
+
+**背景**：参考站 astro.config 设 `image: { layout: "constrained" }`（Astro 5.10+ 稳定的响应式图像能力），Markdown 本地图自动产出 srcset/sizes/宽高占位。主题此前未配置，md 本地图片仅单尺寸输出。用户拍板：标准化能力优先采用。
+
+**前置验证（决定方案可行性，均有源码依据）**：
+- **自定义 processor 不影响图像管线**：`@astrojs/markdown-remark@7.3.2` 的 `createMarkdownProcessor` 内部**无条件装配** `remarkCollectImages`（L60，接收 `opts.image`）与 `rehypeImages`（L79）；astro 侧 `content-layer.js` L88-90 将顶层 `image` 配置经 `processor.createRenderer({ image, ... })` 传入，主题所用 `unified({...})` processor 以 `{ ...shared }` 全量透传——`image.layout` 传导链闭合
+- **生效点**：构建期仅做路径收集与占位标记（`__ASTRO_IMAGE_`），真正的多尺寸变体与 srcset/sizes 由图像服务在 `getImage` 时按 layout 产出（constrained：限宽 + 默认断点 640/750/828/1080/1280/1600/2048/2560 按源图宽过滤）
+- **插件顺序兼容**：用户 rehype 插件先于 `rehypeImages` 执行——`rehypeFigure`（figure 包裹）看到的是普通 img，`rehypeFirstImage` 拿到原始 src，均不受影响；`rehypeImages` 全树 visit 仍能命中 figure 内的 img
+- **schema**：`image.layout ∈ constrained | fixed | full-width | none`，**默认无值（不启用）**；`responsiveStyles` 默认 false
+
+**改动**（packages/theme/src/index.ts，两处）：
+- `astro:config:setup` hook 解构增 `config: astroConfig`（重命名避免与主题 userConfig 冲突）
+- 首个 updateConfig 后追加：`if (!astroConfig.image.layout) updateConfig({ image: { layout: "constrained" } })`——仅在站点未显式配置时注入主题默认，不覆盖用户选择；constrained 与参考站一致
+- **不加 `responsiveStyles`**：主题 global.css 已有全局 `img { display: block; max-width: 100% }` + `.prose figure img { width: 100% }`，配合产出的 width/height 属性（UA 自动推导 aspect-ratio 防布局跳动），无需官方注入样式；与参考站口径相同
+
+**验证（§4.64）**：造临时文章引用本地图（1600×900 jpg，`./相对路径`）清 dist rebuild 成功。产物断言：文章页 img 带 `srcset` 6 档（640/750/828/1080/1280/1600w）+ `sizes` + `loading="lazy"` + `decoding="async"` + `width/height` + `data-astro-image="constrained"`；`_astro/` 下产出 6 个 webp 尺寸变体；独立段落单图仍被 `<figure data-lightbox>` 包裹且 title 落入 `<figcaption>`；行内图同走管线。验证后临时样本已删，biome 0 error 过门禁。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

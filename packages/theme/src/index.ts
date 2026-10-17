@@ -77,7 +77,11 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 	const core: AstroIntegration = {
 		name: PKG_NAME,
 		hooks: {
-			"astro:config:setup": ({ injectRoute, updateConfig }) => {
+			"astro:config:setup": ({
+				config: astroConfig,
+				injectRoute,
+				updateConfig,
+			}) => {
 				// remark：阅读时长/字数 + 自动摘要（渲染期写入 remarkPluginFrontmatter）
 				// LaTeX（b4）：remark-math 识别公式 → rehype-katex 构建期渲染（无客户端运行时）
 				// Mermaid/PlantUML（b4）：remark 标记代码块 → rehype 构建期产出（静态 SVG / 外链 img）
@@ -246,10 +250,21 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 					},
 					markdown: {
 						processor: unified({ remarkPlugins, rehypePlugins }),
-						// 关掉 Astro 原生 shiki：高亮由 EC 独占（原生 shiki 先于用户 rehype 插件执行）
+						// 关掉 Astro 原生 shiki：高亮由 EC 独占（原生 shiki 先于用户
+						// rehype 插件执行）
 						syntaxHighlight: false,
 					},
 				});
+				// 响应式图像（§4.64）：顶层 image.layout 经 content-layer 传给
+				// processor.createRenderer({ image })，unified processor 以
+				// { ...shared } 全量透传进 createMarkdownProcessor（图像插件
+				// remarkCollectImages/rehypeImages 由其内部无条件装配），最终运行期
+				// 图像服务按 layout 为 md 本地图片产出 srcset/sizes。
+				// constrained 与参考站一致：限宽缩放 + 默认断点多尺寸变体；
+				// 仅在站点未显式配置 image.layout 时注入，不覆盖用户选择
+				if (!astroConfig.image.layout) {
+					updateConfig({ image: { layout: "constrained" } });
+				}
 
 				const routes: [pattern: string, file: string][] = [
 					["/", "index.astro"],
