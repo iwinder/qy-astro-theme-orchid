@@ -21,7 +21,17 @@ interface Props {
 
 const { path, enabled = true, title } = Astro.props;
 const c = config.comment;
-const active = enabled && c.enabled && c.provider !== "none";
+// 配置边界校验（§4.62）：provider 启用但对应后端地址/仓库信息为空（schema 默认空串）时
+// 不挂载评论区——空 server 会让 SDK 向站点同源发请求并报错
+const providerReady =
+	(c.provider === "artalk" && c.artalk.server.trim() !== "") ||
+	(c.provider === "twikoo" && c.twikoo.envId.trim() !== "") ||
+	(c.provider === "waline" && c.waline.serverURL.trim() !== "") ||
+	(c.provider === "giscus" &&
+		c.giscus.repo.trim() !== "" &&
+		c.giscus.repoId.trim() !== "") ||
+	(c.provider === "disqus" && c.disqus.shortname.trim() !== "");
+const active = enabled && c.enabled && c.provider !== "none" && providerReady;
 ---
 
 {

@@ -2076,6 +2076,117 @@ html.dark .prose blockquote {
 /* 代码块（§4.61 起由 Expressive Code 接管）：EC 自带完整样式（useStyleReset
    all:revert 防站点样式干扰）与复制/折叠/行号交互，双主题选择器为
    html.dark / html:not(.dark)，随 codeTheme 配置内联进首个代码块输出 */
+/* 折叠插件样式修复（§4.62）：EC 内联插件 baseStyles 时统一加 .expressive-code
+   祖先前缀，而 expressive-code-collapsible 把折叠按钮/渐隐层/内容包装渲染在
+   figure.expressive-code 之外（.ec-collapse 直下），前缀选择器永不命中——按钮失去
+   absolute 定位与命中区域，真实点击无法展开。此处按插件原语义补不带前缀的等价规则；
+   渐隐底色与 codeTheme 双主题（github-light/github-dark）默认代码底色一致，换色需同步 */
+.ec-collapse {
+	position: relative;
+	--ec-collapse-bg-color: #fff;
+	--ec-collapse-accent-color: var(--accent);
+}
+html.dark .ec-collapse {
+	--ec-collapse-bg-color: #24292e;
+}
+.ec-collapse__content {
+	position: relative;
+}
+.ec-collapse.ec-collapse--collapsed .ec-collapse__content {
+	max-height: var(--ec-collapse-preview-height, 280px);
+	overflow: hidden;
+}
+.ec-collapse.ec-collapse--expanded .ec-collapse__content {
+	max-height: none;
+}
+.ec-collapse__gradient {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 80px;
+	background: linear-gradient(
+		to bottom,
+		transparent 0%,
+		var(--ec-collapse-bg-color) 100%
+	);
+	pointer-events: none;
+	opacity: 1;
+	transition: opacity 0.3s ease;
+	z-index: 10;
+}
+.ec-collapse.ec-collapse--expanded .ec-collapse__gradient {
+	opacity: 0;
+	pointer-events: none;
+}
+.ec-collapse__toggle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	margin: 0 auto;
+	padding: 6px 16px;
+	background-color: rgba(0, 0, 0, 0.05);
+	border: 1px solid rgba(0, 0, 0, 0.15);
+	border-radius: 20px;
+	color: var(--ec-collapse-accent-color);
+	font-size: 0.85rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition:
+		background-color 0.2s ease,
+		border-color 0.2s ease;
+}
+.ec-collapse.ec-collapse--collapsed .ec-collapse__toggle {
+	position: absolute;
+	bottom: 12px;
+	left: 50%;
+	transform: translateX(-50%);
+	z-index: 20;
+	margin: 0;
+}
+.ec-collapse.ec-collapse--expanded .ec-collapse__toggle {
+	position: relative;
+	margin: 12px auto;
+}
+.ec-collapse__toggle:hover {
+	background-color: rgba(0, 0, 0, 0.08);
+	border-color: rgba(0, 0, 0, 0.25);
+}
+html.dark .ec-collapse__toggle {
+	background-color: rgba(255, 255, 255, 0.1);
+	border-color: rgba(255, 255, 255, 0.2);
+}
+html.dark .ec-collapse__toggle:hover {
+	background-color: rgba(255, 255, 255, 0.15);
+	border-color: rgba(255, 255, 255, 0.3);
+}
+.ec-collapse__toggle:focus-visible {
+	outline: 2px solid var(--ec-collapse-accent-color);
+	outline-offset: 2px;
+}
+.ec-collapse__icon {
+	transition: transform 0.3s ease;
+}
+.ec-collapse.ec-collapse--expanded .ec-collapse__icon {
+	transform: rotate(180deg);
+}
+.ec-collapse__text-collapse {
+	display: none;
+}
+.ec-collapse.ec-collapse--expanded .ec-collapse__text-expand {
+	display: none;
+}
+.ec-collapse.ec-collapse--expanded .ec-collapse__text-collapse {
+	display: inline;
+}
+@media (prefers-reduced-motion: reduce) {
+	.ec-collapse__gradient,
+	.ec-collapse__toggle,
+	.ec-collapse__icon {
+		transition: none;
+	}
+}
 /* 宽表滚动容器化（§4.13）：display:block + overflow-x:auto，多列宽表窄屏内滚不撑破页面 */
 .prose table {
 	display: block;

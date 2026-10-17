@@ -1109,6 +1109,21 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.61）**：biome 0 error（仅存量 warnings）；清 dist + rebuild 成功（Pagefind 正常）。产物断言：hello-world/theme-override 两页 `div.expressive-code` 包裹 + `figcaption.header` + 复制按钮（class="copy"）在场、行号结构（ec-line）在场；`html:not(.dark)`/`html.dark` 双主题选择器内联样式在场；hello-world 16 行代码块（> lineThreshold 15）自动折叠生效——`ec-collapse__toggle` aria-expanded="false"（defaultCollapsed）+ 「展开代码/收起代码」resolveLabel 本地化文案 + `ec-collapse__gradient` 渐隐层；features-demo `katex-display` 4 处直接落 .prose 无 code-block 包装；全站 HTML 0 处 `.code-block` 残留。
 
+### 4.62 折叠按钮真实点击失效 + demo 占位评论服务报错修复（✅ 2026-10-17 完成）
+
+**背景**：构建产物页报 `GET https://artalk.example.com/api/v2/conf net::ERR_CONNECTION_RESET` + Uncaught Failed to fetch；代码折叠后真实点击「展开代码」无反应（合成 `btn.click()` 正常，监听器在，问题出在命中区域）。
+
+**根因 1（折叠点击失效）**：EC 内联插件 baseStyles 输出时统一加 `.expressive-code` 祖先前缀，而 expressive-code-collapsible v0.1.0 把主折叠按钮/渐隐层/内容包装渲染在 `figure.expressive-code` **之外**（`.ec-collapse` 直下）→ 所有带前缀的插件样式永不命中 → 折叠按钮失去 absolute 定位与命中区域，真实点击落空；header-toggle 在 figcaption 内（figure 之内）不受影响。
+
+**根因 2（占位域名请求报错）**：demo 配置 `comment.enabled: true` + provider artalk + 占位 server，构建产物对占位域名发真实请求必然失败——是 demo 默认值设计问题，非代码 bug。
+
+**改动**：
+- **packages/theme/src/styles/global.css**（核心修复，§4.62 注释块约 105 行）：按插件 dist baseStyles 原语义补**不带前缀**的 `.ec-collapse` 样式组——wrapper relative + 双主题渐隐底色变量（亮 `#fff` / 暗 `#24292e`，与 codeTheme github-light/github-dark 默认代码底色一致，换色需同步）；`__content` collapsed 态 `max-height: var(--ec-collapse-preview-height)`（插件运行时注入 previewLines×行高）+ expanded 态 none；`__gradient` absolute 渐隐层（expanded 时 opacity 0）；`__toggle` collapsed 态 absolute 底部居中（z-20）/ expanded 态 relative 流内，flex + 胶囊样式 + 双主题 hover + focus-visible + `__icon` 旋转 + expand/collapse 文本按态切换 display；`prefers-reduced-motion` 关过渡
+- **packages/theme/src/components/Comment.astro**（配置边界校验）：新增 `providerReady`——provider 对应后端地址/仓库信息为空串（schema 默认值）时不挂载评论区；`active = enabled && c.enabled && provider !== "none" && providerReady`，防占位/空配置下的无效 SDK 请求
+- **site/config/commentConfig.ts**：demo 默认 `comment.enabled: false`（保留用户手改入库），头注释说明占位地址原因与接入方法
+
+**验证（§4.62）**：biome 0 error（仅存量 warnings）；清 dist rebuild 115 页成功；新 dist hello-world artalk 上下文匹配 **20 → 0**（评论区不挂载）。浏览器回归（4173 静态服 + 内嵌浏览器真实点击）：控制台 0 报错、network 无 artalk 请求、无 `#artalk` 元素；折叠按钮 computed `position: absolute / bottom: 12px / z-index: 20`、几何 110×33 居中可命中；真实点击展开 → `--expanded` + aria-expanded=true + content max-height none（scrollH==clientH）+ gradient opacity 0；再点收起完整还原（collapsed / aria false / max-height 192px / gradient 1）。无 schema 变更，README 不动。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

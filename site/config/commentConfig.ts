@@ -3,10 +3,11 @@ import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 // 评论系统（§4.11 五套全支持；§4.58 全量展示，§4.60 冷门字段展开为真实样板）：
 // provider 切换 artalk / twikoo / waline / giscus / disqus / none，仅 provider 对应的
 // 分支参与渲染（其余分支留占位演示值无副作用）；文章 frontmatter comment: false 可按篇关闭。
-// 演示站各后端均为占位地址，接入真实站点时替换成自己的 server/envId/shortname。
+// 演示站各后端均为占位地址（构建产物会对占位域名发真实请求报错），故默认 enabled: false；
+// 接入真实站点时替换成自己的 server/envId/shortname 并置 enabled: true。
 // title 为评论区标题；全部字段与默认值均展示于此，不需要的键可删除（主题 schema 自动兜底）。
 export const commentConfig: ThemeConfig["comment"] = {
-	enabled: true,
+	enabled: false,
 	provider: "artalk",
 	title: "评论",
 	artalk: {
