@@ -146,7 +146,7 @@ function initPalette() {
    容器内仅 1 img 天然独组，组容器内多个 img 同组——无需组名计数器。PhotoSwipe v5 内置
    键盘/滑动/箭头/计数/关闭，wheelToZoom 对齐桌面滚轮缩放；pswp core 经 pswpModule 动态
    加载，保持代码分割。点击须落在 img 上（children 只匹配后代，figure 空白处不触发）。 */
-type PswpLightbox = typeof import("photoswipe/lightbox")["PhotoSwipeLightbox"];
+type PswpLightbox = typeof import("photoswipe/lightbox")["default"];
 let pswpLightbox: PswpLightbox | null = null;
 const LB_SELECTOR = "[data-lightbox], [data-lightbox-group]";
 
@@ -171,7 +171,8 @@ async function initLightbox() {
 	pswpLightbox?.destroy();
 	pswpLightbox = null;
 	prepLightbox();
-	const { PhotoSwipeLightbox } = await import("photoswipe/lightbox");
+	/* photoswipe/lightbox 仅 default 导出（export { PhotoSwipeLightbox as default }），解构命名导出会拿到 undefined */
+	const { default: PhotoSwipeLightbox } = await import("photoswipe/lightbox");
 	pswpLightbox = new PhotoSwipeLightbox({
 		gallery: LB_SELECTOR,
 		children: "img",
