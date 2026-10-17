@@ -124,7 +124,18 @@ site/
 | `sidebar.widgets` calendar 项 `specificConfig.postTooltip` | `boolean` | `false` | `true` 时日历下方文章列表条目悬停显示全文 title |
 | `announcement` | `{title, content, link{text,url,external}, closable}` | content 空 | 侧栏公告卡；`content` 留空整卡不渲染 |
 | `advertisement` | `{enabled, title, image, imageLink, imageAlt, content, link{text,url,external}, closable, displayCount, expireDate?}` | `enabled: false` | 侧栏广告位；`displayCount` 按 localStorage 计数限次（-1 不限），`expireDate` 过期不渲染 |
-| `profile` | `{avatar, name, bio, url, links[{name,url,icon,showName}]}` | 全空 | 侧栏个人资料卡（`sidebar.widgets` 含 `profile` 时渲染）；icon 为内联 SVG 字符串 |
+| `profile` | `{avatar, name, bio, url, links[{name,url,icon,showName}]}` | 全空 | 侧栏个人资料卡（`sidebar.widgets` 含 `profile` 时渲染）；`icon` 填内置图标名或内联 SVG，见「社交图标」 |
+
+#### 社交图标
+
+`profile.links[].icon` 两种写法：**内置图标名**（推荐，构建期查表内联渲染，无运行时请求与 JS 开销）或**内联 SVG 字符串**（以 `<` 开头，向后兼容）。名字 trim + 转小写后解析，未命中跳过图标只渲染文字，不报错。品牌图标 `fill: currentColor`、线性图标 `stroke: currentColor`，颜色随文字继承。
+
+内置图标 20 枚（主题包 `src/icons.ts`）：
+
+- 线性描边（lucide 风格 stroke 1.75）：`github` `email` `rss`
+- 品牌填充（simple-icons CC0 / mdi Apache-2.0）：`qq` `wechat`（别名 `weixin`） `weibo` `bilibili` `xiaohongshu` `x`（别名 `twitter`） `telegram` `youtube` `instagram` `linkedin` `discord` `steam` `zhihu` `gitee` `juejin` `csdn` `douyin`
+
+图文示例见 demo 站「主题使用指南」专题的《社交图标配置》一文。
 
 ### 写作增强
 

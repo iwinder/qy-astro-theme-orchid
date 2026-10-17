@@ -17,3 +17,4 @@ _tmp_*
 site/src/content/posts/*
 !site/src/content/posts/hello-world.md
 !site/src/content/posts/theme-override.md
+!site/src/content/posts/social-icons.md

@@ -1070,6 +1070,8 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.59）**：biome 对改动范围 0 error（import 排序自动修复）；清 dist + rebuild 成功（Pagefind 正常）；产物 index.html 断言：profile-links 内 8 个链接（GitHub/QQ/微信/微博/哔哩哔哩/小红书/邮箱/RSS）× 8 个 svg，品牌图标 10 处 `fill="currentColor"`（5 枚品牌 = 外壳 + path 各 5），stroke 图标 `stroke-width="1.75"` 在场（线性三枚正常）；CSS `.profile-link-icon svg` 百分比宽高约束对 fill/stroke 两种外壳均生效。
 
+**文档补充（§4.59 后续，用户要求）**：① demo 站「主题使用指南」专题新增第 3 篇《社交图标配置：内置图标名替代手写 SVG》（site/src/content/posts/social-icons.md，seriesOrder: 3）——两种写法、20 枚内置图标清单（线性/品牌分表）、别名、未命中行为与定制提示；② packages/theme/README.md「配置参考」同步：profile 行改为「icon 填内置图标名或内联 SVG」，新增「社交图标」小节（与 live2d 详细配置同级），指明两种写法、解析规则与图文指南位置。验证：rebuild 成功，/posts/social-icons/ 渲染正常且 series-nav 当前篇高亮，/series/ 专题页含指南。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
