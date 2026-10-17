@@ -1002,6 +1002,20 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.55）**：rebuild（113 页，pagefind Indexed 62 pages / 8047 words）后双路验证。静态断言 24 项全 PASS（HTML 无 list-head/recentPosts、postList data-default-layout、Header 内 #layoutSwitch、pagefind-entry.json、CSS 各规则含压缩产物形态）。preview 4322 浏览器实测（内嵌面板 492px + Chrome headless 1440px 截图）：hasLayoutSwitch/inHeaderActions=true、noListHead/recentTitleGone=true、defaultLayout=list、profile-avatarW 411/section 445（全宽）+ nameAlign/profileLinksCenter=center；#layoutSwitch 点击→postList grid-mode + aria-pressed=true + --col-w=320px，再点还原；搜索实测 #searchPop 打开、输入 "Astro" 防抖后 #searchResults 渲染 3 条结果条目；492px 视口下 coverBeforeBody=true（封面上文字下）、置顶与普通带封面卡同高 455px（无封面卡 211px 属正常差异）；1440px 截图确认分页 `‹ 1 2 3 … 7 ›` 箭头与页码同为方块等大、置顶卡封面左置带 16px 间距、普通卡封面右置同构、资料卡大头像居中形态对齐参考项目。biome 复查：唯一 error 为继承遗留 global.css:83 noDuplicateProperties（口径内放行）。
 
+### 4.56 置顶卡文字区对齐普通卡 + global.css:83 修复 + 搜索内联导航栏首位（✅ 2026-10-17 完成）
+
+用户提出三点：① 置顶文章右侧的文字部分应与非置顶文章保持一致；② 修复 global.css:83 的报错；③ 导航栏右上角搜索放第一位、其他按钮放其后，搜索文本框直接放导航栏（参考 orchid-blog 实现效果）。
+
+- **置顶卡文字区对齐普通卡（①）**：根因是 §4.55 封面左置改造时 `.post-body` padding 未镜像——写成了 `28px calc(30% + 32px) 28px 32px`（右侧按「封面在右」的方式留白，左侧仅 32px 而封面实际占左 30% + 16px），导致文字区与封面重叠/间距异常。修复为 `28px 32px 28px calc(30% + 32px)`（左留 = 封面 30% + 左偏 16px + 图文间隙 16px，右留 32px 常规边距），注释同步改写。置顶卡与普通卡自此完全镜像（PostCard.astro 模板本就同构，差异纯 CSS）
+- **global.css:83 修复（②）**：html 段 `overflow-x: hidden`（旧浏览器回退行）与 `overflow-x: clip` 双写触发 biome noDuplicateProperties（§4.55 唯一遗留 error）。删除 hidden 回退行仅保留 clip（clip 不产生滚动容器、不影响 sticky 定位），注释同步更新为「§4.13→§4.56」。biome 首次全量 0 error（136 warnings + 6 infos 为既有口径）
+- **搜索内联导航栏首位（③，对齐 orchid-blog Search.svelte 双形态）**：
+  - **Header.astro**：header-actions 重排为 search-wrap（第一）→ layoutSwitch → palette-wrap → modeToggle → navToggle；search-wrap 内双形态——桌面 `.nav-search` 内联框（svg 放大镜 icon + `#searchInput` type=search），移动端退化 `.nav-search-toggle` icon 按钮（`#searchToggle`，aria-expanded）+ `.search-pop` 浮层（`.search-bar` 内 `#searchInputM` + `#searchResults`）
+  - **global.css**：新增 `.nav-search` 段（height 38px / padding 0 12px / border-radius 10px / bg-soft 底、icon 16px、input width 150px→focus 220px 过渡、placeholder muted、隐藏 webkit-search-cancel-button）；`.nav-search-toggle` 默认 display:none、`.search-bar` 默认 display:none（桌面浮层内不显示输入框）；`<640px` 三行切换（nav-search 隐 / nav-search-toggle 显 / search-bar flex）
+  - **app.ts**：`openSearch`（Ctrl+K / `/`）优先聚焦内联框（offsetParent 判可见），不可见才开浮层聚焦 searchInputM；`runSearch` 有词即 `pop.hidden=false`（桌面内联输入即自动弹结果浮层，空词收起）；`closeSearch` 双输入框一并清空；click 委托 searchToggle 聚焦 searchInputM、input 委托同时监听 `#searchInput`/`#searchInputM`（共用 300ms 防抖 + pagefind 查询路径）
+  - **pagefind 无需改动**：site/pagefind.yml 已排除 .search-pop，新内联框 input 无文本内容不进索引
+
+**验证（§4.56）**：biome `check src packages` 0 error（新增 useOptionalChain warning 2 条与既有口径一致不修）；rebuild 成功（pagefind 索引正常）；4322 preview（上会话进程存活直接复用，curl 确认产物含 nav-search/nav-search-toggle/searchInputM）。桌面 Chrome headless 1440px 截图确认内联搜索框在 actions 第一位（后跟视图切换/调色/月亮）、置顶卡「你好，清言集」封面左置文字区间隔正常与普通卡一致。内嵌浏览器 492px DOM 断言全过：navSearchHidden=true、searchToggle/navToggle/modeToggle/layoutSwitch 均 visible、header-actions firstChildClass=search-wrap、searchPop 初始 hidden、searchInputM 存在；a11y 树顺序「搜索 → 切换列表/网格视图 → 调色 → 切换深浅模式 → 菜单」。移动端交互链路：点击 searchToggle → popHidden=false + search-bar display:flex + activeElement=searchInputM + aria-expanded=true；输入 "Astro" 防抖后 resultsHidden=false + itemCount=3（第一条「你好，清言集」）。桌面输入即搜与移动共用 runSearch 同一代码路径。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

@@ -435,8 +435,11 @@ function closeSearch() {
 		pop.hidden = true;
 		doc.getElementById("searchToggle")?.setAttribute("aria-expanded", "false");
 	}
-	const input = doc.getElementById("searchInput") as HTMLInputElement | null;
-	if (input) input.value = "";
+	/* §4.56 双输入框：桌面内联 + 移动端浮层内，关闭时一并清空 */
+	for (const id of ["searchInput", "searchInputM"]) {
+		const input = doc.getElementById(id) as HTMLInputElement | null;
+		if (input) input.value = "";
+	}
 	const box = doc.getElementById("searchResults");
 	if (box) {
 		box.hidden = true;
@@ -444,25 +447,34 @@ function closeSearch() {
 	}
 }
 
-/* 打开搜索浮层（§4.12 快捷键用；已开则不重复聚焦） */
+/* 打开搜索（§4.12 快捷键用）：桌面聚焦内联框（输入即出结果浮层）；
+   内联框不可见（<640px 移动形态）时打开浮层并聚焦浮层内输入框 */
 function openSearch() {
+	const inline = doc.getElementById("searchInput") as HTMLInputElement | null;
+	if (inline && inline.offsetParent) {
+		inline.focus();
+		return;
+	}
 	const pop = doc.getElementById("searchPop");
 	if (!pop || !pop.hidden) return;
 	pop.hidden = false;
 	doc.getElementById("searchToggle")?.setAttribute("aria-expanded", "true");
-	(doc.getElementById("searchInput") as HTMLInputElement | null)?.focus();
+	(doc.getElementById("searchInputM") as HTMLInputElement | null)?.focus();
 }
 
-/* 输入 → 300ms 防抖查询；searchSeq 丢弃过期响应 */
+/* 输入 → 300ms 防抖查询；searchSeq 丢弃过期响应；§4.56 有词即弹出结果浮层 */
 function runSearch(keyword: string) {
 	const seq = ++searchSeq;
 	const box = doc.getElementById("searchResults");
-	if (!box) return;
+	const pop = doc.getElementById("searchPop");
+	if (!box || !pop) return;
 	if (!keyword) {
+		pop.hidden = true;
 		box.hidden = true;
 		box.replaceChildren();
 		return;
 	}
+	pop.hidden = false;
 	setSearchHint(ui("searchLoading"));
 	window.setTimeout(async () => {
 		if (seq !== searchSeq) return;
@@ -613,7 +625,7 @@ doc.addEventListener("click", (e) => {
 		if (pop && !pop.hidden) closeSearch();
 	}
 
-	/* 搜索浮层开关 */
+	/* 搜索浮层开关（§4.56 移动端 icon 按钮；桌面内联框输入即搜，无开关） */
 	if (target.closest("#searchToggle")) {
 		const pop = doc.getElementById("searchPop");
 		if (pop) {
@@ -622,7 +634,9 @@ doc.addEventListener("click", (e) => {
 				.getElementById("searchToggle")
 				?.setAttribute("aria-expanded", pop.hidden ? "false" : "true");
 			if (!pop.hidden) {
-				(doc.getElementById("searchInput") as HTMLInputElement | null)?.focus();
+				(
+					doc.getElementById("searchInputM") as HTMLInputElement | null
+				)?.focus();
 			}
 		}
 		return;
@@ -844,7 +858,7 @@ doc.addEventListener("input", (e) => {
 		const h = parseFloat((el as HTMLInputElement).value);
 		if (Number.isFinite(h)) applyHue(h);
 	}
-	if (el && el.id === "searchInput") {
+	if (el && (el.id === "searchInput" || el.id === "searchInputM")) {
 		runSearch((el as HTMLInputElement).value.trim());
 	}
 });

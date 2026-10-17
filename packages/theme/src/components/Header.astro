@@ -77,6 +77,27 @@ const presetHues = [0, 30, 60, 100, 140, 170, 210, 250, 290, 330];
     </nav>
     <div class="header-actions">
       {
+        /* 搜索（§4.56）：置于 actions 首位，其余按钮跟在其后；对齐参考项目形态——
+           桌面为导航栏内联搜索框（输入即搜），移动端退化为 icon 按钮 + 浮层（含输入框）；
+           索引由构建期 pagefind 生成，dev 下降级提示 */
+      }
+      <div class="search-wrap">
+        <div class="nav-search" title={t('searchShortcut')}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          <input id="searchInput" type="search" placeholder={t('search')} autocomplete="off" enterkeyhint="search" aria-label={t('search')} />
+        </div>
+        <button class="icon-btn nav-search-toggle" id="searchToggle" type="button" aria-label={t('search')} aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
+        <div class="search-pop" id="searchPop" hidden>
+          <div class="search-bar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input id="searchInputM" type="search" placeholder={t('search')} autocomplete="off" enterkeyhint="search" aria-label={t('search')} />
+          </div>
+          <div class="search-results" id="searchResults" hidden></div>
+        </div>
+      </div>
+      {
         /* 列表形态切换（§4.34→§4.55）：allowSwitch 控制；仅首页/列表页显示（CSS data-page 显隐） */
       }
       {config.postList.allowSwitch && (
@@ -92,21 +113,6 @@ const presetHues = [0, 30, 60, 100, 140, 170, 210, 250, 290, 330];
           <svg class="ic-grid" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
         </button>
       )}
-      {
-        /* 搜索（M3b-b6）：按钮 + 浮层，桌面/移动统一；索引由构建期 pagefind 生成，dev 下降级提示 */
-      }
-      <div class="search-wrap">
-        <button class="icon-btn" id="searchToggle" type="button" aria-label={t('search')} title={t('searchShortcut')} aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-        </button>
-        <div class="search-pop" id="searchPop" hidden>
-          <div class="search-bar">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            <input id="searchInput" type="search" placeholder={t('search')} autocomplete="off" enterkeyhint="search" />
-          </div>
-          <div class="search-results" id="searchResults" hidden></div>
-        </div>
-      </div>
       {
         hueEnabled && (
           <div class="palette-wrap">

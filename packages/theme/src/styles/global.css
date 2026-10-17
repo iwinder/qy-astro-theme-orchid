@@ -78,8 +78,8 @@ html.dark {
 html {
 	-webkit-text-size-adjust: 100%;
 	scroll-behavior: smooth;
-	/* 移动端横向滚动兜底（§4.13）：hidden 为旧浏览器回退，clip 不产生滚动容器、不影响 sticky */
-	overflow-x: hidden;
+	/* 移动端横向滚动兜底（§4.13→§4.56）：clip 不产生滚动容器、不影响 sticky；
+	   旧浏览器回退行（overflow-x: hidden 双写）移除以通过 biome noDuplicateProperties */
 	overflow-x: clip;
 }
 body {
@@ -514,9 +514,55 @@ html.dark #modeToggle .i-sun {
 	background: var(--accent-soft);
 }
 
-/* 搜索浮层（M3b-b6）：Pagefind 构建期索引 + 导航栏即时搜索 */
+/* 搜索（M3b-b6→§4.56）：导航栏内联搜索框 + 结果浮层（对齐参考项目 Navbar 形态） */
 .search-wrap {
 	position: relative;
+}
+/* 桌面内联搜索框：icon + input，输入即搜，focus 扩宽 */
+.nav-search {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	height: 38px;
+	padding: 0 12px;
+	border-radius: 10px;
+	background: var(--bg-soft);
+	color: var(--muted);
+	transition:
+		background-color 0.15s,
+		color 0.15s;
+}
+.nav-search:hover,
+.nav-search:focus-within {
+	color: var(--ink-2);
+}
+.nav-search svg {
+	width: 16px;
+	height: 16px;
+	flex: none;
+}
+.nav-search input {
+	width: 150px;
+	border: none;
+	outline: none;
+	background: transparent;
+	font: inherit;
+	font-size: 14px;
+	color: var(--ink);
+	transition: width 0.2s;
+}
+.nav-search input:focus {
+	width: 220px;
+}
+.nav-search input::placeholder {
+	color: var(--muted);
+}
+.nav-search input::-webkit-search-cancel-button {
+	-webkit-appearance: none;
+}
+/* 移动端 icon 按钮：<640px 替代内联框（对齐参考项目移动端形态） */
+.nav-search-toggle {
+	display: none;
 }
 .search-pop {
 	position: absolute;
@@ -531,8 +577,9 @@ html.dark #modeToggle .i-sun {
 	box-shadow: var(--shadow-md);
 	overflow: hidden;
 }
+/* 浮层内输入框仅移动端显示（桌面输入在内联框中完成） */
 .search-bar {
-	display: flex;
+	display: none;
 	align-items: center;
 	gap: 8px;
 	padding: 10px 14px;
@@ -937,8 +984,8 @@ html.dark .post-enter {
 		flex-direction: column;
 		justify-content: center;
 		min-height: 196px;
-		/* 左留：封面 30% + 左偏 16px + 图文间隙 16px */
-		padding: 28px calc(30% + 32px) 28px 32px;
+		/* 左留：封面 30% + 左偏 16px + 图文间隙 16px；右留 32px 常规边距（§4.56 镜像普通卡） */
+		padding: 28px 32px 28px calc(30% + 32px);
 	}
 }
 .post-card.text-only .post-cover {
@@ -3807,6 +3854,16 @@ html.dark .friend-card:hover .friend-name {
 	.back-top {
 		right: 16px;
 		bottom: 20px;
+	}
+	/* 搜索移动端形态（§4.56）：内联框退化为 icon 按钮，浮层内含输入框 */
+	.nav-search {
+		display: none;
+	}
+	.nav-search-toggle {
+		display: inline-flex;
+	}
+	.search-bar {
+		display: flex;
 	}
 	/* 搜索浮层移动端：fixed 贴边铺开 */
 	.search-pop {
