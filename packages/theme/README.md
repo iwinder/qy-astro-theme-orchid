@@ -51,15 +51,44 @@ const posts = defineCollection({
 export const collections = { posts };
 ```
 
+#### 可选：启用 MDX
+
+MDX 是站点能力选择：是否写 `.mdx` 文章由站点决定。主题渲染管线与其天然兼容——
+`@astrojs/mdx` 默认继承站点 `markdown` 配置，主题注册的自定义 unified processor
+（KaTeX / Mermaid / PlantUML / directives / Expressive Code）原样作用于 `.mdx`，无需任何额外接线。
+
+```sh
+pnpm add @astrojs/mdx
+```
+
+```ts
+// astro.config.ts
+import mdx from "@astrojs/mdx";
+
+export default defineConfig({
+	integrations: [mdx(), orchidTheme(themeConfig)],
+});
+```
+
+集合 loader 同步扩展为 `"**/*.{md,mdx}"`。正文可直接 `import` 并渲染 Astro 组件
+（组件是站点直接依赖，如 `astro-icon` 需在站点 `package.json` 声明）。
+
+> 已知上游坑（§4.67）：`hast-util-to-estree@3.1.3` 依赖的 `style-to-js@1.0.0`
+> 纯 CJS（`exports.default` 形态），ESM 默认导入得到对象而非函数，MDX 编译带
+> style 属性的节点（EC/katex 输出）报 `styleToJs is not a function`。在
+> `pnpm-workspace.yaml` 的 `overrides` 加 `style-to-js: ^1.1.16` 即可
+> （1.1.x 起修正 `module.exports` 互操作）。
+
 ### 4. 站点结构约定
 
 ```text
 site/
 ├── astro.config.ts          # 接入主题（见上）
 ├── config/                  # 配置按模块拆分（推荐做法，也可直接内联）
-├── src/content/posts/       # 文章（.md）
+├── src/content/posts/       # 文章（.md；启用 MDX 后 .mdx 一并收录）
 ├── src/content/spec/        # 独立页内容：about.md / friends.md / guestbook.md
 ├── src/overrides/           # 组件覆盖（路径镜像主题，见「定制与覆盖」）
+├── scripts/new-post.mjs     # 写作辅助：pnpm new-post <标题>[.md|.mdx]（demo 站）
 └── public/                  # 静态资源（音乐/壁纸/画廊/模型等）
 ```
 
@@ -273,6 +302,7 @@ docs/design.md   设计与实现记录（§ 编号推进，含踩坑与验证口
 pnpm install
 pnpm --filter site dev     # 本地开发
 pnpm --filter site build   # 构建
+pnpm --filter site new-post "文章标题"   # 生成 frontmatter 骨架到 site/src/content/posts/（.mdx 后缀可显式指定）
 ```
 
 > 注意：改动主题渲染管线（rehype/remark 插件）后构建前需清除 content layer 渲染缓存：`rm -rf site/node_modules/.astro`。

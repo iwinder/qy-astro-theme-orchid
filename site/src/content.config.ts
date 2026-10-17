@@ -6,7 +6,8 @@ import { z } from "astro/zod";
 // 文章集合 schema 由主题提供（definePostSchema 工厂），
 // 站点可在 extend 中追加自己的 frontmatter 字段，主题升级不会丢站点字段。
 const posts = defineCollection({
-	loader: glob({ pattern: "**/*.md", base: "./src/content/posts" }),
+	// §4.67：站点接入 @astrojs/mdx 后，posts 同时收 .md 与 .mdx。
+	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/posts" }),
 	schema: definePostSchema(),
 });
 

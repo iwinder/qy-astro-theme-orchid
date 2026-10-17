@@ -1211,6 +1211,32 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.66）**：biome 0 error（5 改动文件 + 全仓 106 文件复扫，仅存量 2 warnings）；清 dist rebuild 成功（115 页，fontsource 构建期拉取 Inter 无超时）。产物断言全 PASS：①`dist/_astro/fonts/` 产出 Inter woff2 文件；②head 内 3 条 `<link rel="preload" as="font">`；③`<style>` 产出 `@font-face{font-family:Inter-d35c32c9bc0917d1;...font-display:swap;unicode-range:latin}`（含 size-adjust 优化 fallback 面）；④变量链路完整——`--font-inter:Inter-d35c32c9bc0917d1,"…fallback: Arial","…fallback: Arial Bold",sans-serif` → `html:root{--font-body:var(--font-inter),-apple-system,"PingFang SC","Segoe UI","Microsoft YaHei",sans-serif}`，全站 body 经 `var(--font-body)` 生效。
 
+### 4.67 MDX 集成与写作辅助：站点能力选择（@astrojs/mdx + new-post）（✅ 2026-10-17 完成）
+
+**背景**：参考站接入 @astrojs/mdx ^7.0.2（integrations 首位），posts 同时收 .md/.mdx，并有 scripts/new-post.js 写作辅助脚本（59 行：argv 校验 → 扩展名补全 → 查重 → mkdir → frontmatter 骨架）。主题仓库此前无 MDX 能力、无 new-post。延续 §4.65 口径：优先标准化方案。
+
+**方案**：MDX 定位为**站点能力选择**，不是主题配置面——是否写 .mdx 文章由站点决定，主题只保证兼容性：demo 站 `integrations: [mdx(), orchidTheme(themeConfig)]`、posts loader 扩为 `**/*.{md,mdx}`、新增 `pnpm new-post` 脚本，并提供一篇端到端演示文章（.mdx 正文直接 import Astro 组件 + JSX 表达式 + 公式 + 代码高亮）证明主题自定义 unified processor 全链路原样生效。
+
+**前置验证**：读 @astrojs/mdx 8 源码确认其默认继承站点 `markdown` 配置（「Never replace a configured processor」），主题在 `astro:config:setup` 注册的自定义 unified processor（KaTeX/Mermaid/directives/EC 全家桶）无需任何接线即可作用于 .mdx。
+
+**设计决策**：
+- **站点能力非主题配置面**：不新增 `themeConfig.mdx.*` 之类开关——MDX 的启用路径（装依赖 + 加 integration）本就是官方标准形态，再包一层只会偏离上游；README 以「可选：启用 MDX」子节给出三行接入示例
+- **style-to-js 互操作坑用 pnpm overrides 修**（标准修法而非 pin 版本）：hast-util-to-estree@3.1.3 以 ESM 默认导入 `style-to-js`，其锁定的 1.0.0 纯 CJS（`exports["default"]` 形态），MDX 编译任何带 style 属性的节点（EC/katex 输出必带）报 `styleToJs is not a function`；1.1.x 起修正 `module.exports = StyleToJS` 互操作。**pnpm v11 关键变更**：package.json 的 `pnpm` 字段不再被读取，overrides 新家在 pnpm-workspace.yaml（与既有 katex 等 override 并列），变更后需 `pnpm install --no-frozen-lockfile`
+- **组件依赖归属站点**：pnpm 严格隔离下，demo 文章正文直接 `import { Icon } from "astro-icon/components"` 的组件必须由 site 自己声明依赖（astro-icon 原为 theme 包依赖，site 解析不到）——「站点正文直接 import 的组件 = 站点直接依赖」是标准归属规则
+- **new-post 骨架对齐 definePostSchema**：frontmatter 骨架（title/published/description/image/tags/category/draft/lang）取 schema.ts 必填常用字段；小优化：标题用 `parse(slug).name` 去掉扩展名（参考实现会带 .md 后缀）；无扩展名默认 .md、显式 `.mdx` 可写 MDX 文章
+- **演示文章走 gitignore 白名单策略**：mdx-demo.mdx 同 features-demo 等本地验证文件，不入库（posts 白名单仅三篇既有 demo）
+
+**改动**：
+- `site/astro.config.ts`：integrations 首位加 `mdx()`（附定位注释）
+- `site/src/content.config.ts`：posts loader 扩为 `**/*.{md,mdx}`（spec 集合保持 .md 不动，最小变更）
+- `site/package.json`：dependencies 增 `@astrojs/mdx` ^8.1.0、`astro-icon` ^1.2.0；scripts 增 `new-post`
+- `site/scripts/new-post.mjs`：新建写作辅助脚本
+- `site/src/content/posts/mdx-demo.mdx`：本地验证文章（gitignored）
+- `pnpm-workspace.yaml`：overrides 追加 `style-to-js: ^1.1.16`（pnpm-lock.yaml 随动）
+- 文档同步：`packages/theme/README.md` 三处——新增「可选：启用 MDX」子节（定位 + 接入示例 + 上游坑 blockquote）、站点结构树补 `.mdx` 收录与 `scripts/new-post.mjs`、开发命令块补 `pnpm new-post`
+
+**验证（§4.67）**：biome 0 error（4 改动文件）；new-post 冒烟通过（`temp-smoke` 与 `temp-smoke.mdx` 双路径生成骨架正确、title 去扩展名，验证后清理）；清 dist rebuild 期间定位并修复三个构建期错误（style-to-js 互操作 / pnpm v11 设置新家 / astro-icon 依赖归属）后成功——`116 page(s) built in 9.26s`，pagefind 索引 64 页。产物断言 6+1 项全 PASS：`dist/posts/mdx-demo/index.html` 生成、astro-icon 真实渲染（`<svg width="20" height="20" viewBox="0 0 24 24" data-icon="lucide:sparkles">`）、EC 代码高亮（expressive-code/ec-line）、KaTeX 公式、JSX 表达式（2026 与 42）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
