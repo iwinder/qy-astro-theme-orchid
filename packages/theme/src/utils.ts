@@ -117,16 +117,6 @@ export function collectCategories<T extends PostLike>(
 	return new Map([...map.entries()].sort((a, b) => b[1].length - a[1].length));
 }
 
-/** XML/RSS 文本转义 */
-export function xmlEscape(str: string): string {
-	return str
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;")
-		.replace(/'/g, "&apos;");
-}
-
 /** 计算整站已发布文章总字数（站点信息卡「共 N 字」用） */
 export function countTotalWords(posts: PostLike[]): number {
 	return posts.reduce((sum, p) => sum + (p.data.words ?? 0), 0);

@@ -1124,6 +1124,26 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.62）**：biome 0 error（仅存量 warnings）；清 dist rebuild 115 页成功；新 dist hello-world artalk 上下文匹配 **20 → 0**（评论区不挂载）。浏览器回归（4173 静态服 + 内嵌浏览器真实点击）：控制台 0 报错、network 无 artalk 请求、无 `#artalk` 元素；折叠按钮 computed `position: absolute / bottom: 12px / z-index: 20`、几何 110×33 居中可命中；真实点击展开 → `--expanded` + aria-expanded=true + content max-height none（scrollH==clientH）+ gradient opacity 0；再点收起完整还原（collapsed / aria false / max-height 192px / gradient 1）。无 schema 变更，README 不动。
 
+### 4.63 RSS / Sitemap 官方化 + trailingSlash 统一（✅ 2026-10-17 完成）
+
+**背景**：标准能力审计（§4.63 前置）确认 RSS 与 Sitemap 均为手写 XML 生成路由，偏离 Astro 官方标准方案（@astrojs/rss / @astrojs/sitemap）；参考站同样使用官方集成。用户拍板：标准化推荐的一律优先采用。另参考站 `trailingSlash: "always"` 与 vite 构建优化块值得对齐评估。
+
+**前置验证（决定方案走向）**：
+- **vite 8 现实**：Astro 7 所用 vite 为 8.3.4（rolldown 内核）。参考站 vite.build 块属 vite 5 时代写法——`build.esbuildOptions` 在 vite 8 类型中**不存在**（死配置，参考站静默失效）；`esbuild` 仅为 vite 的**可选 peer**（默认不安装，grep .pnpm 无 esbuild@），`cssMinify: "esbuild"` / `minify: "esbuild"` 会因解析不到 esbuild 包**直接构建失败**（实测复现）。而 JS 压缩（oxc）、CSS 压缩（lightningcss）、`cssCodeSplit: true`、`assetsInlineLimit: 4096` 在 vite 8 **均已是默认值**。结论：不引 esbuild 依赖、不设 esbuild 专属项，vite 8 默认即优化态（代码注释留档）
+- **@astrojs/rss 4.0.19**：`trailingSlash` / `customData` / `xmlns` 选项在位；**v4 不再自动生成 atom:link self**，需 `xmlns: {atom}` + customData 手动补齐（对齐原手写版行为）
+- **@astrojs/sitemap 3.7.4**：`filter?(page: string): boolean` 签名确认；`lastmod` 为整站单一日期（不支持按页），原手写版按文章 updated/published 的 per-page lastmod 属**标准替代的可接受损失**
+
+**改动**：
+- **依赖**（packages/theme）：+@astrojs/rss ^4.0.19、+@astrojs/sitemap ^3.7.3（锁文件解析至 sitemap 3.7.4）
+- **index.ts**：`defineTheme` 返回值 `AstroIntegration` → **`AstroIntegration[]`**（核心 integration + `sitemap({filter})`；Astro 对 integrations 配置中嵌套数组自动展平，site 侧 `integrations: [orchidTheme(cfg)]` 写法不变）；updateConfig 增 `trailingSlash: "always"`（主题路由全按尾斜杠组织，dev/prod 口径统一）；路由表删 `["/sitemap.xml", "sitemap.xml.ts"]`
+- **rss.xml.ts**：以 @astrojs/rss 重写（channel 头/XML 转义/guid isPermaLink 归官方库；`xmlns: {atom}` + customData 补 `<language>` 与 atom:link self；`trailingSlash: true` 与站点口径一致；仍取非草稿前 20 篇、description 摘要版）
+- **sitemap.xml.ts 删除**：手写 urlset 路由退役，由官方 integration 在 astro:build:done 扫描全部预渲染页面产出 `sitemap-index.xml` + 分片；filter 排除 `/og/`（分享图）与 `/api/`（JSON 端点），关闭的独立页路由根本不注入无需过滤
+- **robots.txt.ts**：`Sitemap:` 指向改 `sitemap-index.xml`
+- **Footer.astro**：页脚 Sitemap 链接同步改 `/sitemap-index.xml`
+- **utils.ts**：`xmlEscape` 随手写 XML 生成一并退役删除（rss 官方化后无使用点）
+
+**验证（§4.63）**：biome 0 error（190 warnings 均存量）；清 dist rebuild 成功（Pagefind 63 页正常索引）。产物断言：`sitemap-index.xml`（→ sitemap-0.xml）+ `sitemap-0.xml` 生成，独立页（/about/ 等）与中文标签/分类百分号编码收录、无 /og/ 与 /api/ 条目、`sitemap.xml` 不再生成；robots.txt 指向 sitemap-index.xml；rss.xml 官方结构 + `xmlns:atom` + atom:link self + `<language>zh-CN</language>` + 尾斜杠链接；Footer 链接已随更。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

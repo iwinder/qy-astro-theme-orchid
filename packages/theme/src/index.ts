@@ -4,6 +4,9 @@
 // 元组；绝不能 push 已调用的 transformer（如 remarkMermaid()），否则 unified freeze
 // 时会把它当 attacher 二次调用（tree=undefined）导致渲染崩溃，详见下方装配区注释
 import { unified } from "@astrojs/markdown-remark";
+// RSS / Sitemap（§4.63，Astro 生态标准方案）：不再手写 XML 生成路由，
+// sitemap 以 integration 形式挂载（由 defineTheme 一并返回），rss 仍走端点路由
+import sitemap from "@astrojs/sitemap";
 import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections";
 import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers";
 import tailwindcss from "@tailwindcss/vite";
@@ -57,17 +60,21 @@ export const PKG_NAME = "@windcoder/astro-theme-orchid";
 /**
  * 主题入口：以 Astro Integration 形式接入站点
  *
- * - injectRoute：注入主题路由（首页 / 文章页），entrypoint 指向包内文件，站点无需复制任何页面
- * - updateConfig：注入 Tailwind v4 Vite 插件 + 虚拟模块（config）+ overrides 解析
- * - injectTypes（astro:config:done）：为虚拟模块提供类型声明
+ * 返回 integration 数组（Astro 对 integrations 配置里的嵌套数组自动展平，
+ * 站点侧仍写 integrations: [defineTheme(cfg)] 即可）：
+ * - 核心 integration：injectRoute 注入主题路由（首页 / 文章页），entrypoint 指向
+ *   包内文件，站点无需复制任何页面；updateConfig 注入 Tailwind v4 Vite 插件 +
+ *   虚拟模块（config）+ overrides 解析；injectTypes（astro:config:done）为虚拟模块提供类型声明
+ * - @astrojs/sitemap：官方 sitemap（构建末尾产出 sitemap-index.xml + 分片），
+ *   替代原手写 /sitemap.xml 路由
  *
  * 升级主题 = 升级本包版本号；站点定制走 src/overrides/ 同名覆盖，不会被升级覆盖。
  */
-export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
+export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 	// 启动即校验配置，配置错误在 dev/build 一开始就报出来
 	const config = themeConfigSchema.parse(userConfig);
 
-	return {
+	const core: AstroIntegration = {
 		name: PKG_NAME,
 		hooks: {
 			"astro:config:setup": ({ injectRoute, updateConfig }) => {
@@ -226,8 +233,16 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 					},
 				]);
 				updateConfig({
+					// 主题路由全部按尾斜杠组织（如 /posts/xxx/），统一强制，dev 与 prod 行为一致
+					trailingSlash: "always",
 					vite: {
 						plugins: [tailwindcss()],
+						// 构建优化说明（§4.63）：参考站的 vite.build 块（minify:"esbuild"、
+						// esbuildOptions、cssMinify:"esbuild" 等）是 vite 5 时代写法——Astro 7
+						// 所用 vite 8（rolldown）里 esbuild 仅为可选 peer（默认不装），
+						// esbuildOptions 已是死配置、cssMinify:"esbuild" 会直接构建失败；
+						// 而 JS 压缩（oxc）、CSS 压缩（lightningcss）、cssCodeSplit(true)、
+						// assetsInlineLimit(4096) 在 vite 8 均已是默认值，无需重复设置
 					},
 					markdown: {
 						processor: unified({ remarkPlugins, rehypePlugins }),
@@ -245,8 +260,9 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 					["/categories", "categories/index.astro"],
 					["/categories/[category]", "categories/[category].astro"],
 					["/posts/[...slug]", "posts/[...slug].astro"],
+					// sitemap（§4.63）：改由官方 @astrojs/sitemap integration 产出
+					// sitemap-index.xml，原手写 /sitemap.xml 路由移除
 					["/rss.xml", "rss.xml.ts"],
-					["/sitemap.xml", "sitemap.xml.ts"],
 					["/robots.txt", "robots.txt.ts"],
 					["/404", "404.astro"],
 				];
@@ -315,6 +331,22 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration {
 			},
 		},
 	};
+
+	// sitemap（§4.63）：官方 integration 在 astro:build:done 统一扫描全部预渲染页面
+	// 产出 sitemap-index.xml + 分片。filter 排除非内容端点：
+	//   - /og/：文章分享图（二进制图片，不该进 sitemap）
+	//   - /api/：随机文章数据端点（JSON）
+	// 关闭的独立页路由根本不注入，无需在此过滤
+	const integrations: AstroIntegration[] = [
+		core,
+		sitemap({
+			filter: (page) => {
+				const { pathname } = new URL(page);
+				return !pathname.startsWith("/og/") && !pathname.startsWith("/api/");
+			},
+		}),
+	];
+	return integrations;
 }
 
 export default defineTheme;
