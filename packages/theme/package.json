@@ -44,6 +44,7 @@
 		"@astrojs/sitemap": "^3.7.3",
 		"@expressive-code/plugin-collapsible-sections": "^0.44.2",
 		"@expressive-code/plugin-line-numbers": "^0.44.2",
+		"@fancyapps/ui": "^6.1.14",
 		"@tailwindcss/vite": "^4.3.2",
 		"astro-icon": "^1.2.0",
 		"beautiful-mermaid": "^1.1.3",

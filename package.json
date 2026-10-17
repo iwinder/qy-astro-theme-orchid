@@ -6,10 +6,12 @@
 	"packageManager": "pnpm@11.10.0",
 	"description": "@windcoder/astro-theme-orchid 主题包与示例站点的 monorepo",
 	"scripts": {
+		"preinstall": "npx only-allow pnpm",
 		"dev": "pnpm --filter site dev",
 		"build": "pnpm --filter site build",
 		"preview": "pnpm --filter site preview",
 		"sync": "pnpm --filter site sync",
+		"check": "pnpm --filter site check",
 		"lint": "biome check .",
 		"format": "biome check --write .",
 		"test": "node --test packages/theme/scripts/subset-fonts.test.mjs"

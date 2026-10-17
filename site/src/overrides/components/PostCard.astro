@@ -5,7 +5,7 @@
 // 文件内 import 同一虚拟路径时拿到的是包内默认实现，可直接包装复用。
 // 注意：Props 需要透传主题默认实现的全部入参（post/featured），否则功能会静默丢失。
 import DefaultCard from "virtual:theme/components/PostCard.astro";
-import type { CollectionEntry } from "astro";
+import type { CollectionEntry } from "astro:content";
 
 interface Props {
 	post: CollectionEntry<"posts">;

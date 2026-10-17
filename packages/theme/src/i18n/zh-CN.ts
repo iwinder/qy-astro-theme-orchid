@@ -122,8 +122,7 @@ const zhCN = {
 	passwordPlaceholder: "请输入密码",
 	passwordSubmit: "解锁",
 	passwordError: "密码错误，请重试。",
-	/* 客户端动态文案（构建期经 BaseLayout 的 #qy-ui-labels JSON 载体带入） */
-	lightbox: "图片查看",
+	/* 客户端动态文案（构建期经 BaseLayout 的 #qy-ui-labels JSON 载体带入；close/prevImage/nextImage 供 Fancybox l10n，§4.68） */
 	close: "关闭",
 	prevImage: "上一张",
 	nextImage: "下一张",

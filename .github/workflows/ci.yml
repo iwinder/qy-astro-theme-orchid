@@ -57,6 +57,9 @@ jobs:
       - name: Test（node:test 内置运行器，字体子集化脚本）
         run: pnpm test
 
+      - name: Type check（astro check）
+        run: pnpm check
+
       - name: Generate LQIP data
         run: pnpm --filter site lqip
 

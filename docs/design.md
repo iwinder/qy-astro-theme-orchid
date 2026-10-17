@@ -1237,6 +1237,47 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.67）**：biome 0 error（4 改动文件）；new-post 冒烟通过（`temp-smoke` 与 `temp-smoke.mdx` 双路径生成骨架正确、title 去扩展名，验证后清理）；清 dist rebuild 期间定位并修复三个构建期错误（style-to-js 互操作 / pnpm v11 设置新家 / astro-icon 依赖归属）后成功——`116 page(s) built in 9.26s`，pagefind 索引 64 页。产物断言 6+1 项全 PASS：`dist/posts/mdx-demo/index.html` 生成、astro-icon 真实渲染（`<svg width="20" height="20" viewBox="0 0 24 24" data-icon="lucide:sparkles">`）、EC 代码高亮（expressive-code/ec-line）、KaTeX 公式、JSX 表达式（2026 与 42）。
 
+### 4.68 灯箱引擎标准化与工程化门禁补齐：Fancybox 迁移 + astro check + only-allow（✅ 2026-10-17 完成）
+
+**背景**：§4.65-§4.67 标准化批次后例行审计（「检查是否已实现所有推荐的标准开发能力」），发现 3 项工程化缺口与 1 处自研点：① 无类型检查门禁（参考站有 `astro check`）；② root 无包管理器强制（参考站有 `preinstall: npx only-allow pnpm`）；③ site 声明的 satori/sharp 疑似残留（site 源码无直接 import）；④ 灯箱为自研 QyLightbox（参考站用 @fancyapps/ui）。用户拍板「补齐 3 项并迁移灯箱」。
+
+**方案**：灯箱**公共 API 不变、只换引擎**——`data-lightbox`（单图）/ `data-lightbox-group`+`data-lightbox-item`（组浏览）属性面保持，app.ts 内部改用 Fancybox 静态委托 API；三项工程化按参考站标准形态补齐。
+
+**前置验证**（@fancyapps/ui 6.1.15 源码核实，theme node_modules 实读）：
+- 静态 API 齐全：`bind`（4 重载，以 container+selector 为键覆盖注册、天然幂等）、`unbind`（须传 selector string——参考站的 `unbind(document.body)` 因重载语义实为 no-op）、`close/destroy/getInstance/show`
+- **v6 移除了 v5 的顶层 Thumbs/Toolbar/Panzoom 选项**——参考站 options 大部分静默失效；v6 中它们是 Carousel 子选项且默认启用（Toolbar 默认含 counter/toggleFull/autoplay/fullscreen/thumbs/close；Thumbs minCount:2、少于 2 张自动隐藏；Arrows 默认启用）
+- keyboard 默认值够用（Escape/Backspace 关闭、方向键与 PageUp/Down 翻页）；groupAttr 默认 `data-fancybox`；dragToClose/theme 有合理默认
+- `fromNodes` 读图源顺序 `dataset.src || href || currentSrc || src` → 主题产物为 figure 包 img（无 href），须绑前设 `data-src`；alt 自动读内层 img
+- **v6 核心无 caption 机制**（Sidebar 插件负责但未从包根导出，需深路径 import）
+- 包无 exports 字段 → `@fancyapps/ui/dist/fancybox/fancybox.css` 深路径 import 可用（参考站同款）
+
+**设计决策**：
+- **公共 API 不变**：rehypeFigure / 文章封面的 `data-lightbox`、PhotoCard 与 gallery 的组属性面不动，站点与文档无需感知引擎更换
+- **prepLightbox 翻译层**：绑前把主题属性翻译为 Fancybox 约定（`data-fancybox` 组名 + `data-src` 大图地址）；单图给独立组名 `qy-solo-N` 保持「点单图只看单图」原行为，组内统一 `qy-group-N`
+- **v6 零配置 + 仅接 l10n**：不照抄参考站已失效的 options；`l10n: { CLOSE/PREV/NEXT }` 复用既有 i18n 键（close/prevImage/nextImage），UI_FALLBACK 与 `#qy-ui-labels` 载体删 `lightbox` 键
+- **动态 import + 静态 CSS**：JS 走 `await import("@fancyapps/ui")` 代码分割（无灯箱的页面不加载），CSS 走 BaseLayout 深路径 import——与参考站同款分工
+- **放弃 caption**：v6 核心无 caption，Sidebar 需深路径 import 且参考站本就 caption:false；原 QyLightbox 显示 alt 标题的行为随之移除，差异记录在案
+- **VT 生命周期**：Fancybox 实例/容器挂在 body 上 → `astro:after-swap` 时 `Fancybox.destroy()`；`astro:page-load` 的 initPage → initLightbox 在新 body 重建（bind 幂等可安全重复）
+- **解密注入重绑**：加密相册解密后 showDecrypted → initLightbox() 重新预置新元素属性，Fancybox 委托自动拾取
+- **astro check 门禁**：site devDeps 加 `@astrojs/check` + `typescript`（对齐参考站版本），site scripts、root scripts（`pnpm --filter site check`）、CI 各加一步
+- **root preinstall only-allow**：`npx only-allow pnpm` 一行强制包管理器
+- **审计修正：satori/sharp 非 site 残留**——清依赖后构建实证 `/og/*.png` prerender 报 `ERR_MODULE_NOT_FOUND: sharp`：主题 OG 路由被打进 site 的 prerender 产物且 sharp 被 Vite 外部化，pnpm 严格隔离下运行时从 site/dist 向上解析必须在 site 声明。恢复声明并与 theme 版本对齐（sharp ^0.35.5 / satori ^0.47.1）。「构建产物引用的原生依赖 = 站点直接依赖」，与 §4.67 组件归属规则同源
+
+**改动**：
+- `packages/theme/package.json`：dependencies 增 `@fancyapps/ui` ^6.1.14
+- `packages/theme/src/scripts/app.ts`：QyLightbox 自研实现整体退役（初始化模块约 85 行 + 点击委托灯箱分支 + keydown 灯箱分支）重写为 prepLightbox/initLightbox；keydown 灯箱判断 → `Fancybox?.getInstance()`；新增 after-swap destroy 钩子
+- `packages/theme/src/components/BaseLayout.astro`：import fancybox.css；UI 载体删 lightbox 键
+- `packages/theme/src/i18n/en.ts` / `zh-CN.ts`：删 lightbox 键（close/prevImage/nextImage 保留转供 Fancybox l10n）
+- `packages/theme/src/styles/global.css`：删 .lightbox/.lb-* 样式块约 74 行，留注释指向 fancybox.css
+- `packages/theme/src/components/PhotoCard.astro`：头注释同步
+- `site/package.json`：devDeps 增 @astrojs/check ^0.9.9 / typescript ^6.0.3、scripts 增 check；dependencies 恢复 satori/sharp（版本对齐 theme）
+- 根 `package.json`：scripts 增 preinstall（only-allow pnpm）/ check
+- `.github/workflows/ci.yml`：Test 步骤后加 Type check（`pnpm check`）
+- `site/src/overrides/components/PostCard.astro`：`CollectionEntry` 导入源修正 `astro` → `astro:content`（astro check 首跑抓出的存量类型错误）
+- pnpm-lock.yaml 随动
+
+**验证（§4.68）**：biome 全量 0 error（改动文件 0 新警告；global.css 警告为存量基线 90 → 89 净减 1）；`pnpm check`（astro check 首跑）0 errors / 0 warnings / 20 files；清 dist rebuild 成功——116 页不回退、pagefind 索引 64 页、og PNG 正常。冒烟断言全 PASS：fancybox CSS 并入 `_astro/BaseLayout.*.css`、Fancybox 动态 chunk 生成（代码分割生效）、产物 HTML 含 data-lightbox 与 data-fancybox 契约串。遗留：expressive-code-language-badge 的 peer 版本错位警告为存量问题（与本次无关）。**许可提示**：@fancyapps/ui 为 GPL-3.0-or-later / 商业授权双许可，主题 npm 包依赖引入后，不开源使用主题的下游站点需自行评估购买商业授权。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

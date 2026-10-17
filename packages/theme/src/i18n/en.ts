@@ -107,7 +107,6 @@ const en: Record<UiKey, string> = {
 	passwordPlaceholder: "Enter password",
 	passwordSubmit: "Unlock",
 	passwordError: "Wrong password, please try again.",
-	lightbox: "Image viewer",
 	close: "Close",
 	prevImage: "Previous image",
 	nextImage: "Next image",

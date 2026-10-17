@@ -1,7 +1,7 @@
 /* 清言集 · Theme Orchid — 全局交互脚本
    移植自 design/prototype/app.js（冻结），改造为 View Transitions 兼容版：
    - document/window 级一次性委托监听（VT 换页不失联）
-   - astro:page-load 时重初始化页面级状态（nav active / reveal / TOC spy / 灯箱 DOM / 调色面板）
+   - astro:page-load 时重初始化页面级状态（nav active / reveal / TOC spy / 灯箱 Fancybox / 调色面板）
    - astro:after-swap 时重应用暗色 class 与持久化 hue（VT swap 会替换 <html> 属性）
    - 搜索浮层（M3b-b6）：Pagefind 构建期索引，运行时惰性加载
    - 加密文章（M3b-b7）：Web Crypto 解密 + sessionStorage 密码缓存 */
@@ -30,10 +30,14 @@ function applyPreferredDark() {
 }
 applyPreferredDark();
 doc.addEventListener("astro:after-swap", applyPreferredDark);
+/* 灯箱（§4.68）：Fancybox 实例/容器挂在旧 body 上，VT swap 后立即销毁；
+   新 body 的委托绑定由 astro:page-load 的 initPage → initLightbox 重建 */
+doc.addEventListener("astro:after-swap", () => {
+	Fancybox?.destroy();
+});
 
 /* ---------- 客户端动态文案（构建期经 BaseLayout #qy-ui-labels 注入，读一次缓存） ---------- */
 const UI_FALLBACK: Record<string, string> = {
-	lightbox: "图片查看",
 	close: "关闭",
 	prevImage: "上一张",
 	nextImage: "下一张",
@@ -133,91 +137,56 @@ function initPalette() {
 	syncPaletteUI(currentHue());
 }
 
-/* ---------- 通用灯箱（QyLightbox，DOM 动态创建，VT 换页后惰性重建） ---------- */
-interface LbItem {
-	src: string;
-	cap: string;
+/* ---------- 通用灯箱（Fancybox，§4.68，标准化迁移） ---------- */
+/* 主题公共 API 保持 data-lightbox（单图）与 data-lightbox-group/data-lightbox-item（组浏览）；
+   绑定前把属性翻译为 Fancybox 约定：data-fancybox 组名 + data-src 大图地址（rehypeFigure 与
+   文章封面产物均为 figure 包 img，无 href）。Fancybox v6 依赖默认值即可：keyboard/拖拽关闭/
+   Toolbar/Thumbs(≥2 张)/箭头均已内置。单图给独立组名以保持「点击单图只看单图」的原行为。 */
+type FancyboxAPI = typeof import("@fancyapps/ui")["Fancybox"];
+let Fancybox: FancyboxAPI | null = null;
+const LB_SELECTOR = "[data-lightbox], [data-lightbox-item]";
+
+function prepLightbox() {
+	let n = 0;
+	const toFancy = (el: HTMLElement, group: string) => {
+		const img =
+			el.tagName === "IMG" ? (el as HTMLImageElement) : el.querySelector("img");
+		if (!img) return;
+		el.setAttribute("data-fancybox", group);
+		el.setAttribute("data-src", img.currentSrc || img.src);
+	};
+	doc.querySelectorAll<HTMLElement>("[data-lightbox]").forEach((el) => {
+		if (el.closest("[data-lightbox-group]")) return;
+		toFancy(el, `qy-solo-${n++}`);
+	});
+	doc
+		.querySelectorAll<HTMLElement>("[data-lightbox-group]")
+		.forEach((group) => {
+			const name = `qy-group-${n++}`;
+			group
+				.querySelectorAll<HTMLElement>("[data-lightbox-item]")
+				.forEach((item) => {
+					toFancy(item, name);
+				});
+		});
 }
 
-let lb: HTMLElement | null = null;
-let lbItems: LbItem[] = [];
-let lbIdx = 0;
-
-const LB_SVGS = {
-	close:
-		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>',
-	prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>',
-	next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>',
-};
-
-function ensureLightbox(): HTMLElement | null {
-	const existing = doc.querySelector<HTMLElement>(".lightbox");
-	if (existing) {
-		lb = existing;
-		return existing;
+async function initLightbox() {
+	if (!doc.querySelector(LB_SELECTOR)) return;
+	if (!Fancybox) {
+		Fancybox = (await import("@fancyapps/ui")).Fancybox;
 	}
-	if (!doc.body) return null;
-	const el = doc.createElement("div");
-	el.className = "lightbox";
-	el.setAttribute("role", "dialog");
-	el.setAttribute("aria-modal", "true");
-	el.setAttribute("aria-label", ui("lightbox"));
-	el.innerHTML =
-		'<span class="lb-counter"></span>' +
-		'<button class="lb-btn lb-close" type="button" aria-label="' +
-		ui("close") +
-		'">' +
-		LB_SVGS.close +
-		"</button>" +
-		'<button class="lb-btn lb-prev" type="button" aria-label="' +
-		ui("prevImage") +
-		'">' +
-		LB_SVGS.prev +
-		"</button>" +
-		'<img class="lb-img" alt=""/>' +
-		'<button class="lb-btn lb-next" type="button" aria-label="' +
-		ui("nextImage") +
-		'">' +
-		LB_SVGS.next +
-		"</button>" +
-		'<div class="lb-cap"></div>';
-	doc.body.appendChild(el);
-	lb = el;
-	return el;
+	prepLightbox();
+	/* bind 以 selector 为键覆盖注册（幂等）；unbind 防御未来 selector 变更残留 */
+	Fancybox.unbind(LB_SELECTOR);
+	Fancybox.bind(LB_SELECTOR, {
+		l10n: {
+			CLOSE: ui("close"),
+			PREV: ui("prevImage"),
+			NEXT: ui("nextImage"),
+		},
+	});
 }
-
-function lbShow(i: number) {
-	if (!lb || !lbItems.length) return;
-	lbIdx = (i + lbItems.length) % lbItems.length;
-	const img = lb.querySelector(".lb-img") as HTMLImageElement | null;
-	const cap = lb.querySelector(".lb-cap");
-	const counter = lb.querySelector(".lb-counter");
-	if (img) {
-		img.src = lbItems[lbIdx].src;
-		img.alt = lbItems[lbIdx].cap || "";
-	}
-	if (cap) cap.textContent = lbItems[lbIdx].cap || "";
-	if (counter) counter.textContent = lbIdx + 1 + " / " + lbItems.length;
-}
-
-function openLb(items: LbItem[], start?: number) {
-	lbItems = items || [];
-	if (!lbItems.length || !ensureLightbox()) return;
-	lb!.classList.add("open");
-	doc.body.style.overflow = "hidden";
-	lbShow(start || 0);
-}
-
-function closeLb() {
-	if (!lb) return;
-	lb.classList.remove("open");
-	doc.body.style.overflow = "";
-	lbItems = [];
-}
-
-(window as unknown as { QyLightbox: { open: typeof openLb } }).QyLightbox = {
-	open: openLb,
-};
 
 /* ---------- 页面级初始化（每次导航执行） ---------- */
 function initNavActive() {
@@ -294,7 +263,7 @@ function initTocSpy() {
 		{ rootMargin: "-30% 0px -60% 0px" },
 	);
 	headings.forEach((h) => {
-		spy!.observe(h);
+		spy?.observe(h);
 	});
 }
 
@@ -414,12 +383,12 @@ function closeSearch() {
    内联框不可见（<640px 移动形态）时打开浮层并聚焦浮层内输入框 */
 function openSearch() {
 	const inline = doc.getElementById("searchInput") as HTMLInputElement | null;
-	if (inline && inline.offsetParent) {
+	if (inline?.offsetParent) {
 		inline.focus();
 		return;
 	}
 	const pop = doc.getElementById("searchPop");
-	if (!pop || !pop.hidden) return;
+	if (!pop?.hidden) return;
 	pop.hidden = false;
 	doc.getElementById("searchToggle")?.setAttribute("aria-expanded", "true");
 	(doc.getElementById("searchInputM") as HTMLInputElement | null)?.focus();
@@ -511,7 +480,7 @@ async function decryptContent(dataB64: string, pwd: string): Promise<string> {
 	return new TextDecoder().decode(plain);
 }
 
-/** 解密成功：注入 HTML → 隐藏锁 UI → 重跑 reveal 动画（灯箱/复制为委托，自动生效） */
+/** 解密成功：注入 HTML → 隐藏锁 UI → 重跑 reveal 动画 + 灯箱属性预置（§4.68） */
 function showDecrypted(
 	container: HTMLElement,
 	contentEl: HTMLElement,
@@ -521,6 +490,7 @@ function showDecrypted(
 	contentEl.hidden = false;
 	container.hidden = true;
 	initReveal();
+	initLightbox();
 }
 
 function initEncrypted() {
@@ -657,8 +627,8 @@ doc.addEventListener("click", (e) => {
 		if (nav) {
 			const open = nav.classList.toggle("open");
 			target
-				.closest("#navToggle")!
-				.setAttribute("aria-expanded", open ? "true" : "false");
+				.closest("#navToggle")
+				?.setAttribute("aria-expanded", open ? "true" : "false");
 		}
 		return;
 	}
@@ -669,8 +639,8 @@ doc.addEventListener("click", (e) => {
 		if (item) {
 			const open = item.classList.toggle("open-sub");
 			target
-				.closest(".nav-sub-toggle")!
-				.setAttribute("aria-expanded", open ? "true" : "false");
+				.closest(".nav-sub-toggle")
+				?.setAttribute("aria-expanded", open ? "true" : "false");
 		}
 		return;
 	}
@@ -726,7 +696,7 @@ doc.addEventListener("click", (e) => {
 		lbShow(lbIdx + 1);
 		return;
 	}
-	if (lb && lb.classList.contains("open") && target === lb) {
+	if (lb?.classList.contains("open") && target === lb) {
 		closeLb();
 		return;
 	}
@@ -775,7 +745,7 @@ doc.addEventListener(
 	"error",
 	(e) => {
 		const img = e.target as HTMLImageElement | null;
-		if (!img || img.tagName !== "IMG") return;
+		if (img?.tagName !== "IMG") return;
 		const raw = img.dataset.apiRetries;
 		if (!raw) return;
 		let list: string[] = [];
@@ -816,7 +786,7 @@ doc.addEventListener("keydown", (e) => {
 			return;
 		}
 	}
-	/* 搜索快捷键（§4.12）：/ 或 ⌘/Ctrl+K；输入中、灯箱打开时不触发 */
+	/* 搜索快捷键（§4.12）：/ 或 ⌘/Ctrl+K；输入中、灯箱（Fancybox）打开时不触发 */
 	if (
 		e.key === "/" ||
 		((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k")
@@ -826,16 +796,12 @@ doc.addEventListener("keydown", (e) => {
 		const typing =
 			!!el &&
 			(el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName));
-		if (!typing && !lb?.classList.contains("open")) {
+		if (!typing && !Fancybox?.getInstance()) {
 			e.preventDefault();
 			openSearch();
 		}
 		return;
 	}
-	if (!lb || !lb.classList.contains("open")) return;
-	if (e.key === "Escape") closeLb();
-	else if (e.key === "ArrowLeft") lbShow(lbIdx - 1);
-	else if (e.key === "ArrowRight") lbShow(lbIdx + 1);
 });
 
 /* ---------- LQIP（b9.5）：图片加载完成后淡出占位渐变 ---------- */
@@ -913,7 +879,7 @@ function initSeriesNav() {
 
 /* ---------- 生命周期 ---------- */
 function initPage() {
-	ensureLightbox();
+	initLightbox();
 	initNavActive();
 	closeMobileNav();
 	initReveal();
