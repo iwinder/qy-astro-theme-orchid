@@ -5,7 +5,7 @@ import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 // 文章列表：cover 图卡 / compact 紧凑行，每页 6 篇
 export const postList: ThemeConfig["postList"] = {
 	style: "cover",
-	pageSize: 6,
+	pageSize: 10,
 	// 随机封面（§4.33）：frontmatter 显式 image: "api" 的文章按 slug 确定性取图，
 	// {slug} 占位符会被替换为文章 slug（末尾自动追加 ?v=<hash>）
 	randomCover: { apis: ["https://picsum.photos/seed/{slug}/540/304"] },

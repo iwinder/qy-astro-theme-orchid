@@ -16,7 +16,16 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 		// 个人资料卡（§4.15）：内容见 profileConfig.ts
 		// 每个 widget 的 enabled（默认 true）：置 false 后该组件在所有页面（列表页+文章页）都不渲染
 		{ type: "profile", enabled: true },
-		{ type: "announcement", enabled: true },
+		{ type: "announcement", enabled: false },
+		// calendar/toc 移动端（<768px）隐藏（§4.49，与主题默认一致）；
+		// specificConfig.postTooltip 开启后日历下方文章列表条目悬停显示全文 title（§4.41）
+		{
+			type: "calendar",
+			enabled: true,
+			hideOnMobile: true,
+			position: "sticky",
+			specificConfig: { postTooltip: false },
+		},
 		{ type: "categories", enabled: true, position: "sticky" },
 		// specificConfig.count 展示的热门标签数量（0 = 全部展示），超出收进「…更多」入口（§4.48）
 		{
@@ -29,17 +38,10 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 		{
 			type: "friends",
 			enabled: true,
+			position: "sticky",
 			specificConfig: { count: 3, random: false },
 		},
-		// calendar/toc 移动端（<768px）隐藏（§4.49，与主题默认一致）；
-		// specificConfig.postTooltip 开启后日历下方文章列表条目悬停显示全文 title（§4.41）
-		{
-			type: "calendar",
-			enabled: true,
-			hideOnMobile: true,
-			position: "sticky",
-			specificConfig: { postTooltip: false },
-		},
+
 		// toc 仅文章页侧栏渲染（列表页无目录可展示）
 		{
 			type: "toc",
@@ -48,7 +50,7 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 			hideOnMobile: true,
 			position: "sticky",
 		},
-		{ type: "siteInfo", enabled: true },
-		{ type: "advertisement", enabled: true },
+		{ type: "siteInfo", enabled: true, position: "sticky" },
+		{ type: "advertisement", enabled: true, position: "sticky" },
 	],
 };
