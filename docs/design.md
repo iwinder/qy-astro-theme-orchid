@@ -1336,6 +1336,24 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.70）**：biome 单文件 0 问题；`pnpm build` exit 0。**⚠️ content layer 缓存陷阱（实测踩中）**：改 rehype 插件后 `pnpm build` 通过但 dist 仍残留旧 `<figure data-lightbox>`——Astro content layer 把渲染后的 markdown HTML 持久化在 `site/node_modules/.astro/data-store.json`，**rehype 插件变更不使缓存失效**，必须 `rm -rf site/node_modules/.astro` 再构建；dev 侧同理（`site/.astro/`，且 integration 层代码不热更、touch md 亦无法让 dev server 用新插件重渲染，必须重启 dev server）。清缓存重建后 dist 静态验证：普通 figure 带 data-lightbox 数 0、封面独立 1、article 带 data-lightbox-gallery。浏览器实测（preview:4323）：同页 3 图同组（缩略图条 3 张）、点击第 N 张开在第 N 张、键盘 ←/→ 切换且缩略图高亮同步滚动居中、缩略图点击跳转、自动播放 4s 间隔推进且末张自动停（按钮态同步）、封面独立 1/1 无缩略图条无自动播放按钮；全屏按钮渲染与点击响应正常（Fullscreen API 受自动化浏览器 user-activation 限制无法验证实际进入，原生 `document.documentElement.requestFullscreen()` 直调同被拒，实锤环境限制非代码问题，真实浏览器待人工确认）。教训：① content layer 对「插件产物」零失效感知，管线产物类改动验证前先清 `node_modules/.astro`；② v5 键盘监听绑 document，自动化测试 dispatch 键事件到 window 不冒泡、到 document 才生效；③ 灯箱组行为「容器嵌套 = 双绑定」是硬约束，公共属性面文档需明示组容器不可嵌套。
 
+### 4.71 封面入文章灯箱组 + 缩略图条居中与开关（✅ 2026-10-18 完成）
+
+**背景**：用户两点反馈：① 文章指定自定义封面时，灯箱没考虑封面位置的图片，只考虑正文图片——§4.70 方案里封面 `figure.article-cover[data-lightbox]` 刻意留在 article 外作独立单图（1/1），与正文组割裂；用户预期点封面也能进入正文全组上下文；② 底部缩略图条靠左对齐应居中，且要提供开关按钮控制显隐。
+
+**方案**：文章页组容器上移——`<div data-lightbox-gallery>` 包裹「封面 figure + 专题导航 + article」整体，封面成为组内第 0 张；缩略图条居中走 flex margin auto 安全技巧；开关按钮注册进顶栏（`order: 7`）。
+
+**设计决策**：
+- **wrapper 归组而非封面移入 article**：封面与 article 之间隔着 `series-nav`（专题导航），封面移进 article 会视觉错位；动态 dataSource（封面+正文 items 手工拼接）会引入 index 换算复杂度。wrapper 纯归组标记零样式副作用（`.post-main` 本为块流），且 v5 对 children/组 items 的序号均按 DOM 顺序计算——封面置于容器最前即天然 index 0，**无需任何换算**
+- **嵌套契约延续（§4.70）**：封面 figure 去 `data-lightbox`、article 去 `data-lightbox-gallery`（组容器内绝不再套组属性，否则双绑定）；`friends/guestbook/about` 三页无封面概念，保持 article 单容器归组不动；wrapper 不入 pagefind 索引（索引点在 article）
+- **缩略图条居中**：`.pswp__qy-thumbs` 首尾子项 `margin-left/right: auto`——内容窄于容器时两侧 margin 平分自由空间实现居中；图多溢出时 auto 归零自然退化为左对齐横向滚动，**不会裁切左侧**（比 `justify-content: center` + overflow 安全：后者溢出时左端不可达）
+- **开关按钮**（`qy-thumbs-toggle`，appendTo bar，order 7 → 顶栏排位 counter(5) 与全屏(8) 之间）：图标「横条内两竖线」；`is-active`/`aria-pressed` 表示「显示中」；显隐走 `.pswp__qy-thumbs.is-hidden { display: none }`（与移动端媒体查询隐藏并存不冲突）；**模块级 `lbThumbsVisible` 跨灯箱打开/跨页面导航保持用户选择**，重开时 `onInit` 按持久态应用；收起后重新显示 `pswp.dispatch("change")` 重触发 change 监听，把高亮缩略图滚回正确位置
+- **单图退化**：开关与缩略图条同在 `items.length < 2` 早退之后注册，单图组（如仅封面的文章）无开关；`>1` 图才出现
+- **i18n**：新增 `thumbs` 键（zh-CN「缩略图条」/en "Thumbnails"），UI_FALLBACK 与 BaseLayout `#qy-ui-labels` 同步
+
+**改动**：`posts/[...slug].astro`（wrapper 容器 + 封面/article 去组属性）、`app.ts`（`lbThumbsVisible` + `qy-thumbs-toggle` 注册 + UI_FALLBACK thumbs 键 + 段头注释 §4.69-§4.71）、`global.css`（缩略图条首尾 margin auto 居中 + `.is-hidden` + 注释）、`i18n/zh-CN.ts`/`en.ts`、`BaseLayout.astro`（labels 注入 thumbs）
+
+**验证（§4.71）**：biome 单文件 0 错误（存量基线告警不动）；`rm -rf site/node_modules/.astro && pnpm build` exit 0；dist 静态验证 wrapper 结构（`div[data-lightbox-gallery]` → cover figure → article，本页无 series-nav）。浏览器实测（preview:4323，观剧总结页 4 图组）：点封面开在 **1/4** 且缩略图条首张即封面、active index 0；键盘 → 切至 2/4 高亮同步 index 1；开关点击显隐与 `aria-pressed` 同步、重显示后高亮重定位正常；**收起状态下关闭重开仍收起**（模块级保持）；重开落在正文图仍 2/4（DOM 顺序正确）。单图场景（hello-world，`image: "api"` 随机封面）：点封面开 1/1，无缩略图条无开关。居中实测：564px 窄视口注入样式覆盖移动端隐藏规则后，首缩略图 left 135 / 尾图距右缘 134——**完全对称**（pswp fixed 根宽为 clientWidth 549 = innerWidth 564 - 滚动条 15，两侧 margin auto 各 122.5px），居中生效；溢出退化路径由 CSS 语义保证（auto 归零）未单独构造场景。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
