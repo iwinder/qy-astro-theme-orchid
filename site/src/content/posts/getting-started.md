@@ -20,16 +20,21 @@ seriesOrder: 1
 
 ## 安装与启动
 
-### 方式一：从示例站点开始（推荐）
+### 方式一：从 starter 模板开始（推荐）
+
+到 GitHub 打开 [astro-theme-orchid-starter](https://github.com/iwinder/astro-theme-orchid-starter)，点 **Use this template** 生成你自己的仓库（或直接克隆）：
 
 ```bash
-git clone https://github.com/iwinder/qy-astro-theme-orchid.git
-cd qy-astro-theme-orchid/site
+git clone https://github.com/<你的用户名>/astro-theme-orchid-starter.git my-blog
+cd my-blog
 pnpm install
 pnpm dev
 ```
 
-打开 `http://localhost:4321` 即可看到与官方演示一致的站点。接下来把 `src/config/` 里的配置改成你自己的，清空 `src/content/posts/` 里的示例文章开始写作即可。
+打开 `http://localhost:4321` 即可看到站点。starter 只含配置与内容骨架，主题依赖 npm 包——必改项（域名、标题、资料卡、横幅图）见 starter 的 README。
+
+> [!note]
+> 本仓库的 `site/` 是主题的官方 demo 站，也是指南文档的载体——适合浏览效果与查配置示例，**不建议直接克隆它起步**（工作区依赖与 monorepo 结构会让升级退回 diff 合并姿势）。
 
 ### 方式二：接入已有 Astro 站点
 

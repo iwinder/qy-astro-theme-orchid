@@ -12,6 +12,8 @@
 
 ## 快速上手
 
+> 新站点推荐直接从 [astro-theme-orchid-starter](https://github.com/iwinder/astro-theme-orchid-starter) 模板生成（Use this template），配置与内容骨架开箱即用；以下为在已有 Astro 站点上接入主题的步骤。
+
 ### 1. 安装
 
 ```sh

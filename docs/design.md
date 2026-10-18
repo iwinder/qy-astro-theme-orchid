@@ -1568,6 +1568,23 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.84）**：biome 0 error；`pnpm --filter site check` 0 errors 0 warnings；`CI=true pnpm --filter site build` exit 0（Indexed 31 pages = 30 + 1，新篇产出）；导览表链接与 slug 一致。
 
+### 4.85 新建独立 starter 模板仓库 astro-theme-orchid-starter（✅ 2026-10-18 完成）
+
+**背景**：早前会话结论——用户起步入口不应该是克隆开发仓库（site 依赖 `workspace:*`、build 脚本引用 `../packages/theme/scripts`、overrides 在根 workspace，clone 用户被锁死在 fork 姿态，与主题「pnpm update 即升级」卖点矛盾），应建独立 starter 仓库；因发版调试一度搁置，主题 0.2.0 上 npm 后前置条件满足，用户指定仓库路径为本级目录 astro-theme-orchid-starter/（非主仓库子目录）。
+
+**方案**：从 site 抽取「配置 + 内容骨架」两层新建独立仓库：28 个 config 文件复制 + 中性化（siteConfig title/since、profileConfig yourname、friendsConfig 申请文案、announcementConfig 文案、bannerConfig 关闭并指引、galleryConfig albums 清空留示例注释）；hello-world 欢迎文 + 三个 spec 正文重写为通用版；主题依赖改 `^0.2.0`（npm registry，非 workspace）；astro.config 去 mdx 集成（可选能力，注释含启用三步）；content.config loader 收为 `**/*.md`；**自带 scripts 副本**（subset-fonts / generate-lqips / new-post 三脚本 + subset-font devDep）——主题包 files 仅 `["src"]`，scripts 不随 npm 发布（与遗留待办「theme files 补 scripts」互为印证，starter 先自包含解耦，该待办降为可选）；pnpm-workspace.yaml 带 katex / micromark-util-character / style-to-js 三条 overrides（katex/micromark 为核心功能依赖，非仅 MDX）；.gitignore/tsconfig 从 site 精简。**入口切换**：getting-started 方式一由「克隆本仓库 site」改为「Use this template 生成 starter」并加 note 说明 site 定位（demo 与文档载体，不建议直接克隆起步）；主题 README 快速上手头部加 starter 引流块。
+
+**设计决策**：
+- **独立仓库而非子目录**：用户明确路径；模板仓库无历史包袱，Use this template 干净起步
+- **starter 自带脚本副本而非等主题发版**：0.2.0 已发布且 files 不含 scripts，改 files 需再发版拖周期；脚本为独立后处理工具（astro build 不依赖），副本自包含最稳
+- **MDX 不预装**：starter 保持最小依赖面，启用步骤写进 astro.config 注释与 README，衔接《MDX 指南》
+- **overrides 三条全带**：style-to-js 虽为 MDX 坑，但 katex mhchem 与 remark-directive 修复是核心渲染依赖，缺了公式化学式与 ::github 指令就坏
+- **gallery albums 清空 / banner 关闭**：无演示图片资产，避免空图裂图；注释保留结构示例与开启指引
+
+**改动**：新仓库 astro-theme-orchid-starter/（33 文件：顶层 6 + config 28 + scripts 3 + content 4 + favicon + spec 3，含 .gitignore；git init 单提交 37b6ee1）；主仓库 getting-started.md 方式一重写 + packages/theme/README.md 引流块。
+
+**验证（§4.85）**：starter 本地 `pnpm install`（pnpm v11.10.0，registry 拉真实 0.2.0）5.3s exit 0（顺手清理 pnpm 自动写入的 minimumReleaseAgeExclude 本机配置噪音）；`pnpm check` 0 errors 0 warnings 1 hint；`CI=true pnpm build` exit 0——dist 全站产出（about/friends/guestbook/sponsor/gallery/series/archive/tags/categories/og/api/pagefind/rss/sitemap 齐全），dist/posts/hello-world 带 data-pagefind-body。主仓库两处文档改动待 build 验证后随本节提交。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
