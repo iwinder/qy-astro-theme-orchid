@@ -1454,6 +1454,24 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.77）**：biome 0 error（118 files）。`rm -rf site/node_modules/.astro` 后 `CI=true pnpm --filter site build` exit 0（pagefind 索引 75 页）；`site/dist/posts/mdx-guide/index.html` 生成。调研数据均为 npm registry（registry.npmmirror.com 元数据）与 api.npmjs.org downloads 实测。
 
+### 4.78 config 目录拍平 + 快速开始轻量化改造（✅ 2026-10-18 完成）
+
+**背景**：用户两点要求：①`src/config/` 应按功能平铺 ts 文件，不需要 site/content/services/pages 子目录；②《快速开始》承载了内容集合细节、扁平写法示例等展开内容，与开篇「让用户快速了解」的轻量定位冲突，应对标 docs-firefly.cuteleaf.cn 的 getting-started 结构（环境要求/安装/项目结构/配置文件概览），并新增「配置文件概览」一表列出全部配置文件。
+
+**方案**：
+- ①`git mv` 拍平：site/（6）+ content/（1）+ services/（4）+ pages/（3）共 14 个模块文件全部移至 `src/config/` 顶层，删除四个空子目录。`index.ts` 的 import 路径（`./xxxConfig`）自 §4.58 迁移起就是拍平形式，本次让物理结构归位；全套指南文章的路径注释（`// site/src/config/xxxConfig.ts`，共 21 处）自始就是拍平形式，零改动即与新结构一致
+- ②getting-started 全量重写（184→167 行，内容显著减负）：结构对齐 Firefly——环境要求 → 快速上手（方式一 clone 三步命令 / 方式二接入编号步骤 1-3：装包 + astro.config + content.config 代码块，解说各压至一句）→ 目录结构（骨架树）→ **配置文件概览（新增 14 行表：文件 | 说明 | 详细文档链接，跨篇模块如 appearanceConfig/contentConfig 挂双链接）** → 常用命令 → 部署 → 升级 → 系列导览。删除：独立「内容集合」大节（并入方式二步骤 3，`definePostSchema` 19 字段与 spec 展开细节引流 writing/pages-and-data）、「最小化组织 `src/config.ts` 扁平写法」代码示例与逐条说明（压为概览表下一句话）、build 脚本三段拼接 note（压为部署节末一句）、MDX note 与 config 重启提示合并为概览表后单 note
+
+**设计决策**：
+- **配置文件概览是快速开始的信息枢纽**：14 文件一表挂全 12 篇指南链接，替代被删的 README 配置大表成为「配置→文档」的入口映射；license 归 sidebar-and-profile、banner 归 nav-and-banner、postList/archive 归 postlist-and-archive，归属按各篇实际讲授内容（sidebar-and-profile.md L153 讲 licenseConfig 等，已 grep 核实）
+- **内容集合代码块保留在方式二而非删除**：无 content.config.ts 站点 build 直接失败，它是接入必需步骤而非可选细节——「轻量」是压解说不压必要步骤；方式一（clone 示例站）用户完全不需要读它，结构上天然分层
+- **「14 个模块 + index.ts」替代原「15 个配置文件」表述**：概览表 14 行模块 + 文字说明 index.ts 组装职责，总数口径在目录树注释里显式标注，消除「15 个文件但表里只有 14 行」的歧义
+- **子目录之诡异不再深究**：85c392e 迁移后子目录与 index.ts 拍平 import 长期物理不一致但 build/CI（fresh checkout）均通过（5d9dd0e CI success 实证），解析器以某种宽松方式兜住了；本次拍平后路径物理命中，不再依赖任何隐性解析行为
+
+**改动**：`site/src/config/`（14 文件 git mv 拍平 + 4 子目录删除）；`site/src/content/posts/getting-started.md`（全量重写）。
+
+**验证（§4.78）**：biome 0 error；`rm -rf site/node_modules/.astro` 后 `CI=true pnpm --filter site build` exit 0；`site/dist/posts/getting-started/index.html` 重新生成且含配置文件概览表。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
