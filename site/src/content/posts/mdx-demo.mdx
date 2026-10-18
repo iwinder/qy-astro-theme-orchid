@@ -1,0 +1,41 @@
+---
+title: MDX 能力演示：在文章里使用组件
+description: .mdx 继承主题 unified processor（公式与代码高亮全生效），并可直接使用 Astro 组件。
+published: 2026-10-17
+tags:
+  - 主题功能
+  - 示例
+category: 主题演示
+---
+
+import { Icon } from "astro-icon/components";
+
+本文演示主题对 MDX 的端到端支持：
+
+- 集合层：`content.config.ts` 的 posts loader 已扩展为 `**/*.{md,mdx}`
+- 渲染层：MDX 默认继承站点 `markdown` 配置，主题注册的 unified
+  processor（KaTeX、Mermaid、directives、Expressive Code）原样作用于 `.mdx`
+- 组件层：正文可直接 `import` 并渲染 Astro 组件
+
+## 组件与表达式
+
+<Icon name="lucide:sparkles" size={20} /> 图标来自 astro-icon（站点依赖，组件可直接使用）。
+
+MDX 独有的 JSX 表达式：当前年份 {new Date().getFullYear()}，简单运算 {6 * 7}。
+
+## 公式与代码（主题管线继承验证）
+
+行内公式 $E = mc^2$ 与块级公式：
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2} \, dx = \sqrt{\pi}
+$$
+
+代码块应与 `.md` 文章一致地被 Expressive Code 接管（行号、语言徽章、复制按钮）：
+
+```ts
+// .mdx 里的代码块：Expressive Code 高亮
+export function add(a: number, b: number): number {
+	return a + b;
+}
+```
