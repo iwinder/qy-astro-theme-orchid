@@ -22,13 +22,19 @@ seriesOrder: 1
 
 ### 方式一：从 starter 模板开始（推荐）
 
-到 GitHub 打开 [astro-theme-orchid-starter](https://github.com/iwinder/astro-theme-orchid-starter)，点 **Use this template** 生成你自己的仓库（或直接克隆）：
+到 GitHub 打开 [astro-theme-orchid-starter](https://github.com/iwinder/astro-theme-orchid-starter)，点 **Use this template** 把模板生成到你自己的账号下（仓库名自定），然后克隆**你生成的仓库**（地址在你仓库页面的 Code 按钮里）：
 
 ```bash
-git clone https://github.com/<你的用户名>/astro-theme-orchid-starter.git my-blog
+git clone https://github.com/<你的账号>/<你的仓库名>.git my-blog
 cd my-blog
 pnpm install
 pnpm dev
+```
+
+只想先体验效果，也可以直接克隆模板本体：
+
+```bash
+git clone https://github.com/iwinder/astro-theme-orchid-starter.git my-blog
 ```
 
 打开 `http://localhost:4321` 即可看到站点。starter 只含配置与内容骨架，主题依赖 npm 包——必改项（域名、标题、资料卡、横幅图）见 starter 的 README。
