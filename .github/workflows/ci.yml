@@ -52,16 +52,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: |
-          set -o pipefail
-          pnpm install --frozen-lockfile 2>&1 | tee /tmp/install.log || {
-            tail -150 /tmp/install.log | fold -w 3900 > /tmp/install-tail.txt
-            while IFS= read -r chunk; do
-              chunk="${chunk//%/%25}"
-              echo "::error::${chunk//$'\n'/%0A}"
-            done < /tmp/install-tail.txt
-            exit 1
-          }
+        run: pnpm install --frozen-lockfile
 
       - name: Test（node:test 内置运行器，字体子集化脚本）
         run: pnpm test

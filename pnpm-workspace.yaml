@@ -1,10 +1,6 @@
 packages:
   - packages/*
   - site
-# 显式指定 store 绝对路径：pnpm 在 store 未显式配置时会用临时文件探测（create+unlink），
-# 该探测在 TRAE sandbox 下被误报 EXDEV 导致安装中断；绝对路径走直通分支跳过探测，
-# 路径与 PNPM_HOME 默认推导值一致，数据位置不变。
-storeDir: /Volumes/zhitai/Work/repositories/pnpm/store
 # 统一 katex 版本：主题包 / rehype-katex 等必须共享同一实例，
 # mhchem 宏（import 'katex/contrib/mhchem'）才能对 rehype-katex 生效
 overrides:
