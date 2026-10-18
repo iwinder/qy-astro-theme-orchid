@@ -1311,6 +1311,31 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **运行时勘误二（点击只现遮罩不出图，修复 174c578）**：现象——点击灯箱图仅有背景遮罩、无图片。源码实锤三因叠加：① v5 `_domElementToItemData` 仅从 `<a>` 读取 `data-pswp-*`（dist L1575-1577），设计决策中设在 img 上的翻译层属性是死代码，裸 img 结构下 itemData 仅 `{ element }`；② `preloadFirstSlide` 默认开启时，打开前在 lightbox 实例上预生成首图 Content 并经 `addToCache` 注入 core 缓存（L1858-1859、L1929-1932），数据不全的预生成 Content 会抢先占位；③ 真正触发面——`initPage` 双入口（首帧直跑 + `astro:page-load` 首载同样触发）令 `initLightbox` 并发执行两次，在 `await import` 窗口交错，先恢复者创建的实例被后恢复者覆盖模块变量 `pswpLightbox` 而泄漏双绑定：点击时先建实例的 preload 设置自身 dataSource，其 itemData filter 却经模块变量寻址读到后建实例（dataSource 未设）而早退，空 Content 经 `addToCache` 污染 core 缓存；core 阶段 slide.data 虽经后建实例已填的 dataSource 变完整，`setContent` 却命中坏缓存——与「open 正常、slide.data 完整、缓存 Content 为空壳」的全部观测吻合。修复三件套（任一单改均可修，叠加确保任意交错态正确）：`destroy` 移到 `await import` 之后；options 增 `preloadFirstSlide: false`；itemData filter 直读 `itemData.element` 不经模块变量间接寻址；顺带删除死代码 prepLightbox（翻译层属性 v5 永不读取；`data-lightbox-item` 保留为公共 API 标记，运行时惰性）。验证：biome 单文件 0 问题；`pnpm build` exit 0（116 页、pagefind 64 页）；浏览器实测 hello-world 点击封面正常出图（`content.type=image` / `state=loaded` / 遮罩 `.pswp__bg` 黑 0.8 全视口 / Esc 关闭后根节点移除）；未加载图的兜底路径 src 仍由 filter 补齐、宽高交由 v5 加载后自行纠正（与迁移前「仅已加载才写尺寸」行为持平）。教训：lightbox 与 core 是共享同一 options 引用的两个独立实例，跨实例状态经模块变量中转在异步初始化交错下不可靠，钩子内应直读事件参数自带引用（`itemData.element`）。另：`pnpm lint` 全仓存在 design/prototype 静态原型的存量 lint 报错（历史遗留，与主题包 src 无关），本次验证以改动文件单独校验 + build 为准。
 
+### 4.70 灯箱组行为重构 + 自定义 UI 三件套：缩略图条/全屏/自动播放（✅ 2026-10-18 完成，fix ae121df）
+
+**背景**：用户实测文章页（多图混排）报两点：① 部分图片点击不进灯箱——非独立段落图（同一 `<p>` 内 img+br+text 混排）与 image-grid 网格图不经 rehypeFigure，无 `data-lightbox`，不在 LB_SELECTOR 委托范围；② 行为对齐 @fancyapps/ui 缺口——点哪张只展示哪张（无法左右切换），且无底部缩略图条/全屏/自动播放。根因：§4.69 单容器即单组方案下，rehypeFigure 给每张正文图独立 `<figure data-lightbox>`，每图自成单图组。§4.69 曾留痕「PhotoSwipe v5 无内置缩略图条/全屏/自动播放，行为差异接受」——本次按用户要求补齐（v5 的 `ui.registerElement` 扩展点支持）。
+
+**方案**：组契约重构（figure 去独立组属性，归组上交页面级容器）+ `uiRegister` 注册自定义 UI 三件套。
+
+**前置验证**（photoswipe 5.4.4 `dist/types/` 实读）：
+- `pswp.element: HTMLDivElement`（灯箱根，全屏目标）、`pswp.ui: UI`、`UI.registerElement(elementData: UIElementData)`；`UIElementData`：`isButton?/onInit?(element, pswp)/onClick?(e, element, pswp)/appendTo?: "bar"|"wrapper"|"root"`/`order`
+- `options.dataSource: DataSource = SlideData[] | DataSourceObject`（后者 `{ gallery, items?, children? }`），挂 PhotoSwipeBase 上（`pswp.options` 可读）
+- `currIndex/goTo/next` 均有类型；`change`/`destroy` 事件齐备
+
+**设计决策**：
+- **figure 去自带 data-lightbox，归组上交**：rehypeFigure 产物不再带 `data-lightbox`；posts/[...slug]/friends/guestbook/about 四处 prose `<article>` 加 `data-lightbox-gallery`——文章内全部图（含非独立段落图、网格图）同组可切换。封面 `figure.article-cover[data-lightbox]` 在 article 外保持独立单图。**嵌套契约**：v5 对每个匹配 LB_SELECTOR 的容器都绑点击监听，容器嵌套会双重开图——closest 就近匹配使显式 `[data-lightbox]`/`[data-lightbox-group]` 优先于外层组容器，组容器内绝不再套组属性
+- **LB_SELECTOR 扩展**：`[data-lightbox], [data-lightbox-group], [data-lightbox-gallery]` 三选一律（children 仍 `img`，点击必须落在 img 上）
+- **缩略图条**（`appendTo: "root"`，div）：`uiRegister` 时从 `pswp.options.dataSource` 读组内全部 items；`{gallery}` 形 dataSource 的 `items` 未即时生成，惰性补齐（与 core 同逻辑 `gallery.querySelectorAll("img")`）。每项建 `button.pswp__qy-thumb`（lazy img，src 取 `currentSrc || getAttribute("src") || item.src`），el 上委托点击 `goTo(index)`；`change` 时高亮 `.is-active` + `scrollIntoView({ block: "nearest", inline: "center", behavior: "smooth" })`
+- **全屏按钮**（`appendTo: "bar"`）：onClick 走 `document.fullscreenElement` 判断进/出，标准 API + webkit 前缀（`webkitFullscreenElement/webkitRequestFullscreen/webkitExitFullscreen`）双路径；CSS 随 `.pswp:fullscreen` 切换 enter/exit 图标
+- **自动播放按钮**（`appendTo: "bar"`，4s 间隔 `next()`）：onClick 切 `is-active` 启停 `setInterval`；`change` 到末张自动停 + 摘 `is-active`；`destroy` 清定时器防泄漏
+- **单图退化**：`items.length < 2` 时不注册缩略图条与自动播放（封面单图灯箱 1/1 干净展示）；全屏任何图都有
+- **图标样式**：独立类 `.qy-pswp-icn`（stroke 绘制）避开 `.pswp__icn` 的 fill 规则冲突；play/pause 用 fill 变体 `.qy-icn-fill`；缩略图条底部黑渐变 + 横向滚动隐藏滚动条；`max-width: 639px` 隐藏缩略图条（拇指操作与移动端布局冲突）
+- **i18n**：新增 `fullscreen`/`slideshow` 键（zh-CN：全屏/自动播放），BaseLayout `#qy-ui-labels` JSON 注入供脚本 `ui()` 回退读取（UI_FALLBACK 同步补两键）
+
+**改动**：`rehype.ts`（figure 去 data-lightbox + 注释）、`posts/[...slug].astro`/`friends.astro`/`guestbook.astro`/`about.astro`（prose article 加 data-lightbox-gallery）、`app.ts`（LB_SELECTOR 扩展 + uiRegister 三件套 + UI_FALLBACK）、`i18n/zh-CN.ts`/`en.ts`、`BaseLayout.astro`（labels 注入）、`global.css`（+86 行按钮/缩略图条样式）
+
+**验证（§4.70）**：biome 单文件 0 问题；`pnpm build` exit 0。**⚠️ content layer 缓存陷阱（实测踩中）**：改 rehype 插件后 `pnpm build` 通过但 dist 仍残留旧 `<figure data-lightbox>`——Astro content layer 把渲染后的 markdown HTML 持久化在 `site/node_modules/.astro/data-store.json`，**rehype 插件变更不使缓存失效**，必须 `rm -rf site/node_modules/.astro` 再构建；dev 侧同理（`site/.astro/`，且 integration 层代码不热更、touch md 亦无法让 dev server 用新插件重渲染，必须重启 dev server）。清缓存重建后 dist 静态验证：普通 figure 带 data-lightbox 数 0、封面独立 1、article 带 data-lightbox-gallery。浏览器实测（preview:4323）：同页 3 图同组（缩略图条 3 张）、点击第 N 张开在第 N 张、键盘 ←/→ 切换且缩略图高亮同步滚动居中、缩略图点击跳转、自动播放 4s 间隔推进且末张自动停（按钮态同步）、封面独立 1/1 无缩略图条无自动播放按钮；全屏按钮渲染与点击响应正常（Fullscreen API 受自动化浏览器 user-activation 限制无法验证实际进入，原生 `document.documentElement.requestFullscreen()` 直调同被拒，实锤环境限制非代码问题，真实浏览器待人工确认）。教训：① content layer 对「插件产物」零失效感知，管线产物类改动验证前先清 `node_modules/.astro`；② v5 键盘监听绑 document，自动化测试 dispatch 键事件到 window 不冒泡、到 document 才生效；③ 灯箱组行为「容器嵌套 = 双绑定」是硬约束，公共属性面文档需明示组容器不可嵌套。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
@@ -1349,6 +1374,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - Astro 7 markdown：JS 插件必须走 `markdown.processor: unified({...})`（`@astrojs/markdown-remark`），legacy `remarkPlugins/rehypePlugins` 字段只触发警告不生效
 - ⚠️ **unified 插件数组铁律**：元素一律是 attacher（插件工厂本体），带参用 `[plugin, options]` 元组；**绝不能 push 已调用的 transformer**（如 `remarkMermaid()`）——freeze 时会被当 attacher 二次调用（首参 tree=undefined）报 `Cannot read properties of undefined (reading 'children')`，插件静默失效且与文档内容无关（详见 §4.2 b4 记录）
 - integration 更新 markdown processor 后 content store 不自动清除——重启 dev 前删 `site/.astro/` 可排除陈旧缓存干扰
+- ⚠️ **content layer 渲染缓存对插件产物零失效感知（§4.70 实测）**：渲染后的 markdown HTML 持久化在 `site/node_modules/.astro/data-store.json`（dev 为 `site/.astro/`），**rehype/remark 插件变更不使缓存失效**——构建/实测管线产物类改动前必须先 `rm -rf site/node_modules/.astro`（dev 还需重启 server，integration 层代码不热更、touch md 也无效）
 - Astro 组件 frontmatter（`---` 区）**不能包含 JSX**（返回 JSX 的箭头函数会在 vite import analysis 报 invalid JS syntax），JSX 片段只能写在模板区
 - ⚠️ **Astro 7.3.8 捆绑 Zod v4：`.default({})` 不解析内层默认值**（`.default({})` 命中即短路返回 `{}` 原值，内层字段的 default 全部丢失，实测 `z.object({a: z.boolean().default(true), b: z.object({c: z.number().default(3)}).default({})}).parse({})` → `{a: true, b: {}}`）。schema.ts 惯用法：**object section 的 default 必须写显式完整默认值字面量**（如 `.default({ enabled: true, name: '...' })`），嵌套层同理；新增配置 section 时一并遵守，否则该 section 缺省配置时站点运行期 `undefined` 500
 - 主题包版本升级策略：功能进 `minor`、修复进 `patch`、破坏性配置变更进 `major` 并保留 default 回退
