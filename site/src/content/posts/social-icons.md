@@ -12,7 +12,7 @@ seriesOrder: 25
 ---
 
 侧栏个人资料卡（`profile.links`）的社交图标不需要手写 SVG，
-`icon` 字段填**内置简名**即可——主题基于 [astro-icon](https://docs.astro.build/en/guides/integrations-guide/icon/)
+`icon` 字段填**内置简名**即可——主题基于 [astro-icon](https://www.astroicon.dev/)
 + Iconify 标准生态构建期内联渲染，无运行时请求、无 JS 开销。
 
 ## 三种写法
