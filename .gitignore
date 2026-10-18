@@ -13,6 +13,9 @@ _tmp_*
 .pnpm-store/
 .npmrc
 
+# npm pack / pnpm pack 打包预检产物（npm publish 的 git 检查会因 untracked 文件报 unclean）
+*.tgz
+
 # 本地开发用真实文章（来自 orchid-blog 的私人内容，永不入库、不进历史）
 site/src/content/posts/*
 !site/src/content/posts/hello-world.md
