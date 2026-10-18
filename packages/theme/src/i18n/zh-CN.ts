@@ -122,11 +122,13 @@ const zhCN = {
 	passwordPlaceholder: "请输入密码",
 	passwordSubmit: "解锁",
 	passwordError: "密码错误，请重试。",
-	/* 客户端动态文案（构建期经 BaseLayout 的 #qy-ui-labels JSON 载体带入；close/prevImage/nextImage 供 PhotoSwipe l10n，§4.69） */
+	/* 客户端动态文案（构建期经 BaseLayout 的 #qy-ui-labels JSON 载体带入；close/prevImage/nextImage/fullscreen/slideshow 供 PhotoSwipe，§4.69/§4.70） */
 	close: "关闭",
 	prevImage: "上一张",
 	nextImage: "下一张",
 	copied: "已复制",
+	fullscreen: "全屏",
+	slideshow: "自动播放",
 	/* 分享海报（M3b-b9.6） */
 	sharePoster: "生成分享海报",
 	generatingPoster: "海报生成中…",

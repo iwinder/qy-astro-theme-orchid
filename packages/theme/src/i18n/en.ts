@@ -111,6 +111,8 @@ const en: Record<UiKey, string> = {
 	prevImage: "Previous image",
 	nextImage: "Next image",
 	copied: "Copied",
+	fullscreen: "Fullscreen",
+	slideshow: "Slideshow",
 	sharePoster: "Generate share poster",
 	generatingPoster: "Generating poster…",
 	copyLink: "Copy link",

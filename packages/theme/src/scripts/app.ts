@@ -43,6 +43,8 @@ const UI_FALLBACK: Record<string, string> = {
 	prevImage: "上一张",
 	nextImage: "下一张",
 	copied: "已复制",
+	fullscreen: "全屏",
+	slideshow: "自动播放",
 };
 let uiLabels: Record<string, string> | null = null;
 function ui(key: string): string {
@@ -138,20 +140,26 @@ function initPalette() {
 	syncPaletteUI(currentHue());
 }
 
-/* ---------- 通用灯箱（PhotoSwipe，§4.69，MIT 替换 Fancybox） ---------- */
-/* 主题公共 API 保持 data-lightbox（单图）与 data-lightbox-group/data-lightbox-item（组浏览）。
-   容器内 img 即灯箱项：单图 figure 容器内仅 1 img 天然独组，组容器内多个 img 同组——无需
-   组名计数器。v5 的 _domElementToItemData 只从 <a> 读 data-pswp-*，而 rehypeFigure 与文章
-   封面产物均为 figure 包裸 img（无 <a>），故经 itemData filter 直读 itemData.element（即
-   img 本身）补 src 与 naturalWidth/Height：打开后每个 slide 的 getItemData 都会经过，lazy
-   图此时已加载，尺寸必然准确。preloadFirstSlide 关闭：v5 打开前会在 lightbox 实例上预生成
-   首图 Content 并经 addToCache 注入 core 缓存，数据不全时 core 侧完整的 itemData 也无法
-   生效，直接关掉最稳。PhotoSwipe v5 内置键盘/滑动/箭头/计数/关闭，wheelToZoom 对齐桌面
-   滚轮缩放；pswp core 经 pswpModule 动态加载，保持代码分割。点击须落在 img 上（children
-   只匹配后代，figure 空白处不触发）。 */
+/* ---------- 通用灯箱（PhotoSwipe，§4.69/§4.70，MIT 替换 Fancybox） ---------- */
+/* 主题公共 API：data-lightbox（单图）、data-lightbox-group/data-lightbox-item（组浏览）、
+   data-lightbox-gallery（文章级组容器，§4.70）。容器内 img 即灯箱项：文章容器把整篇 img
+   （独立段落 figure、行内图、image-grid 网格图）归为一组，左右切换/计数/缩略图条共享同一
+   上下文；显式 [data-lightbox]/[data-lightbox-group] 经 closest 就近匹配优先于文章容器。
+   嵌套容器都会被绑定点击监听而双重触发开图，故内层绝不能再套组属性——rehypeFigure 产物
+   （figure 包裸 img）也因此不带 data-lightbox（§4.70）。v5 的 _domElementToItemData 只从
+   <a> 读 data-pswp-*，裸 img 结构下经 itemData filter 直读 element 补 src 与
+   naturalWidth/Height。preloadFirstSlide 关闭：v5 打开前会预生成首图 Content 并注入 core
+   缓存，数据不全时完整 itemData 无法生效，直接关掉最稳。自定义 UI（§4.70）：uiRegister
+   时惰性补齐 {gallery} 形 dataSource 的 items（与 core 同一逻辑 querySelectorAll('img')，
+   谁先填充索引都一致），再按图数注册全屏按钮（恒有）与自动播放按钮/缩略图条（>1 图）。
+   PhotoSwipe v5 内置键盘/滑动/箭头/计数/关闭，wheelToZoom 对齐桌面滚轮缩放；pswp core 经
+   pswpModule 动态加载，保持代码分割。点击须落在 img 上（children 只匹配后代，容器空白处
+   不触发）。 */
 type PswpLightbox = typeof import("photoswipe/lightbox")["default"];
 let pswpLightbox: PswpLightbox | null = null;
-const LB_SELECTOR = "[data-lightbox], [data-lightbox-group]";
+const LB_SELECTOR =
+	"[data-lightbox], [data-lightbox-group], [data-lightbox-gallery]";
+const LB_SLIDESHOW_INTERVAL = 4000;
 
 async function initLightbox() {
 	if (!doc.querySelector(LB_SELECTOR)) return;
@@ -161,7 +169,7 @@ async function initLightbox() {
 	   在 await 处交错时，先恢复者创建的实例会被后恢复者覆盖模块变量而泄漏双绑定 */
 	pswpLightbox?.destroy();
 	pswpLightbox = null;
-	pswpLightbox = new PhotoSwipeLightbox({
+	const lb = new PhotoSwipeLightbox({
 		gallery: LB_SELECTOR,
 		children: "img",
 		preloadFirstSlide: false,
@@ -173,9 +181,10 @@ async function initLightbox() {
 			arrowNextTitle: ui("nextImage"),
 		},
 	});
+	pswpLightbox = lb;
 	/* v5 只从 <a> 读 data-pswp-*，裸 img 结构下 itemData 仅 { element }；
 	   filter 直读 element 本身，不经模块变量间接寻址，任何实例交错状态下都正确 */
-	pswpLightbox.addFilter("itemData", (itemData) => {
+	lb.addFilter("itemData", (itemData) => {
 		const el = itemData.element;
 		const img = el instanceof HTMLImageElement ? el : el?.querySelector("img");
 		if (!img) return itemData;
@@ -186,7 +195,156 @@ async function initLightbox() {
 		}
 		return itemData;
 	});
-	pswpLightbox.init();
+	/* 自定义 UI（§4.70）：全屏/自动播放/缩略图条。uiRegister 在 UI 构建期触发一次，
+	   此时 pswp 就绪；{gallery} 形 dataSource 的 items 可能尚未被 core 惰性填充，主动补齐 */
+	lb.on("uiRegister", () => {
+		const pswp = lb.pswp;
+		const ds = pswp?.options?.dataSource;
+		if (!pswp || !ds) return;
+		if (!Array.isArray(ds) && ds.gallery && !ds.items) {
+			const gal =
+				ds.gallery instanceof Element
+					? ds.gallery
+					: Array.isArray(ds.gallery)
+						? ds.gallery[0]
+						: null;
+			if (gal) {
+				ds.items = Array.from(
+					gal.querySelectorAll<HTMLImageElement>("img"),
+				).map((el) => ({ element: el }));
+			}
+		}
+		const items = Array.isArray(ds) ? ds : (ds.items ?? []);
+		if (!pswp.ui) return;
+
+		/* 全屏（灯箱根元素进全屏；enter/exit 两态图标由 :fullscreen CSS 切换） */
+		pswp.ui.registerElement({
+			name: "qy-fullscreen",
+			title: ui("fullscreen"),
+			ariaLabel: ui("fullscreen"),
+			isButton: true,
+			appendTo: "bar",
+			order: 8,
+			html:
+				'<svg class="qy-pswp-icn qy-icn-fs-enter" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/></svg>' +
+				'<svg class="qy-pswp-icn qy-icn-fs-exit" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4"/><path d="M15 4v5h5"/><path d="M9 20v-5H4"/><path d="M15 20v-5h5"/></svg>',
+			onClick: () => {
+				type FsElement = HTMLElement & {
+					webkitRequestFullscreen?: () => Promise<void> | void;
+				};
+				type FsDocument = Document & {
+					webkitFullscreenElement?: Element | null;
+					webkitExitFullscreen?: () => Promise<void> | void;
+				};
+				const d = doc as FsDocument;
+				const target = pswp.element as FsElement | undefined;
+				if (!target) return;
+				if (d.fullscreenElement || d.webkitFullscreenElement) {
+					(d.exitFullscreen || d.webkitExitFullscreen)?.call(d);
+				} else {
+					(target.requestFullscreen || target.webkitRequestFullscreen)?.call(
+						target,
+					);
+				}
+			},
+		});
+
+		if (items.length < 2) return;
+
+		/* 自动播放（is-active 态切 play/pause 图标；播到末张自动停；销毁时清定时器） */
+		let slideshowTimer = 0;
+		const stopSlideshow = (btn: HTMLElement) => {
+			if (!slideshowTimer) return;
+			clearInterval(slideshowTimer);
+			slideshowTimer = 0;
+			btn.classList.remove("is-active");
+		};
+		pswp.ui.registerElement({
+			name: "qy-slideshow",
+			title: ui("slideshow"),
+			ariaLabel: ui("slideshow"),
+			isButton: true,
+			appendTo: "bar",
+			order: 9,
+			html:
+				'<svg class="qy-pswp-icn qy-icn-fill qy-icn-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z"/></svg>' +
+				'<svg class="qy-pswp-icn qy-icn-fill qy-icn-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7z"/><path d="M13.5 5H17v14h-3.5z"/></svg>',
+			onClick: (_e, btn) => {
+				if (slideshowTimer) {
+					stopSlideshow(btn);
+					return;
+				}
+				btn.classList.add("is-active");
+				slideshowTimer = window.setInterval(
+					() => pswp.next(),
+					LB_SLIDESHOW_INTERVAL,
+				);
+			},
+		});
+		pswp.on("change", () => {
+			if (slideshowTimer && pswp.currIndex === items.length - 1) {
+				const btn = pswp.element?.querySelector<HTMLElement>(
+					".pswp__button--qy-slideshow",
+				);
+				if (btn) stopSlideshow(btn);
+			}
+		});
+		pswp.on("destroy", () => {
+			if (slideshowTimer) clearInterval(slideshowTimer);
+			slideshowTimer = 0;
+		});
+
+		/* 缩略图条（root 层横滚条，点击跳转；change 时同步高亮并居中滚动） */
+		pswp.ui.registerElement({
+			name: "qy-thumbs",
+			tagName: "div",
+			appendTo: "root",
+			onInit: (el) => {
+				items.forEach((item, i) => {
+					const img =
+						item.element instanceof HTMLImageElement ? item.element : null;
+					const src =
+						(img && (img.currentSrc || img.getAttribute("src"))) ||
+						item.src ||
+						"";
+					const thumb = doc.createElement("button");
+					thumb.type = "button";
+					thumb.className = "pswp__qy-thumb";
+					thumb.dataset.index = String(i);
+					const thumbImg = doc.createElement("img");
+					thumbImg.loading = "lazy";
+					thumbImg.alt = "";
+					if (src) thumbImg.src = src;
+					thumb.appendChild(thumbImg);
+					el.appendChild(thumb);
+				});
+				el.addEventListener("click", (e) => {
+					const btn = (e.target as HTMLElement).closest<HTMLElement>(
+						".pswp__qy-thumb",
+					);
+					const idx = btn?.dataset.index;
+					if (idx !== undefined) pswp.goTo(Number(idx));
+				});
+				const sync = () => {
+					el.querySelector(".pswp__qy-thumb.is-active")?.classList.remove(
+						"is-active",
+					);
+					const active = el.children[pswp.currIndex];
+					if (active instanceof HTMLElement) {
+						active.classList.add("is-active");
+						active.scrollIntoView({
+							block: "nearest",
+							inline: "center",
+							behavior: "smooth",
+						});
+					}
+				};
+				pswp.on("change", sync);
+				sync();
+			},
+		});
+	});
+	lb.init();
 }
 
 /* ---------- 页面级初始化（每次导航执行） ---------- */

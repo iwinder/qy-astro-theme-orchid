@@ -13,7 +13,7 @@ const { Content } = entry ? await render(entry) : { Content: null };
   <header class="archive-head reveal">
     <h1 class="page-title">{t('about')}</h1>
   </header>
-  <article class="card page-card prose reveal">
+  <article class="card page-card prose reveal" data-lightbox-gallery>
     {
       Content ? (
         <Content />

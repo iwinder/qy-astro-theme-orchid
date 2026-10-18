@@ -259,7 +259,7 @@ const jsonLd = {
     )
   }
     {/* data-pagefind-body（M3b-b6）：限定 Pagefind 只索引标题与正文（h1 在 article 外，双 body 标记） */}
-    <article class="prose reveal" data-pagefind-body>
+    <article class="prose reveal" data-pagefind-body data-lightbox-gallery>
       {d.password ? (
         /* 加密文章（M3b-b7）：构建期把正文渲染后整体加密，页面只出密文 + 锁 UI；
            TOC 的 headings 来自构建期明文解析，会在锁旁泄漏标题结构，故一并隐藏 */

@@ -190,7 +190,9 @@ export function rehypeCallouts(): Transformer {
 /* ---------------------------------------------------------------- figure */
 
 /**
- * 独立段落中的单图 → <figure data-lightbox>；img 的 title 属性 → <figcaption>
+ * 独立段落中的单图 → <figure>；img 的 title 属性 → <figcaption>。
+ * 灯箱归组交给页面级 data-lightbox-gallery 容器（§4.70）：figure 不再自带
+ * data-lightbox，否则文章容器内嵌套两组容器会被双重绑定点击监听而双开灯箱
  */
 export function rehypeFigure(): Transformer {
 	return (tree) => {
@@ -208,7 +210,7 @@ export function rehypeFigure(): Transformer {
 			const figure: any = {
 				type: "element",
 				tagName: "figure",
-				properties: { "data-lightbox": true },
+				properties: {},
 				children: [img],
 			};
 			if (title) {
