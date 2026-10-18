@@ -3201,7 +3201,7 @@ gallery-filter {
 }
 
 /* 灯箱（§4.69）：样式由 photoswipe/photoswipe.css 提供（BaseLayout 引入） */
-/* 灯箱自定义 UI（§4.70）：全屏/自动播放按钮与缩略图条。
+/* 灯箱自定义 UI（§4.70/§4.71）：全屏/自动播放按钮与缩略图条（可开关、内容居中）。
    自定义图标用 .qy-pswp-icn 独立类名，避开 .pswp__icn 的 fill 覆盖（图标走 stroke 描边） */
 .qy-pswp-icn {
 	position: absolute;
@@ -3279,6 +3279,18 @@ gallery-filter {
 .pswp__qy-thumb.is-active {
 	opacity: 1;
 	border-color: var(--pswp-icon-color, #fff);
+}
+/* §4.71：缩略图条内容居中——首尾缩略图 margin auto 撑开空隙；图多溢出时 auto 归零，
+   自然退化为左对齐横向滚动，不会裁切左侧（flex 对齐安全技巧） */
+.pswp__qy-thumbs > .pswp__qy-thumb:first-child {
+	margin-left: auto;
+}
+.pswp__qy-thumbs > .pswp__qy-thumb:last-child {
+	margin-right: auto;
+}
+/* §4.71：开关按钮收起缩略图条 */
+.pswp__qy-thumbs.is-hidden {
+	display: none;
 }
 @media (max-width: 639px) {
 	.pswp__qy-thumbs {

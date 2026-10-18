@@ -45,6 +45,7 @@ const UI_FALLBACK: Record<string, string> = {
 	copied: "已复制",
 	fullscreen: "全屏",
 	slideshow: "自动播放",
+	thumbs: "缩略图条",
 };
 let uiLabels: Record<string, string> | null = null;
 function ui(key: string): string {
@@ -140,26 +141,29 @@ function initPalette() {
 	syncPaletteUI(currentHue());
 }
 
-/* ---------- 通用灯箱（PhotoSwipe，§4.69/§4.70，MIT 替换 Fancybox） ---------- */
+/* ---------- 通用灯箱（PhotoSwipe，§4.69-§4.71，MIT 替换 Fancybox） ---------- */
 /* 主题公共 API：data-lightbox（单图）、data-lightbox-group/data-lightbox-item（组浏览）、
-   data-lightbox-gallery（文章级组容器，§4.70）。容器内 img 即灯箱项：文章容器把整篇 img
-   （独立段落 figure、行内图、image-grid 网格图）归为一组，左右切换/计数/缩略图条共享同一
-   上下文；显式 [data-lightbox]/[data-lightbox-group] 经 closest 就近匹配优先于文章容器。
+   data-lightbox-gallery（文章级组容器，§4.70）。容器内 img 即灯箱项：文章页把封面+整篇
+   img（独立段落 figure、行内图、image-grid 网格图）归为一组（§4.71：封面经 wrapper 容器
+   入组、成为组内第 0 张），左右切换/计数/缩略图条共享同一上下文；显式
+   [data-lightbox]/[data-lightbox-group] 经 closest 就近匹配优先于文章容器。
    嵌套容器都会被绑定点击监听而双重触发开图，故内层绝不能再套组属性——rehypeFigure 产物
    （figure 包裸 img）也因此不带 data-lightbox（§4.70）。v5 的 _domElementToItemData 只从
    <a> 读 data-pswp-*，裸 img 结构下经 itemData filter 直读 element 补 src 与
    naturalWidth/Height。preloadFirstSlide 关闭：v5 打开前会预生成首图 Content 并注入 core
-   缓存，数据不全时完整 itemData 无法生效，直接关掉最稳。自定义 UI（§4.70）：uiRegister
+   缓存，数据不全时完整 itemData 无法生效，直接关掉最稳。自定义 UI（§4.70/§4.71）：uiRegister
    时惰性补齐 {gallery} 形 dataSource 的 items（与 core 同一逻辑 querySelectorAll('img')，
-   谁先填充索引都一致），再按图数注册全屏按钮（恒有）与自动播放按钮/缩略图条（>1 图）。
-   PhotoSwipe v5 内置键盘/滑动/箭头/计数/关闭，wheelToZoom 对齐桌面滚轮缩放；pswp core 经
-   pswpModule 动态加载，保持代码分割。点击须落在 img 上（children 只匹配后代，容器空白处
-   不触发）。 */
+   谁先填充索引都一致），再按图数注册全屏按钮（恒有）与自动播放按钮/缩略图条/缩略图开关
+   （>1 图；开关状态模块级跨打开保持）。PhotoSwipe v5 内置键盘/滑动/箭头/计数/关闭，
+   wheelToZoom 对齐桌面滚轮缩放；pswp core 经 pswpModule 动态加载，保持代码分割。点击须
+   落在 img 上（children 只匹配后代，容器空白处不触发）。 */
 type PswpLightbox = typeof import("photoswipe/lightbox")["default"];
 let pswpLightbox: PswpLightbox | null = null;
 const LB_SELECTOR =
 	"[data-lightbox], [data-lightbox-group], [data-lightbox-gallery]";
 const LB_SLIDESHOW_INTERVAL = 4000;
+/* 缩略图条显隐（§4.71）：模块级状态跨灯箱打开/跨页面导航保持用户选择 */
+let lbThumbsVisible = true;
 
 async function initLightbox() {
 	if (!doc.querySelector(LB_SELECTOR)) return;
@@ -341,6 +345,36 @@ async function initLightbox() {
 				};
 				pswp.on("change", sync);
 				sync();
+			},
+		});
+
+		/* 缩略图条开关（§4.71）：is-active/aria-pressed 表示「显示中」；模块级状态跨打开保持，
+		   收起后重新显示时 dispatch change 触发 sync 把高亮缩略图滚回居中 */
+		pswp.ui.registerElement({
+			name: "qy-thumbs-toggle",
+			title: ui("thumbs"),
+			ariaLabel: ui("thumbs"),
+			isButton: true,
+			appendTo: "bar",
+			order: 7,
+			html: '<svg class="qy-pswp-icn" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="8" width="18" height="8" rx="1.5"/><path d="M9 8v8"/><path d="M15 8v8"/></svg>',
+			onInit: (btn) => {
+				btn.classList.toggle("is-active", lbThumbsVisible);
+				btn.setAttribute("aria-pressed", String(lbThumbsVisible));
+				if (!lbThumbsVisible) {
+					pswp.element
+						?.querySelector(".pswp__qy-thumbs")
+						?.classList.add("is-hidden");
+				}
+			},
+			onClick: (_e, btn) => {
+				lbThumbsVisible = !lbThumbsVisible;
+				pswp.element
+					?.querySelector(".pswp__qy-thumbs")
+					?.classList.toggle("is-hidden", !lbThumbsVisible);
+				btn.classList.toggle("is-active", lbThumbsVisible);
+				btn.setAttribute("aria-pressed", String(lbThumbsVisible));
+				if (lbThumbsVisible) pswp.dispatch("change");
 			},
 		});
 	});

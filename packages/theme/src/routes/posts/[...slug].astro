@@ -210,9 +210,14 @@ const jsonLd = {
       )}
     </div>
   </header>
+  {/* 灯箱组容器（§4.71）：封面 + 专题导航 + 正文整体归组，封面成为组内第 0 张——
+      点击封面/正文任一图都可切换全组；纯归组标记无样式（.post-main 为块流，包装层零副作用）。
+      内部子元素不得再带组属性（嵌套容器双绑定，§4.70 契约），故 figure 去 data-lightbox、
+      article 去 data-lightbox-gallery。wrapper 不入 pagefind 索引（索引点在 article） */}
+  <div data-lightbox-gallery>
   {
     articleCover && (
-      <figure class="article-cover reveal" data-lightbox>
+      <figure class="article-cover reveal">
         <div class="qy-lqip" style={getLqipStyle(articleCover)} aria-hidden="true"></div>
         <img
           src={articleCover}
@@ -259,7 +264,7 @@ const jsonLd = {
     )
   }
     {/* data-pagefind-body（M3b-b6）：限定 Pagefind 只索引标题与正文（h1 在 article 外，双 body 标记） */}
-    <article class="prose reveal" data-pagefind-body data-lightbox-gallery>
+    <article class="prose reveal" data-pagefind-body>
       {d.password ? (
         /* 加密文章（M3b-b7）：构建期把正文渲染后整体加密，页面只出密文 + 锁 UI；
            TOC 的 headings 来自构建期明文解析，会在锁旁泄漏标题结构，故一并隐藏 */
@@ -270,6 +275,7 @@ const jsonLd = {
         <Content />
       )}
     </article>
+  </div>
     {/* 过时提醒（§4.11）：许可卡之前展示；加密文章不渲染 */}
     {!d.password && <OutdatedCard updated={d.updated ?? d.published} published={d.published} />}
     <License licenseName={d.licenseName} licenseUrl={d.licenseUrl} enabled={d.license} />

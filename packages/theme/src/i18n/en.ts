@@ -113,6 +113,7 @@ const en: Record<UiKey, string> = {
 	copied: "Copied",
 	fullscreen: "Fullscreen",
 	slideshow: "Slideshow",
+	thumbs: "Thumbnails",
 	sharePoster: "Generate share poster",
 	generatingPoster: "Generating poster…",
 	copyLink: "Copy link",
