@@ -28,7 +28,7 @@ import { defineConfig } from "astro/config";
 
 export default defineConfig({
 	site: "https://blog.example.com",
-	integrations: [orchidTheme({ title: "我的博客" /* 其余配置见下文 */ })],
+	integrations: [orchidTheme({ title: "我的博客" /* 其余配置见 demo 站指南系列 */ })],
 });
 ```
 
@@ -53,31 +53,9 @@ export const collections = { posts };
 
 #### 可选：启用 MDX
 
-MDX 是站点能力选择：是否写 `.mdx` 文章由站点决定。主题渲染管线与其天然兼容——
-`@astrojs/mdx` 默认继承站点 `markdown` 配置，主题注册的自定义 unified processor
-（KaTeX / Mermaid / PlantUML / directives / Expressive Code）原样作用于 `.mdx`，无需任何额外接线。
+MDX 是站点能力选择：是否写 `.mdx` 文章由站点决定。主题渲染管线与其天然兼容——`@astrojs/mdx` 默认继承站点 `markdown` 配置，主题注册的自定义 unified processor（KaTeX / Mermaid / PlantUML / directives / Expressive Code）原样作用于 `.mdx`。
 
-```sh
-pnpm add @astrojs/mdx
-```
-
-```ts
-// astro.config.ts
-import mdx from "@astrojs/mdx";
-
-export default defineConfig({
-	integrations: [mdx(), orchidTheme(themeConfig)],
-});
-```
-
-集合 loader 同步扩展为 `"**/*.{md,mdx}"`。正文可直接 `import` 并渲染 Astro 组件
-（组件是站点直接依赖，如 `astro-icon` 需在站点 `package.json` 声明）。
-
-> 已知上游坑（§4.67）：`hast-util-to-estree@3.1.3` 依赖的 `style-to-js@1.0.0`
-> 纯 CJS（`exports.default` 形态），ESM 默认导入得到对象而非函数，MDX 编译带
-> style 属性的节点（EC/katex 输出）报 `styleToJs is not a function`。在
-> `pnpm-workspace.yaml` 的 `overrides` 加 `style-to-js: ^1.1.16` 即可
-> （1.1.x 起修正 `module.exports` 互操作）。
+启用三步：`pnpm add @astrojs/mdx`、在 `integrations` 数组里注册（与主题顺序无关）、集合 loader 扩为 `"**/*.{md,mdx}"`。组件写作、`.md`/`.mdx` 选型，以及已知的 `style-to-js` 依赖坑（含一行 overrides 根治配方），见 demo 站《MDX 指南》一文。
 
 ### 4. 站点结构约定
 
@@ -92,188 +70,17 @@ site/
 └── public/                  # 静态资源（音乐/壁纸/画廊/模型等）
 ```
 
-独立页 `friends.md` / `guestbook.md` 的 frontmatter 只需 `title`；页面数据（友链列表、打赏码等）来自主题配置（见下文 `friends` / `sponsor`）。
+独立页 `friends.md` / `guestbook.md` 的 frontmatter 只需 `title`；页面数据（友链列表、打赏码等）来自主题配置，见 demo 站《独立页面与数据》一文。
 
-## 配置参考
+## 配置文档
 
-> **同步约定**：主题新增或修改配置项时，本表同步更新（同一次提交内）。字段语义以 [`src/schema.ts`](./src/schema.ts) 注释为准。
+主题配置项全部有默认值、无必填项，dev/build 启动即经 Zod schema 校验，配错直接报出。字段语义以 [`src/schema.ts`](./src/schema.ts) 注释为准。
 
-### 基础信息
+完整配置说明与文章 frontmatter 全字段表统一放在 demo 站「主题使用指南」系列文章（源文件在本仓库 `site/src/content/posts/`），按主题分组：
 
-| 配置项 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `title` | `string` | `"Orchid Blog"` | 站点名 |
-| `description` | `string` | `""` | 站点描述（首页与 meta description 默认值） |
-| `keywords` | `string[]` | `[]` | 站点级 SEO keywords；文章页由 frontmatter `tags` 覆盖，留空不输出 meta |
-| `logo` | `string` | `""` | 导航栏 Logo 图片 URL（public 路径或外链），留空只渲染文字标题 |
-| `author` | `string` | `""` | 作者名 |
-| `accentColor` | `string` | `"#4a9d8f"` | 强调色（6 位 hex）。构建期转 HSL，全部派生色由公式计算 |
-| `lang` | `string` | `"zh-CN"` | 站点语言（`<html lang>`），同时驱动 UI 文案（支持 `zh-CN` / `en`） |
-| `pageWidth` | `number` | `1600` | 内容区页宽（800-1920 px，≥1280 屏按 min(92vw, 此值) 取值）；文章页维持 1120px 阅读行宽不跟随 |
-| `timezone` | `string` | — | 构建期日期时区（IANA 名，如 `"Asia/Shanghai"`），留空跟随构建环境 |
-| `since` | `string` | — | 建站日期 `YYYY-MM-DD`（站点信息卡「已运行」），不配置不显示 |
-| `colorMode` | `"light" \| "dark" \| "system"` | `"system"` | 默认深浅模式（仅初值，用户切换后以 localStorage 为准） |
-| `favicon` | `{src, type?, sizes?, theme?}[]` | `[]` | 数组非空时替换默认 favicon；`theme: "light"/"dark"` 按系统深浅切换 |
-| `footer.customHtml` | `string` | `""` | 页脚自定义 HTML（备案号等），渲染在页脚最底部 |
-
-### 导航与背景
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `nav` | `{label, href?, external?, children?}[]` | `[]` | 顶部导航。`children` 非空时父项为下拉入口；`external: true` 新窗口打开 |
-| `banner.enabled` | `boolean` | `true` | 首页 banner 总开关（hero 文案 + 背景图合并单配置，§4.42）；`false` 时两者都不渲染 |
-| `banner.src` | `string \| string[]` | — | banner 图源。数组时构建期随机选一张（零 JS）；不配置则无图（quote 有值时 hero 文案渲染为列表上方独立区块） |
-| `banner.height` | `number` | `32` | banner 高度（10-90 vh） |
-| `banner.dimOpacity` | `number` | `0.2` | 黑蒙层不透明度（0-1） |
-| `banner.position` | `string` | `"center"` | 图片 object-position |
-| `banner.homeOnly` | `boolean` | `true` | `true` 仅首页显示 |
-| `banner.quote` / `banner.sub` | `string` | `""` | hero 主句/副句；quote 支持 `<em>` 强调色，留空不渲染。有 banner 图时叠加显示其上，否则为列表上方独立区块 |
-| `huePanel.enabled` | `boolean` | `true` | 导航栏 hue 调色面板（预设色板 + 滑杆，运行时覆写 `--accent-h`，持久化 localStorage） |
-
-### 文章列表与侧栏
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `postList.style` | `"cover" \| "compact"` | `"cover"` | 默认卡片形态；frontmatter `cardStyle` 可按篇覆盖、可混排 |
-| `postList.showCover` | `boolean` | `true` | 列表封面开关（§4.55）；`false` 时列表卡不渲染封面（整体降级纯文字形态） |
-| `postList.pageSize` | `number` | `10` | 每页文章数 |
-| `postList.fallbackCover` | `string` | — | 无图文章兜底封面；不配置则降级纯文字卡 |
-| `postList.randomCover.apis` | `string[]` | `[]` | 随机封面图源（URL 支持 `{slug}` 占位符）；frontmatter `image: "api"` 的文章从此取图，客户端失败自动重试降级 |
-| `postList.defaultLayout` | `"list" \| "grid"` | `"list"` | 默认列表形态（§4.55）：访客未手动切换过时的初始形态；移动端小屏不生效（恒为单列上下布局） |
-| `postList.allowSwitch` | `boolean` | `false` | 导航栏右上的列表/网格切换按钮（§4.55 移至 Header，仅首页/列表页显示；访客选择持久化 localStorage） |
-| `postList.gridColumnWidth` | `number` | `320` | 网格模式最小列宽（220-600 px） |
-| `categoryBar.enabled` | `boolean` | `false` | 分类导航栏（首页列表与文章页正文顶部） |
-| `toc.enabled` | `boolean` | `true` | 文章页目录 |
-| `archive.fold` | `boolean` | `false` | 归档页按年折叠（最新一年默认展开） |
-| `outdated.enabled` / `outdated.threshold` | `boolean` / `number` | `true` / `30` | 文章过时提醒与阈值（天，按最后更新时间计算） |
-| `sidebar.onPost` | `boolean` | `false` | 文章详情页是否启用侧栏 |
-| `sidebar.widgets` | `{type, enabled?, showOnPost?, postOnly?, hideOnMobile?, position?, specificConfig?}[]` | 公告/分类/标签/友链/日历/TOC/站点信息/广告 | widget 顺序即渲染顺序，公共配置（开关/显隐/位置）配在数组项上，专属参数统一收进 `specificConfig` 入口（§4.52）。类型：`announcement` `categories` `tags` `friends` `calendar` `toc` `siteInfo` `advertisement` `profile`；`showOnPost: false` 仅列表页显示，`postOnly: true` 仅文章页显示，`hideOnMobile: true` 移动端隐藏，`position: "sticky"` ≥768px 跟随滚动 |
-| `sidebar.widgets` tags 项 `specificConfig.count` | `number` | `12` | 展示的热门标签数量（0 = 全部展示），超出收进「…更多」入口 |
-| `sidebar.widgets` friends 项 `specificConfig.count` / `specificConfig.random` | `number` / `boolean` | `3` / `false` | 友链展示数量；`random: true` 构建期随机取样 |
-| `sidebar.widgets` calendar 项 `specificConfig.postTooltip` | `boolean` | `false` | `true` 时日历下方文章列表条目悬停显示全文 title |
-| `announcement` | `{title, content, link{text,url,external}, closable}` | content 空 | 侧栏公告卡；`content` 留空整卡不渲染 |
-| `advertisement` | `{enabled, title, image, imageLink, imageAlt, content, link{text,url,external}, closable, displayCount, expireDate?}` | `enabled: false` | 侧栏广告位；`displayCount` 按 localStorage 计数限次（-1 不限），`expireDate` 过期不渲染 |
-| `profile` | `{avatar, name, bio, url, links[{name,url,icon,showName}]}` | 全空 | 侧栏个人资料卡（`sidebar.widgets` 含 `profile` 时渲染）；`icon` 填内置图标名或内联 SVG，见「社交图标」 |
-
-#### 社交图标
-
-`profile.links[].icon` 三种写法：**内置简名**（推荐，构建期映射到 Iconify 标准集合内联渲染，无运行时请求与 JS 开销）、**Iconify 全名**（`"集:名"`，如 `"simple-icons:bilibili"`；站点补装任意 `@iconify-json/*` 集合包即可使用，无需改主题）或**内联 SVG 字符串**（以 `<` 开头，向后兼容）。名字 trim + 转小写后解析，未命中跳过图标只渲染文字，不报错。品牌图标 `fill: currentColor`、线性图标 `stroke: currentColor`，颜色随文字继承。
-
-基于 [astro-icon](https://docs.astro.build/en/guides/integrations-guide/icon/) + Iconify 生态（§4.65 标准化方案），内置简名 20 枚：
-
-- 线性描边（lucide，ISC）：`github` `email` `rss`
-- 品牌填充（simple-icons，CC0）：`qq` `wechat`（别名 `weixin`） `weibo` `bilibili` `xiaohongshu` `x`（别名 `twitter`） `telegram` `youtube` `instagram` `linkedin` `discord` `steam` `zhihu` `gitee` `juejin` `csdn` `douyin`（simple-icons 未收录抖音官方形，暂以内联 SVG 兜底）
-
-图文示例见 demo 站「主题使用指南」专题的《社交图标配置》一文。
-
-### 写作增强
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `codeTheme.light` / `codeTheme.dark` | `string` | `"github-light"` / `"github-dark"` | Expressive Code 双主题（Shiki 主题名），按站点深浅模式切换 |
-| `codeTheme.fold` | `{enabled, lineThreshold, previewLines, defaultCollapsed}` | `false` / `15` / `8` / `true` | 长代码自动折叠（pluginCollapsible）：行数超过 `lineThreshold` 折叠为 `previewLines` 行预览；meta 标 `collapse` 的块恒可手动折叠；math/mermaid/plantuml 块不参与 |
-| `codeTheme.lineNumbers` | `boolean` | `true` | 代码块显示行号（EC pluginLineNumbers，shell 会话块自动关闭） |
-| `codeTheme.languageBadge` | `boolean` | `false` | 代码块右上角显示语言徽标（EC pluginLanguageBadge） |
-| `codeTheme.wrap` | `boolean` | `false` | 长行自动换行（false 时横向滚动） |
-| `latex.enabled` | `boolean` | `false` | `$...$` / `$$...$$` 数学公式（KaTeX，含 mhchem 化学宏） |
-| `diagram.mermaid` | `{enabled, lightTheme, darkTheme}` | `false` / `"github-light"` / `"github-dark"` | Mermaid 构建期双主题静态渲染（` ```mermaid ` 代码块） |
-| `diagram.plantuml` | `{enabled, server, lightTheme, darkTheme}` | `false` / 官方服务 / `""` / `""` | PlantUML（` ```plantuml ` 代码块），图片由浏览器访问渲染服务加载 |
-| `emailProtection` | `{enabled, method}` | `false` / `"base64"` | mailto 链接构建期编码防爬（`base64` / `rot13`），点击时还原 |
-| `og.enabled` | `boolean` | `false` | 构建期生成每篇文章 OG 分享图（1200x630）；Google Fonts 拉取失败降级占位图，不中断构建 |
-| `sharePoster.enabled` | `boolean` | `true` | 文章页「生成分享海报」按钮（纯浏览器 canvas，按需加载） |
-| `relatedPosts` | `{enabled, count, randomCount}` | `true` / `5` / `5` | 文章页相关/随机推荐（相关栏构建期评分；加密文章不进两个池） |
-| `license` | `{enabled, name, url, prefix, suffix}` | `true` / `"CC BY-NC-SA 4.0"` / CC 链接 / `""` / `""` | 版权声明；frontmatter `licenseName/licenseUrl/license` 可按篇覆盖 |
-
-### 独立页与数据
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `pages` | `{about, friends, guestbook, sponsor, gallery, series}` | 全 `true` | 独立页路由开关，`false` 则路由完全不生成 |
-| `gallery` | `{title, description, albums[], columnWidth}` | 「画廊」/ `[]` / `240` | 相册数据纯配置驱动。`albums[]`: `{id, name, description?, date?, location?, tags?, cover?, password?, passwordHint?}`；照片来源 `public/gallery/<id>/` 目录扫描 + 同目录 `urls.txt` 远程列表；`password` 非空即加密相册（构建期加密） |
-| `friends` | `{title, description, sort, apply, list[]}` | 「友链」/ weight 排序 | `list[]`: `{title, site, image?, desc?, tags?, weight?, enabled?, featured?}`；同时驱动友链页与侧栏 widget；头像留空渲染字头像 |
-| `friends.apply` | `{title, description, link, label}` | title 空 | 申请友链卡片，title 留空整卡不渲染 |
-| `sponsor` | `{title, description, usage, showSponsorsList, showButtonInPost, methods[], sponsors[]}` | 「打赏」 | `methods[]`: `{name, icon?, image?, link?, description?, enabled?}`（收款码与跳转链接至少配一个）；`sponsors[]`: `{name, avatar?, amount?, date?}` 打赏者名单 |
-| `comment` | `{enabled, provider, title, artalk, twikoo, waline, giscus, disqus}` | `false` / `"none"` / 「评论」 | 五套评论按 `provider` 分发；`enabled: false` 或 `provider: "none"` 页面不渲染评论区。各套子配置：`artalk{server, locale, visitorCount}`、`twikoo{envId, jsUrl, cssUrl}`、`waline{serverURL, lang, visitorCount}`、`giscus{repo, repoId, category, categoryId, mapping, strict, reactionsEnabled, emitMetadata, inputPosition, lang, loading}`、`disqus{shortname}`；对应字段留空即不启用该套 |
-| `analytics` | `{googleAnalyticsId, microsoftClarityId, umami, la51}` | 全空 | 四选多，ID 留空即不注入。`umami{websiteId, scriptUrl, replaysScriptUrl, trackOutboundLinks, collectWebVitals, replays{...}}`；`la51{id, sdkUrl, ck, autoTrack, hashMode, screenRecord}` |
-
-### 悬浮组件与特效
-
-| 配置项 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `sakura` | `{enabled, density}` | `false` / `24` | 樱花飘落（全站 canvas 粒子，零贴图）；`prefers-reduced-motion` 自动停用 |
-| `music` | `{enabled, position, volume, playMode, showLyrics, playlist[]}` | `false` / `"left"` / `0.7` / `"list"` / `true` / `[]` | 音乐播放器（local 模式，`transition:persist` 跨页不断播）。`playlist[]`: `{name, artist?, url, cover?, lrc?}`；`lrc` 支持 `.lrc` 文件路径或内联歌词文本；`playMode`: `list`/`one`/`random`；音量访客调整后记忆。`enabled` 且歌单非空才渲染 |
-| `fonts` | `{name, cssVariable, provider, weights?, styles?, subsets?, fallbacks?, display?, preload?, role?, options?}[]` | `[]` | 字体（Astro Fonts API 标准方案，§4.66）：声明式接入，构建期产出 @font-face 与变量，`<head>` 渲染 `<Font>` 组件；`role` 映射主题三角色变量。详见下方「fonts 详细配置」 |
-| `live2d` | 见下 | `enabled: false` | Live2D 看板娘（基于 [l2d-widget](https://l2d-widget.hacxy.cn)），`transition:persist` 跨页常驻 |
-
-#### live2d 详细配置
-
-| 子项 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `enabled` | `boolean` | `false` | 总开关 |
-| `model` | `{path, volume?, scale?, x?, y?}` 或其数组 | — | 模型配置，数组可多模型切换（默认菜单自动出现「切换模型」）。`path` 为模型 json 的 public 路径或外链；`volume` 动作音量 0-1（默认 0 静音）；`scale` 缩放；`x`/`y` 偏移 -2~2 |
-| `position` | `"bottom-left" \| "bottom-right"` | `"bottom-left"` | 显示位置。与音乐播放器（左下）/ 返回顶部（右下）同角时会重叠，注意 `zIndex` 层级取舍 |
-| `size` | `number` 或 `{width, height}` | `280` | 画布尺寸（px），数字为正方形边长 |
-| `primaryColor` | `string` | `""` | 菜单/气泡等 UI 主题色，留空用库默认 |
-| `transitionDuration` / `transitionType` | `number` / `"slide" \| "fade"` | — | 入场/退场动画时长（ms）与类型 |
-| `menus.items` | `{icon?, label, action, url?}[]` | 主页/回到顶部/休眠（+切换模型） | 自定义菜单（覆盖默认）。`action` 内置动作：`home` `scrollToTop` `sleep` `switchModel`，或 `"link"` + `url` 跳转外链 |
-| `menus.align` | `"left" \| "right"` | `"right"` | 菜单对齐 |
-| `tips` | `{enable, welcomeMessage[], messages[], duration, interval, offset{x,y}, typing?}` | — | 提示气泡：欢迎语与循环提示文案（站点个性化内容，自行配置）；`duration` 显示时长 / `interval` 轮换间隔（ms）；不配置用库默认，`enable: false` 关闭 |
-| `responsive` | `{hideOnMobile, mobileBreakpoint}` | `true` / `768` | 移动端按断点隐藏 |
-| `zIndex` | `number` | `240` | 容器层级（返回顶部 250 / 音乐播放器 255，默认放其下避免按钮被挡） |
-
-#### fonts 详细配置
-
-| 子项 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `name` | `string` | （必填） | 字体族名（provider 侧标识，如 `"Inter"`；`local` 为自定义名） |
-| `cssVariable` | `string` | （必填） | CSS 变量名（`--` 开头，如 `"--font-inter"`），Font 组件据此产出变量 |
-| `provider` | `"google" \| "fontsource" \| "local" \| "bunny" \| "fontshare" \| "npm"` | （必填） | 字体来源。`google`/`fontsource`/`bunny`/`fontshare` 构建期联网拉取；`local` 配合 `options.variants` 声明本地文件；`npm` 从已装字体包读取 |
-| `weights` | `number[]` | `[400]` | 字重档位（Astro 只下载列出的字重） |
-| `styles` | `("normal" \| "italic" \| "oblique")[]` | `["normal", "italic"]` | 字形 |
-| `subsets` | `string[]` | `["latin"]` | 语言子集 |
-| `fallbacks` | `string[]` | `["sans-serif"]` | 回退字体族（Astro 自动产出 size-adjust 优化 fallback @font-face，减少布局抖动） |
-| `display` | `"auto" \| "swap" \| "block" \| "metadata" \| "fallback"` | Astro 默认 | font-display 行为 |
-| `preload` | `boolean` | `false` | `<link rel=preload>` 首屏预载字体文件（正文字体建议开启） |
-| `role` | `"body" \| "display" \| "mono"` | — | 角色映射（主题层字段）：`<head>` 产出 `html:root` 高优先级规则，把 `--font-body` / `--font-display` / `--font-mono` 重定向为 `var(<cssVariable>), <原角色回退栈>`——字体未覆盖的字形（如 Inter 只有 latin，中文）自然回落原栈 |
-| `options.variants` | `{src, weight?, style?}[]` | — | `provider: "local"` 专属：本地字体文件声明（相对站点项目根） |
-
-示例（demo 站即此配置）：
-
-```ts
-// site/src/config/appearanceConfig.ts
-export const fonts: ThemeConfig["fonts"] = [
-  {
-    name: "Inter",
-    cssVariable: "--font-inter",
-    provider: "fontsource",
-    weights: [400, 700],
-    preload: true,
-    role: "body",
-  },
-];
-```
-
-与字体子集化管线（§4.5）的边界：`site/subset-fonts.json` 面向 `public/` 下自托管字体文件（构建后子集化 + URL 重写）；`fonts` 走 Astro Fonts API，产物在 `dist/_astro/fonts/`、由 `<Font>` 直接产出引用。两条管线互不相交，可并存。
-
-## 文章 frontmatter
-
-`definePostSchema` 全量字段（均可选字段见默认值）：
-
-| 字段 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `title` | `string` | （必填） | 标题 |
-| `description` | `string` | `""` | 摘要描述（构建期另有自动摘要插件兜底） |
-| `published` / `updated` | `date` | 必填 / — | 发布/更新时间 |
-| `draft` / `pinned` | `boolean` | `false` | 草稿 / 置顶 |
-| `image` | `string` | — | 封面图；`"api"` 走 `postList.randomCover.apis` 随机图 |
-| `tags` / `category` | `string[]` / `string` | `[]` / — | 标签 / 分类 |
-| `password` / `passwordHint` | `string` | — | 非空即加密文章（构建期加密，密码校验在客户端） |
-| `cardStyle` | `"cover" \| "compact" \| "text"` | — | 列表卡片形态按篇覆盖 |
-| `series` / `seriesOrder` | `string` / `number` | — | 专题名与专题内顺序（聚合到 `/series/<name>/`） |
-| `lang` / `author` | `string` | — | 语言 / 作者（空跟随站点） |
-| `sourceLink` | `string` | — | 原文链接（转载） |
-| `licenseName` / `licenseUrl` / `license` | `string` / `string` / `boolean` | — / — / `true` | 文章级版权覆盖，`license: false` 按篇关闭声明 |
-| `comment` | `boolean` | `true` | 本篇是否展示评论 |
+- 基础：《站点基础配置》｜《导航栏与首页横幅》｜《侧边栏与个人资料》｜《文章列表与归档》
+- 功能：《文章页功能》｜《视觉特效与媒体》（含 fonts 详细配置）｜《独立页面与数据》｜《评论、公告、统计与广告》
+- 写作：《写作指南》（frontmatter 全字段与增强语法）｜《MDX 指南》（MDX 启用与踩坑修复）
 
 ## 定制与覆盖
 
@@ -286,15 +93,15 @@ export const fonts: ThemeConfig["fonts"] = [
 
 ## 文档同步约定
 
-- 新增/修改**配置项**：同一次提交内更新本 README「配置参考」对应行，并在 `docs/design.md` 记录功能节（§ 编号）。
-- 新增**frontmatter 字段**：同步更新「文章 frontmatter」表。
+- 新增/修改**配置项**：同一次提交内更新 demo 站对应指南文章（`site/src/content/posts/`），并在 `docs/design.md` 记录功能节（§ 编号）。
+- 新增**frontmatter 字段**：同步更新 demo 站《写作指南》字段表。
 - 行为变更不涉及配置面时，至少在 `docs/design.md` 留痕。
 
 ## 本仓库开发
 
 ```text
 packages/theme   主题包（exports 直指 src，无构建步骤）
-site             中性 demo 站点（config/ 按模块拆分配置，是配置参考的最佳示例）
+site             中性 demo 站点（config/ 按模块拆分配置，是指南文章与配置示例的载体）
 docs/design.md   设计与实现记录（§ 编号推进，含踩坑与验证口径）
 ```
 

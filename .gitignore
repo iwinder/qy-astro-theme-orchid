@@ -32,3 +32,4 @@ site/src/content/posts/*
 !site/src/content/posts/pages-and-data.md
 !site/src/content/posts/comment-and-analytics.md
 !site/src/content/posts/writing.md
+!site/src/content/posts/mdx-guide.md

@@ -1435,6 +1435,25 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.76 终版）**：biome 0 error。dev（`npx astro dev stop` + 删 `site/.astro` 重建）产物：writing 与 getting-started 的折叠脚本 `window.ecCollapsibleInit` 0 残留、`data-astro-rerun` 保留。浏览器 E2E 按**用户报障精确路径**：full load /posts/writing/（脚本执行、无标志可置）→ 专题目录点「快速开始」（VT）→ 4 个按钮 `dataset.init` 全 true → 点击展开 `192→490px`/`ec-collapse--expanded` → 收起复原；再走往返序列 getting-started → writing → getting-started，第二次进入后按钮依然全绑定、再次点击展开成功；console 无脚本错误。build（先删 `site/node_modules/.astro`）exit 0：14 个含折叠脚本页面守卫 0 残留、`data-astro-rerun` 无回归。
 
+### 4.77 MDX 指南成文 + README 瘦身引流 + hast-util-to-estree 可用性调研（✅ 2026-10-18 完成）
+
+**背景**：用户三点要求：①`hast-util-to-estree`「看着 2 年没更新」还有可用性吗；②MDX 相关内容分散三处（README 快速上手、getting-started 提示、writing 注意事项），单独成一篇指南文章说清楚；③README 只留标准项目信息，大量配置说明引流到指南文档。
+
+**方案**：
+- ①调研（npm registry + npm downloads 实测）：hast-util-to-estree latest 3.1.3 发布于 **2025-03-03**（约 19 个月非 2 年，27 版本）；直接上游 `@mdx-js/mdx` latest 3.1.1 发布于 2025-08-29（约 14 个月，210 版本）；周下载 hast-util-to-estree 704 万 / @mdx-js/mdx 742 万 / @astrojs/mdx 167 万。结论：**可用，无需担心**——低更新频率是 unified/syntax-tree 生态「完成态」库的常态（API 稳定 + semver + 测试完善），且它仍是 MDX 官方编译管线核心一环、Astro 官方 MDX 集成的传递依赖；真正要盯的是依赖解析结果而非发布日期（§4.67 的 style-to-js 坑正是解析锁到 1.0.0 所致，与「不更新」无关）
+- ②新建 [MDX 指南](site/src/content/posts/mdx-guide.md)（系列「主题使用指南/进阶」order 13，尾接 social-icons 12，避免全系列迁移序号）：整合三处内容 + 本会话机理补强——启用三步（装包/integrations/loader）、组件写作与站点直接依赖归属、`.md`/`.mdx` 选型、style-to-js 坑完整机理链（hast-util-to-estree 的 element handler 遇 `style` **属性**调 `parseStyle` → `styleToJs(...)`，ESM 默认导入 + style-to-js@1.0.0 纯 CJS `exports.default` 形态 → `styleToJs is not a function`；1.1.0 同日修复 `module.exports = StyleToJS`）、pnpm overrides 根治配方（v10+ 在 pnpm-workspace.yaml、旧版在 package.json.pnpm.overrides、npm/yarn 对应物）、`pnpm why style-to-js` 验证法。**机理修正**：源码实证（hast-util-to-estree/lib/handlers/element.js L85-89 `if (property === 'style')`）触发面是元素带 style 属性（手写 inline style / EC 代码块增强输出 / KaTeX 输出），旧三处文案「内联 `<style>` 标签报错」表述不准（style 标签 vs style 属性混淆），指南里以 warning 块显式澄清
+- ③README 瘦身 312→120 行：保留标题简介/特性一览/快速上手（安装/接入/内容集合/站点结构）/定制与覆盖/文档同步约定/本仓库开发/License；「配置参考」160 行大表与「文章 frontmatter」表整体删除，换成「配置文档」节（无必填项 + Zod 校验说明 + demo 站指南系列三组分引流）；MDX 子节去代码与坑 blockquote 精简为定位 + 三步概要 + 引流；「文档同步约定」改写（配置项变更同步 demo 站指南文章而非 README 表）；示例注释「其余配置见下文」改「见 demo 站指南系列」
+
+**设计决策**：
+- **指南文章放「进阶」组 order 13 而非入门组**：系列序号跨组连续（writing.md 专题机制明文约定），插入门组 order 3 需全系列 10 篇迁移；MDX 涉及依赖解析与 overrides 属进阶话题，尾接成本为零
+- **README 引流用纯文字篇名**（沿用 L167《社交图标配置》先例）：demo 站 siteUrl 是占位域名 `blog.example.com`，无真实部署地址可写死 URL
+- **旧文案的「内联 style 标签」表述在指南中修正而非沿袭**：有源码铁证（element.js 触发条件是 property === 'style'），错误表述会让用户在无 style 标签但带公式/EC 的文章上排查跑偏；但指南 warning 同时保留旧说法提及（网传描述常见）以便对照
+- **README 不保留 frontmatter 字段表**：demo 站《写作指南》已有 19 字段全表，双处维护是 §4.72 审计过的过时根源
+
+**改动**：`site/src/content/posts/mdx-guide.md`（新增，~200 行）；`.gitignore`（posts 白名单 +mdx-guide.md）；`site/src/content/posts/getting-started.md`（note 提示改一行引流 + 系列导览表 +MDX 指南行）；`site/src/content/posts/writing.md`（MDX 小节精简为简介+引流、description 去「MDX 注意事项」）；`packages/theme/README.md`（312→120 行，如上）。
+
+**验证（§4.77）**：biome 0 error（118 files）。`rm -rf site/node_modules/.astro` 后 `CI=true pnpm --filter site build` exit 0（pagefind 索引 75 页）；`site/dist/posts/mdx-guide/index.html` 生成。调研数据均为 npm registry（registry.npmmirror.com 元数据）与 api.npmjs.org downloads 实测。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

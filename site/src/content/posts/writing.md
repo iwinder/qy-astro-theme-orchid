@@ -1,6 +1,6 @@
 ---
 title: 写作指南：frontmatter 全字段与增强语法
-description: 文章 frontmatter 全部 19 个字段的类型与默认值、new-post 脚手架、草稿与置顶、加密文章、MDX 注意事项，以及提示块/仓库卡片/图片网格/公式/图表全部写作语法。
+description: 文章 frontmatter 全部 19 个字段的类型与默认值、new-post 脚手架、草稿与置顶、加密文章，以及提示块/仓库卡片/图片网格/公式/图表全部写作语法。
 published: 2026-10-18
 tags:
   - 主题机制
@@ -79,11 +79,8 @@ passwordHint: "我们的暗号"
 
 ## MDX 与注意事项
 
-`.mdx` 可在文章里直接写组件（import 后当 JSX 用）。已知坑：
-
-> [!warning]
-> MDX 内联 `<style>` 标签会因 `style-to-js` 解析报错。CSS 请写进独立样式文件，
-> 或使用 `<style is:inline>` 规避。
+`.mdx` 可在文章里直接写组件（import 后当 JSX 用）。启用步骤、`.md`/`.mdx` 选型，
+以及 `style-to-js` 依赖坑的完整机理与修复配方，统一见 [MDX 指南](/posts/mdx-guide/)。
 
 纯 Markdown 写作不受影响；不确定要不要组件时用 `.md` 即可。
 

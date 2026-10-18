@@ -70,7 +70,7 @@ export default defineConfig({
 ```
 
 > [!note]
-> 若使用 MDX，需注意：`.mdx` 文件里内联 `<style>` 标签时会因 `style-to-js` 解析问题报错，CSS 请写到独立样式文件或改用 `is:global` 的 `<style is:inline>` 规避。
+> 若启用 MDX，有一个 `style-to-js` 依赖解析坑需提前了解（一行 overrides 即可根治）：详见 [MDX 指南](/posts/mdx-guide/)。
 
 ## 内容集合
 
@@ -181,3 +181,4 @@ pnpm update @windcoder/astro-theme-orchid
 | [写作指南](/posts/writing/) | frontmatter 全字段、写作增强语法、加密文章、MDX |
 | [组件覆盖（override）](/posts/theme-override/) | 用同名文件替换主题组件 |
 | [社交图标配置](/posts/social-icons/) | 内置图标名、Iconify 全名、内联 SVG 三种写法 |
+| [MDX 指南](/posts/mdx-guide/) | 启用步骤、组件写作、style-to-js 踩坑与修复 |
