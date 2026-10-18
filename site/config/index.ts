@@ -11,6 +11,7 @@ import { announcementConfig } from "./announcementConfig";
 import { banner, fonts, live2d, music, sakura } from "./appearanceConfig";
 import { commentConfig } from "./commentConfig";
 import {
+	archive,
 	codeTheme,
 	diagram,
 	emailProtection,
@@ -35,6 +36,7 @@ import { sponsorConfig } from "./sponsorConfig";
 export const themeConfig = {
 	// 站点身份与全站开关：siteConfig.ts
 	lang: siteConfig.lang,
+	timezone: siteConfig.timezone,
 	title: siteConfig.title,
 	description: siteConfig.description,
 	author: siteConfig.author,
@@ -42,6 +44,7 @@ export const themeConfig = {
 	since: siteConfig.since,
 	keywords: siteConfig.keywords,
 	logo: siteConfig.logo,
+	favicon: siteConfig.favicon,
 	pages: siteConfig.pages,
 	categoryBar: siteConfig.categoryBar,
 	huePanel: siteConfig.huePanel,
@@ -49,6 +52,7 @@ export const themeConfig = {
 	pageWidth: siteConfig.pageWidth,
 	footer: siteConfig.footer,
 	// 内容渲染与文章页功能：contentConfig.ts
+	archive,
 	postList,
 	toc,
 	codeTheme,
@@ -84,6 +88,7 @@ export {
 	advertisementConfig,
 	analyticsConfig,
 	announcementConfig,
+	archive,
 	banner,
 	codeTheme,
 	commentConfig,

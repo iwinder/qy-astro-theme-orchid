@@ -1354,6 +1354,22 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.71）**：biome 单文件 0 错误（存量基线告警不动）；`rm -rf site/node_modules/.astro && pnpm build` exit 0；dist 静态验证 wrapper 结构（`div[data-lightbox-gallery]` → cover figure → article，本页无 series-nav）。浏览器实测（preview:4323，观剧总结页 4 图组）：点封面开在 **1/4** 且缩略图条首张即封面、active index 0；键盘 → 切至 2/4 高亮同步 index 1；开关点击显隐与 `aria-pressed` 同步、重显示后高亮重定位正常；**收起状态下关闭重开仍收起**（模块级保持）；重开落在正文图仍 2/4（DOM 顺序正确）。单图场景（hello-world，`image: "api"` 随机封面）：点封面开 1/1，无缩略图条无开关。居中实测：564px 窄视口注入样式覆盖移动端隐藏规则后，首缩略图 left 135 / 尾图距右缘 134——**完全对称**（pswp fixed 根宽为 clientWidth 549 = innerWidth 564 - 滚动条 15，两侧 margin auto 各 122.5px），居中生效；溢出退化路径由 CSS 语义保证（auto 归零）未单独构造场景。
 
+### 4.72 配置体系三方对齐审计：README 过时项清理 + site/config 缺键补全（✅ 2026-10-18 完成）
+
+**背景**：用户要求把全部配置做成「说明文章」（README 配置参考表）与「配置文件」（site/config/ 模块示例），该删的删、该补的补、按功能分类补充。以 `schema.ts`（43 个顶层键，源真理）为基准全量核对三方，发现两类漂移：README 3 处过时（历史值未随 schema 演进）；site/config 缺 3 个顶层键演示 + 1 处注释停留在 §4.65 图标标准化之前。
+
+**方案**：零新增配置项，纯文档/示例对齐——README 过时值改回 schema 实际值并重写文案对齐 schema 注释；site/config 以带注释示例补齐缺键，`index.ts` 组装层同步接线（遵守「schema.ts + README 表 + site 组装层」三处同步约定，防 default 静默兜底的漏键坑）。
+
+**设计决策**：
+- **README 三处过时修正**：① §4.58 后 `title` 已有 default("Orchid Blog")，L35「只有 title 必填」与 L105「（必填）」为历史遗留 → 统一为「无必填项」+ 默认值列补 `"Orchid Blog"`；② L112 `pageWidth` 写 `1120`，schema 实为 `1600`（页宽重构遗留）→ 默认值改 `1600`，说明文案对齐 schema（内容区页宽，≥1280 屏按 min(92vw, 此值)，文章页维持 1120px 阅读行宽不跟随）
+- **site/config 缺键归类**：schema 43 键组装层只传 40 键，`favicon`/`timezone`/`archive` 靠 schema default 兜底。按功能域归位：`timezone`/`favicon` 属站点身份 → siteConfig.ts（favicon 以单条目演示形状，值即主题默认 `/favicon.svg`，视觉零变化）；`archive` 属内容渲染域 → contentConfig.ts（紧随 postList，`fold: true` 演示按年折叠特性）
+- **profileConfig 注释更新**：§4.65 后 `links[].icon` 支持三种写法（内置简名 / Iconify 全名 `"集:名"` 如 `simple-icons:bilibili` / 内联 SVG），site 侧注释停留在「两种写法」→ 补第三种，指引从已退役的 `src/icons.ts` 改为主题 README「社交图标」
+- **显式 vs 约定的边界**：site/config 定位是「全部顶层键的可查示例」（§4.58 约定），补全三键使三方矩阵 43/43 全对齐，而非依赖「未导出字段默认兜底」的隐式路径
+
+**改动**：`packages/theme/README.md`（title 两处 + pageWidth 行）、`site/config/siteConfig.ts`（+timezone +favicon）、`site/config/contentConfig.ts`（+archive）、`site/config/profileConfig.ts`（注释三写法）、`site/config/index.ts`（组装层 +3 键、再导出 +archive）
+
+**验证（§4.72）**：`pnpm lint` exit 0（仅存量基线告警）；`pnpm --filter site check` 0 errors 0 warnings（`satisfies ThemeConfig` 对三新键通过）；`pnpm --filter site build` exit 0（116 页 + pagefind 64 页）。dist 抽查：首页 favicon 输出 `<link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">`（显式配置生效）；归档页 8 个年份组全部渲染为 `<button class="archive-year">`，7/8 timeline 带 `fold` 类（最新一年展开、其余折叠），fold 特性经组装层正确传导。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

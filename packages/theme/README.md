@@ -32,7 +32,7 @@ export default defineConfig({
 });
 ```
 
-配置在 dev/build 启动即校验（Zod schema），错误会直接报出来。所有配置项都有默认值，只有 `title` 必填。
+配置在 dev/build 启动即校验（Zod schema），错误会直接报出来。所有配置项都有默认值，无必填项（`title` 缺省为 `"Orchid Blog"`，正式站点应显式配置）。
 
 ### 3. 内容集合
 
@@ -102,14 +102,14 @@ site/
 
 | 配置项 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `title` | `string` | （必填） | 站点名 |
+| `title` | `string` | `"Orchid Blog"` | 站点名 |
 | `description` | `string` | `""` | 站点描述（首页与 meta description 默认值） |
 | `keywords` | `string[]` | `[]` | 站点级 SEO keywords；文章页由 frontmatter `tags` 覆盖，留空不输出 meta |
 | `logo` | `string` | `""` | 导航栏 Logo 图片 URL（public 路径或外链），留空只渲染文字标题 |
 | `author` | `string` | `""` | 作者名 |
 | `accentColor` | `string` | `"#4a9d8f"` | 强调色（6 位 hex）。构建期转 HSL，全部派生色由公式计算 |
 | `lang` | `string` | `"zh-CN"` | 站点语言（`<html lang>`），同时驱动 UI 文案（支持 `zh-CN` / `en`） |
-| `pageWidth` | `number` | `1120` | 主容器页宽（800-1920 px），驱动主壳与文章页双列布局 |
+| `pageWidth` | `number` | `1600` | 内容区页宽（800-1920 px，≥1280 屏按 min(92vw, 此值) 取值）；文章页维持 1120px 阅读行宽不跟随 |
 | `timezone` | `string` | — | 构建期日期时区（IANA 名，如 `"Asia/Shanghai"`），留空跟随构建环境 |
 | `since` | `string` | — | 建站日期 `YYYY-MM-DD`（站点信息卡「已运行」），不配置不显示 |
 | `colorMode` | `"light" \| "dark" \| "system"` | `"system"` | 默认深浅模式（仅初值，用户切换后以 localStorage 为准） |

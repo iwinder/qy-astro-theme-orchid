@@ -11,12 +11,16 @@ export const siteConfig = {
 	keywords: ["技术", "生活", "博客", "Astro"],
 	// 导航栏 Logo：标题左侧图片（public 路径或外链），置空只渲染文字标题
 	logo: "/favicon.svg",
+	// favicon 图标列表：非空时替换主题默认 favicon；theme 指定 "light"/"dark" 时按系统深浅切换（可配双图标）
+	favicon: [{ src: "/favicon.svg", type: "image/svg+xml", sizes: "any" }],
 	// 作者名（版权行 / 文章作者兜底）
 	author: "windcoder",
 	// 强调色（6 位 hex）：全部派生色（accent/soft/ink 等）由 HSL 公式计算；访客可用导航栏调色面板临时改
 	accentColor: "#4a9d8f",
 	// 站点语言（<html lang> 与 UI 文案语言包）
 	lang: "zh-CN",
+	// 构建期日期时区（IANA 名）：文章/归档等日期输出与构建机时区解耦，留空跟随构建环境
+	timezone: "Asia/Shanghai",
 	// 建站日期（YYYY-MM-DD，站点信息卡「已运行」），不配置则不显示该行
 	since: "2024-01-01",
 	// 独立页开关：置 false 后主题不注入对应路由（路由完全不生成，而非运行期 404）

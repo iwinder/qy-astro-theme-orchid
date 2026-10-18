@@ -22,6 +22,10 @@ export const postList: ThemeConfig["postList"] = {
 	gridColumnWidth: 320,
 };
 
+// ---------- 归档页 ----------
+// fold: 按年折叠（最新一年默认展开，其余年份折叠）
+export const archive: ThemeConfig["archive"] = { fold: true };
+
 // ---------- 文章页目录（独立悬浮 TOC；sidebar.onPost 开启后由侧栏 toc widget 承担） ----------
 export const toc: ThemeConfig["toc"] = { enabled: true };
 
