@@ -11,24 +11,17 @@ seriesGroup: 功能配置
 seriesOrder: 16
 ---
 
-本篇讲评论区：五套后端（Artalk / Twikoo / Waline / giscus / Disqus）任选其一，对应配置文件 `site/src/config/commentConfig.ts`。
+本篇讲评论区：五套后端（Artalk / Twikoo / Waline / giscus / Disqus）任选其一，`provider` 一键切换。
 评论区**按需注入**——`enabled` 关闭时该区域整体不渲染，评论脚本完全不进构建产物。
 
-## 快速上手
-
-以 Artalk 为例：
-
-```ts
-// site/src/config/commentConfig.ts
-export const commentConfig: ThemeConfig["comment"] = {
-	enabled: true,
-	provider: "artalk",
-	title: "评论",
-	artalk: { server: "https://artalk.example.com", locale: "zh-CN", visitorCount: true },
-};
-```
+**配置文件**：`site/src/config/commentConfig.ts`
 
 ## 顶层配置
+
+顶层键控制评论区的总开关、后端选择与标题，以 Artalk 为例：
+
+**仅 `provider` 对应的分支参与渲染**，其余分支的值留着无副作用；
+不需要的键可整段删除（主题 schema 自动兜底）。文章 frontmatter `comment: false` 可**按篇关闭**（见[写作指南](/posts/writing/)）。
 
 | 键 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
@@ -36,14 +29,21 @@ export const commentConfig: ThemeConfig["comment"] = {
 | `provider` | `string` | `"artalk"` | `artalk` / `twikoo` / `waline` / `giscus` / `disqus` / `none` |
 | `title` | `string` | `"评论"` | 评论区标题 |
 
-**仅 `provider` 对应的分支参与渲染**，其余分支的值留着无副作用；
-不需要的键可整段删除（主题 schema 自动兜底）。文章 frontmatter `comment: false` 可**按篇关闭**（见[写作指南](/posts/writing/)）。
+```ts
+// site/src/config/commentConfig.ts
+export const commentConfig: ThemeConfig["comment"] = {
+	enabled: true,
+	provider: "artalk",
+	title: "评论",
+};
+```
 
-## 五套后端全字段
+## Artalk
 
-**Artalk**（自建）：
+自建评论后端：
 
 ```ts
+// site/src/config/commentConfig.ts
 artalk: {
 	server: "https://artalk.example.com", // 服务端地址
 	locale: "zh-CN",                      // 界面语言
@@ -51,9 +51,12 @@ artalk: {
 },
 ```
 
-**Twikoo**：
+## Twikoo
+
+`envId` 填环境 ID / 服务端地址：
 
 ```ts
+// site/src/config/commentConfig.ts
 twikoo: {
 	envId: "https://twikoo.example.com",  // 环境 ID / 服务端地址
 	jsUrl: "https://registry.npmmirror.com/twikoo/1.7.13/files/dist/twikoo.min.js",
@@ -64,9 +67,12 @@ twikoo: {
 > [!warning]
 > Twikoo 的 `jsUrl` **无空值兜底**——留空会渲染出 `src=""`，请保留默认 CDN 或换成自部署地址。
 
-**Waline**：
+## Waline
+
+服务端可部署在 Vercel 或自建：
 
 ```ts
+// site/src/config/commentConfig.ts
 waline: {
 	serverURL: "https://waline.example.com", // 服务端地址（Vercel/自建）
 	lang: "zh-CN",        // 界面语言
@@ -74,9 +80,12 @@ waline: {
 },
 ```
 
-**giscus**（基于 GitHub Discussions）：
+## giscus
+
+基于 GitHub Discussions：
 
 ```ts
+// site/src/config/commentConfig.ts
 giscus: {
 	repo: "user/repo",        // 仓库
 	repoId: "R_xxx",          // 仓库 ID
@@ -95,9 +104,12 @@ giscus: {
 四件套（`repo`/`repoId`/`category`/`categoryId`）在 [giscus.app](https://giscus.app/zh-CN) 生成；
 其余参数默认值与 giscus.app 生成结果一致，按需覆盖。
 
-**Disqus**：
+## Disqus
+
+`shortname` 填 Disqus 短域名：
 
 ```ts
+// site/src/config/commentConfig.ts
 disqus: { shortname: "your-shortname" },
 ```
 

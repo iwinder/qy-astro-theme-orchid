@@ -11,9 +11,21 @@ seriesGroup: 基础配置
 seriesOrder: 8
 ---
 
-版权声明（license）不是侧栏 widget，而是渲染在**每篇文章末尾**的组件；侧栏 widgets 的挂载与布局见[侧边栏与小组件](/posts/sidebar/)。本文讲它的内容配置与按篇覆盖，全部在 `site/src/config/licenseConfig.ts`。
+版权声明（license）不是侧栏 widget，而是渲染在**每篇文章末尾**的组件；侧栏 widgets 的挂载与布局见[侧边栏与小组件](/posts/sidebar/)。本文讲它的内容配置与按篇覆盖。
 
-## 全部可配置项
+**配置文件**：`site/src/config/licenseConfig.ts`
+
+## 版权声明
+
+配置总开关、许可证名称与全文链接，以及声明的前后缀自定义文案；前后缀留空时用语言包默认文案。
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `enabled` | `boolean` | `true` | `false` 全站关闭版权声明 |
+| `name` | `string` | `"CC BY-NC-SA 4.0"` | 许可证名称 |
+| `url` | `string` | CC 官方链接 | 许可证全文链接 |
+| `prefix` | `string` | `""` | 自定义前缀文案，留空用语言包默认 |
+| `suffix` | `string` | `""` | 自定义后缀文案 |
 
 ```ts
 // site/src/config/licenseConfig.ts
@@ -26,15 +38,7 @@ export const licenseConfig: ThemeConfig["license"] = {
 };
 ```
 
-| 键 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `enabled` | `boolean` | `true` | `false` 全站关闭版权声明 |
-| `name` | `string` | `"CC BY-NC-SA 4.0"` | 许可证名称 |
-| `url` | `string` | CC 官方链接 | 许可证全文链接 |
-| `prefix` | `string` | `""` | 自定义前缀文案，留空用语言包默认 |
-| `suffix` | `string` | `""` | 自定义后缀文案 |
-
-## 按篇覆盖
+### 按篇覆盖
 
 文章 frontmatter 可覆盖全局设置（见[写作指南](/posts/writing/)）：
 

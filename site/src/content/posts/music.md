@@ -11,10 +11,24 @@ seriesGroup: 功能配置
 seriesOrder: 13
 ---
 
-本篇覆盖悬浮音乐播放器的全部配置，对应配置文件 `site/src/config/musicConfig.ts`；
+本篇覆盖悬浮音乐播放器的全部配置；
 模块默认关闭，未出现的字段都有主题默认值兜底。
 
-## 全部可配置项
+**配置文件**：`site/src/config/musicConfig.ts`
+
+## 播放器配置
+
+自研播放内核（audio + LRC 解析），**跨页不断播**——SPA 式保活，翻页不重置进度。
+zIndex 255，高于看板娘与返回顶部按钮。
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `enabled` | `boolean` | `false` | 总开关 |
+| `position` | `"left" \| "right"` | `"left"` | 悬浮球停靠侧 |
+| `volume` | `number` | `0.7` | 初始音量 |
+| `playMode` | `"list" \| "one" \| "random"` | `"list"` | 播放模式 |
+| `showLyrics` | `boolean` | `true` | 歌词面板 |
+| `playlist` | `Track[]` | `[]` | 播放列表 |
 
 ```ts
 // site/src/config/musicConfig.ts
@@ -36,21 +50,14 @@ export const music: ThemeConfig["music"] = {
 };
 ```
 
+### 播放列表
+
 | 键 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `enabled` | `boolean` | `false` | 总开关 |
-| `position` | `"left" \| "right"` | `"left"` | 悬浮球停靠侧 |
-| `volume` | `number` | `0.7` | 初始音量 |
-| `playMode` | `"list" \| "one" \| "random"` | `"list"` | 播放模式 |
-| `showLyrics` | `boolean` | `true` | 歌词面板 |
-| `playlist` | `Track[]` | `[]` | 播放列表 |
 | `playlist[].name` / `artist` | `string` | 必填 | 曲名 / 艺术家 |
 | `playlist[].url` | `string` | 必填 | 音频地址 |
 | `playlist[].cover` | `string` | `""` | 封面图 |
 | `playlist[].lrc` | `string` | `""` | 歌词三种形态：`.lrc` 文件路径 / 内联 LRC 文本 / 不配置即无歌词 |
-
-自研播放内核（audio + LRC 解析），**跨页不断播**——SPA 式保活，翻页不重置进度。
-zIndex 255，高于看板娘与返回顶部按钮。
 
 ## 使用效果
 

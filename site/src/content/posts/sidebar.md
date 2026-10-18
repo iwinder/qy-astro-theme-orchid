@@ -1,6 +1,6 @@
 ---
 title: 侧边栏与小组件（sidebar）
-description: 侧边栏 widgets 数组体系——九种组件挂载与渲染顺序、公共显隐配置（showOnPost/postOnly/hideOnMobile）、粘性定位与各 widget 专属布局参数。
+description: 侧边栏 widgets 数组体系——侧栏开关（onPost）、九种组件挂载与渲染顺序、widget 通用属性与显隐（showOnPost/postOnly/hideOnMobile）、粘性定位与各 widget 专属布局参数。
 published: 2026-10-18
 tags:
   - 主题机制
@@ -11,35 +11,26 @@ seriesGroup: 基础配置
 seriesOrder: 6
 ---
 
-侧边栏是主题里可玩性最高的模块：**九种 widget 以数组声明**，类型、顺序、显隐、粘性定位全部可配，配置文件是 `site/src/config/sidebarConfig.ts`。本文讲侧栏这套「功能布局」——挂载哪些组件、按什么顺序渲染、在哪些页面显示；每个 widget 的**内容配置**则分散在各功能自己的文章，见「九种 widget 与专属配置」一节的链接。
+侧边栏是主题里可玩性最高的模块：**九种 widget 以数组声明**，类型、顺序、显隐、粘性定位全部可配。本文讲侧栏这套「功能布局」——挂载哪些组件、按什么顺序渲染、在哪些页面显示；每个 widget 的**内容配置**则分散在各功能自己的文章，见「九种 widget 与专属配置」一节的链接。
 
-## 快速上手
+**配置文件**：`site/src/config/sidebarConfig.ts`
 
-```ts
-// site/src/config/sidebarConfig.ts
-import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
+## 侧栏开关
 
-export const sidebarConfig: ThemeConfig["sidebar"] = {
-	onPost: true, // 文章页启用侧栏（false 时文章页退回悬浮目录）
-	widgets: [
-		{ type: "profile" },
-		{ type: "categories", position: "sticky" },
-		{ type: "tags", position: "sticky", specificConfig: { count: 12 } },
-	],
-};
-```
-
-## 顶层配置
+`onPost` 决定文章页是否启用侧栏，关闭时文章页退回悬浮目录。
 
 | 键 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
 | `onPost` | `boolean` | `true` | 文章页是否启用侧栏；`false` 时文章页用悬浮目录替代 |
-| `widgets` | `WidgetItem[]` | 主题默认九件套 | **数组整体覆写**主题默认 widgets（见下方注意） |
 
-> [!note]
-> `widgets` 数组是**整体覆写**语义，不是合并：只要写了 `widgets`，主题默认的那套就不生效；且非默认字段（如 `position: "sticky"`）必须显式声明，item 内层默认值不继承主题默认。
+```ts
+// site/src/config/sidebarConfig.ts
+onPost: true, // 文章页启用侧栏（false 时文章页退回悬浮目录）
+```
 
-## 公共配置（每个 widget 项上）
+## widget 通用属性
+
+`widgets` 数组里每个 item 除了 `type`，还共享一组通用属性——开关、两个方向的显隐、移动端隐藏与粘性定位；组件专属参数统一收进 `specificConfig`。
 
 | 键 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
@@ -53,7 +44,25 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 
 两个显隐方向（`showOnPost: false` 与 `postOnly: true`）都缺省时，列表页与文章页侧栏都显示。
 
+```ts
+// site/src/config/sidebarConfig.ts
+widgets: [
+	{ type: "profile" },
+	{ type: "categories", position: "sticky" },
+	{ type: "tags", position: "sticky", specificConfig: { count: 12 } },
+],
+```
+
 ## 九种 widget 与专属配置
+
+`widgets` 数组从九种 widget 里挑选挂载，声明的顺序就是渲染的顺序。
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `widgets` | `WidgetItem[]` | 主题默认九件套 | **数组整体覆写**主题默认 widgets（见下方注意） |
+
+> [!note]
+> `widgets` 数组是**整体覆写**语义，不是合并：只要写了 `widgets`，主题默认的那套就不生效；且非默认字段（如 `position: "sticky"`）必须显式声明，item 内层默认值不继承主题默认。
 
 | type | 组件 | specificConfig 专属键 |
 |---|---|---|
@@ -69,9 +78,16 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 
 上表只讲**布局**（专属键、渲染规则）；各组件的实际内容——资料卡字段、公告文案、友链数据、广告素材、目录行为——分别见对应链接的文章。
 
+```ts
+// site/src/config/sidebarConfig.ts
+{ type: "friends", enabled: true, position: "sticky",
+  specificConfig: { count: 3, random: false } },
+```
+
 ## 本站示例
 
 ```ts
+// site/src/config/sidebarConfig.ts
 export const sidebarConfig: ThemeConfig["sidebar"] = {
 	onPost: true,
 	widgets: [

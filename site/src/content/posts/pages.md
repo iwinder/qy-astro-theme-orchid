@@ -15,7 +15,14 @@ seriesOrder: 23
 开关在 `site/src/config/siteConfig.ts` 的 `pages`，正文来自 `src/content/spec/` 下的 Markdown 集合。
 各页的数据配置另见[友链](/posts/friends/)、[赞助](/posts/sponsor/)、[画廊](/posts/gallery/)。
 
+**配置文件**：
+
+- `site/src/config/siteConfig.ts` → `pages`（页面开关）
+- `site/src/content/spec/` → about / friends / guestbook 页面正文
+
 ## 页面开关（siteConfig.pages）
+
+置 `false` 后主题**不注入对应路由**——路由在构建期完全不生成，而非运行期 404。
 
 ```ts
 // site/src/config/siteConfig.ts
@@ -29,12 +36,14 @@ pages: {
 },
 ```
 
-置 `false` 后主题**不注入对应路由**——路由在构建期完全不生成，而非运行期 404。
 页面开关与全站其余基础配置的联动见[站点基础配置](/posts/site-config/)。
 
 ## 页面正文（spec 集合）
 
 about、friends、guestbook 三个页面的正文来自 `src/content/spec/` 下的 Markdown 文件：
+
+- 文件名固定（slug 即页面名），frontmatter 只需 `title`
+- **缺条目不会构建失败**——对应页面渲染主题内置的占位内容
 
 ```
 site/src/content/spec/
@@ -42,6 +51,3 @@ site/src/content/spec/
 ├── friends.md    # 友链页正文（渲染在友链列表上方）
 └── guestbook.md  # 留言板页正文（渲染在评论区上方）
 ```
-
-- 文件名固定（slug 即页面名），frontmatter 只需 `title`
-- **缺条目不会构建失败**——对应页面渲染主题内置的占位内容

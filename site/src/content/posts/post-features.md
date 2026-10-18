@@ -15,24 +15,43 @@ seriesOrder: 10
 底部推荐、分享图与海报、过时提醒，每个模块一个独立配置文件，开关即用。
 公式、图表、邮箱防爬这三个「内容渲染」模块见[内容渲染](/posts/content-rendering/)。
 
+**配置文件**：
+
+- `site/src/config/tocConfig.ts` → `toc`（目录）
+- `site/src/config/expressiveCodeConfig.ts` → `codeTheme`（代码高亮）
+- `site/src/config/relatedPostsConfig.ts` → `relatedPosts`（相关/随机推荐）
+- `site/src/config/shareConfig.ts` → `og` / `sharePoster`（分享：OG 图与海报）
+- `site/src/config/outdatedConfig.ts` → `outdated`（过时提醒）
+
 ## 目录（toc）
+
+两种形态自动切换：`sidebar.onPost: true`（默认）时由**侧栏 toc widget** 承担；
+侧栏关闭文章页侧栏时，回退为**悬浮目录**（页面右侧浮动面板）。
+侧栏 toc 的显隐配置见[侧边栏与小组件](/posts/sidebar/)。
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `enabled` | `boolean` | `true` | 悬浮目录总开关 |
 
 ```ts
 // site/src/config/tocConfig.ts
 export const toc: ThemeConfig["toc"] = { enabled: true };
 ```
 
-| 键 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `enabled` | `boolean` | `true` | 悬浮目录总开关 |
-
-两种形态自动切换：`sidebar.onPost: true`（默认）时由**侧栏 toc widget** 承担；
-侧栏关闭文章页侧栏时，回退为**悬浮目录**（页面右侧浮动面板）。
-侧栏 toc 的显隐配置见[侧边栏与小组件](/posts/sidebar/)。
-
 ## 代码高亮（codeTheme）
 
 主题采用 **Expressive Code**（Astro 生态标准方案），Shiki 双主题，构建期渲染零运行时开销：
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `light` / `dark` | `string` | `"github-light"` / `"github-dark"` | Shiki 内置主题名；dark 优先，按 `html.dark` 选择器随站点深浅模式切换 |
+| `fold.enabled` | `boolean` | `true` | 长代码块自动折叠 |
+| `fold.lineThreshold` | `number` | `15` | 超过该行数才折叠 |
+| `fold.previewLines` | `number` | `8` | 折叠时预览行数（底部渐隐） |
+| `fold.defaultCollapsed` | `boolean` | `true` | 达阈值时是否默认折叠 |
+| `lineNumbers` | `boolean` | `true` | 行号 |
+| `languageBadge` | `boolean` | `false` | 代码块右上角语言徽标 |
+| `wrap` | `boolean` | `false` | 长行换行（`false` 横向滚动） |
 
 ```ts
 // site/src/config/expressiveCodeConfig.ts
@@ -51,23 +70,20 @@ export const codeTheme: ThemeConfig["codeTheme"] = {
 };
 ```
 
-| 键 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `light` / `dark` | `string` | `"github-light"` / `"github-dark"` | Shiki 内置主题名；dark 优先，按 `html.dark` 选择器随站点深浅模式切换 |
-| `fold.enabled` | `boolean` | `true` | 长代码块自动折叠 |
-| `fold.lineThreshold` | `number` | `15` | 超过该行数才折叠 |
-| `fold.previewLines` | `number` | `8` | 折叠时预览行数（底部渐隐） |
-| `fold.defaultCollapsed` | `boolean` | `true` | 达阈值时是否默认折叠 |
-| `lineNumbers` | `boolean` | `true` | 行号 |
-| `languageBadge` | `boolean` | `false` | 代码块右上角语言徽标 |
-| `wrap` | `boolean` | `false` | 长行换行（`false` 横向滚动） |
-
 > [!note]
 > 主题接管代码高亮后，`astro.config.mjs` 的 `markdown.syntaxHighlight` 必须保持 `false`（主题接入时已处理），否则双重高亮冲突。
 
 使用效果：每个代码块自带复制按钮；超 15 行的块默认折叠为 8 行预览，点击右上角按钮展开（可看本站[你好，清言集](/posts/hello-world/)中的演示）。
 
 ## 相关/随机推荐（relatedPosts）
+
+文章底部的推荐区：「相关文章」构建期评分选出，「随机文章」客户端拉取。
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `enabled` | `boolean` | `true` | 文章底部推荐区总开关 |
+| `count` | `number` | `5` | 「相关文章」数量，构建期评分：标签/标题 Jaccard 相似度 + 时间新鲜度 + 同分类加成 |
+| `randomCount` | `number` | `5` | 「随机文章」数量，客户端 fetch `/api/allPostMeta.json` |
 
 ```ts
 // site/src/config/relatedPostsConfig.ts
@@ -78,15 +94,16 @@ export const relatedPosts: ThemeConfig["relatedPosts"] = {
 };
 ```
 
-| 键 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `enabled` | `boolean` | `true` | 文章底部推荐区总开关 |
-| `count` | `number` | `5` | 「相关文章」数量，构建期评分：标签/标题 Jaccard 相似度 + 时间新鲜度 + 同分类加成 |
-| `randomCount` | `number` | `5` | 「随机文章」数量，客户端 fetch `/api/allPostMeta.json` |
-
 加密文章**不进两个推荐池**——不会通过推荐区泄露加密文章的存在。
 
 ## 分享：OG 图与海报（og / sharePoster）
+
+**OG 分享图**：构建期为每篇文章生成 **1200×630** 分享图到 `/og/<slug>.png`，
+社交媒体（微信、Twitter/X、Telegram 等）分享链接时自动展示。
+Google Fonts 拉取失败时自动降级纯形状占位图，**构建不中断**。
+
+**分享海报**：文章页出现「生成分享海报」按钮：纯浏览器端 canvas + 二维码合成站点海报图，
+点开才加载依赖，**构建零开销**。海报含标题、摘要、站点信息与访问二维码。
 
 ```ts
 // site/src/config/shareConfig.ts
@@ -97,14 +114,15 @@ export const og: ThemeConfig["og"] = { enabled: true };
 export const sharePoster: ThemeConfig["sharePoster"] = { enabled: true };
 ```
 
-**OG 分享图**：构建期为每篇文章生成 **1200×630** 分享图到 `/og/<slug>.png`，
-社交媒体（微信、Twitter/X、Telegram 等）分享链接时自动展示。
-Google Fonts 拉取失败时自动降级纯形状占位图，**构建不中断**。
-
-**分享海报**：文章页出现「生成分享海报」按钮：纯浏览器端 canvas + 二维码合成站点海报图，
-点开才加载依赖，**构建零开销**。海报含标题、摘要、站点信息与访问二维码。
-
 ## 过时提醒（outdated）
+
+天数由**客户端实时计算**（构建期算会随时间失效）——超过阈值时文章顶部出现
+「最后更新」卡片与过时警告，提示读者内容可能不再准确。
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `enabled` | `boolean` | `true` | 总开关 |
+| `threshold` | `number` | `30` | 距最后更新（`updated ?? published`）超过该天数时提醒 |
 
 ```ts
 // site/src/config/outdatedConfig.ts
@@ -113,14 +131,6 @@ export const outdated: ThemeConfig["outdated"] = {
 	threshold: 30, // 天
 };
 ```
-
-| 键 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `enabled` | `boolean` | `true` | 总开关 |
-| `threshold` | `number` | `30` | 距最后更新（`updated ?? published`）超过该天数时提醒 |
-
-天数由**客户端实时计算**（构建期算会随时间失效）——超过阈值时文章顶部出现
-「最后更新」卡片与过时警告，提示读者内容可能不再准确。
 
 ## 模块总览
 

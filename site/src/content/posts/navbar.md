@@ -11,9 +11,19 @@ seriesGroup: 基础配置
 seriesOrder: 4
 ---
 
-本篇讲站点导航栏：菜单项、下拉子菜单与外链标记，全部配置在 `site/src/config/navBarConfig.ts`。首页横幅（banner）是另一个独立配置文件，见[首页横幅](/posts/banner/)。
+本篇讲站点导航栏：菜单项、下拉子菜单与外链标记。首页横幅（banner）是另一个独立配置文件，见[首页横幅](/posts/banner/)。
 
-## 快速上手
+**配置文件**：`site/src/config/navBarConfig.ts`
+
+## 菜单项
+
+导航栏是一个纯数组：数组项按声明顺序渲染在导航栏中部，每个菜单项由 `label` 显示文本与 `href` 链接组成，外链再置 `external: true`。
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `label` | `string` | 必填 | 显示文本 |
+| `href` | `string` | 无 children 时必填 | 站内链接以 `/` 开头；外链填完整 URL 并置 `external: true` |
+| `external` | `boolean` | `false` | 标记外链，渲染时新窗口打开并带外链图标 |
 
 ```ts
 // site/src/config/navBarConfig.ts
@@ -25,15 +35,12 @@ export const navBarConfig: ThemeConfig["nav"] = [
 ];
 ```
 
-数组项按声明顺序渲染在导航栏中部。
+## 子菜单
 
-## 全部可配置项
+`children` 非空时，该项渲染为下拉子菜单；父项 `href` 可省略，做成纯展开按钮。
 
 | 键 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `label` | `string` | 必填 | 显示文本 |
-| `href` | `string` | 无 children 时必填 | 站内链接以 `/` 开头；外链填完整 URL 并置 `external: true` |
-| `external` | `boolean` | `false` | 标记外链，渲染时新窗口打开并带外链图标 |
 | `children` | `NavItem[]` | `[]` | 非空时渲染为下拉子菜单，父项 `href` 可省略（纯展开按钮） |
 
 三条规则：
@@ -42,9 +49,22 @@ export const navBarConfig: ThemeConfig["nav"] = [
 2. **纯展开按钮**：父项只有 `label` + `children`、没有 `href` 时，点击只展开不下跳
 3. **无 children 必须提供 href**，否则构建期校验报错
 
+```ts
+// site/src/config/navBarConfig.ts
+{
+	label: "更多",
+	children: [
+		{ label: "关于", href: "/about/" },
+		{ label: "友链", href: "/friends/" },
+		{ label: "留言板", href: "/guestbook/" },
+	],
+},
+```
+
 ## 本站示例
 
 ```ts
+// site/src/config/navBarConfig.ts
 export const navBarConfig: ThemeConfig["nav"] = [
 	{ label: "首页", href: "/" },
 	{

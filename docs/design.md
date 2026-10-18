@@ -1536,6 +1536,22 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.82）**：biome 132 files 0 error（自动修复 index.ts import 排序 1 处）；`CI=true pnpm --filter site build` exit 0（全站 56 页，dist/posts 30 目录 = 26 指南 + 4 demo 全产出，about/friends 等独立页正常渲染）；**pagefind 对照实验**（git stash 后构建 HEAD 对照）：改动前 Indexed 17 pages（= 13 指南 + 4 demo），改动后 Indexed 30 pages（= 26 指南 + 4 demo），与文章数严格一致、无索引回归；「Indexed N pages」实为带 `data-pagefind-body` 标记的文章页数（pagefind v1.5.2「Found a data-pagefind-body element… Ignoring pages without this tag」），历史留痕中 64/74/75 页的记录口径与此不符，以本对照实验为准。seriesOrder 1-26 无冲突（grep 全量核对）；旧 slug（nav-and-banner 等 5 个）与 appearanceConfig/contentConfig 全局扫描 0 残留。**勘误（提交 60ecc9d 后 CI 两次失败于 astro check，随 7704bef 修复）**：本地验证漏跑 `pnpm --filter site check`（astro build 不做类型检查）——`ThemeConfig["diagram"]` 整体可选，`ThemeConfig["diagram"]["mermaid"]` 双层索引 ts(2339) 非法（单键 optional 直接赋值合法，故其余拆分文件未爆），mermaidConfig.ts / plantumlConfig.ts 改用 `NonNullable<ThemeConfig["diagram"]>["mermaid"|"plantuml"]` 后 check 0 errors 0 warnings。教训：config 拆分涉及嵌套可选键时，验证清单必须含 astro check 而非仅 build。
 
+### 4.83 指南功能文章体例统一（对齐 Firefly 介绍逻辑）（✅ 2026-10-18 完成）
+
+**背景**：§4.82 完成按功能拆文拆文件后，用户指出「拆功能不等于功能介绍逻辑就对了」——要求参考 docs-firefly.cuteleaf.cn/zh/guide/site.html 的体例：先简单描述 → 列出配置文件 → 列配置信息及案例；一个配置文件多个功能时按功能分组列，而不是一次全列或这里一块那里一块。现状差距实测：site-config.md 17 键一张全量大表 + 五个孤立机制小节（强调色/pageWidth/timezone/pages/favicon 散落文末）；profile.md 等拆分产物「全量代码 + 全量表」一锅端。
+
+**方案**：定统一体例模板——①开头 1-3 句定位（功能是什么、挂载/联动关系引流）→ ②**配置文件**加粗行块 → ③按功能分组，每组 `## 功能组名`（组名=功能名，禁「全部可配置项/快速上手/完整配置/字段说明」分类名），组内固定顺序「功能说明（机制并入，删孤立小节）→ 属性表（只列本组键）→ 组内代码案例（片段式，路径注释+行内注释保留）→ 按需提示块」→ ④使用效果/相关配置保留。21 篇配置文章经 5 组并行子代理改造（A: site-config 重度按 8 组拆分——基础信息/站点标识/语言与时区/强调色/深浅模式/页面宽度/页面开关/页脚；B: navbar/banner/profile/license/sidebar；C: postlist-and-archive/post-features/content-rendering/pages；D: comment/analytics/announcement/advertisement/friends/sponsor/gallery；E: sakura/music/live2d/fonts），硬规则「内容零增删，只搬位/合并，机制说明并入所属功能组」。
+
+**设计决策**：
+- **组名即功能名**：读者按「我想配什么」定位组，组内自包含（说明+表+案例），不再需要跨节拼凑一个键的完整信息
+- **单功能小文件整篇一组**（license/sakura 等 5 键内小文件），避免为分组而分组；多键文件才拆组
+- **多配置文件文章用「配置文件」列表块**（post-features 五文件、content-rendering 四文件逐行列「文件 → 模块」），保持入口单一
+- **「内容零增删」硬规则防跑偏**：体例改造只重组不重写，表格行/行内注释/提示块/效果/互链逐项 grep 核对
+
+**改动**：21 篇文章内部结构重组（site-config 120→190 行，其余各篇 ±20 行内）；无 config/代码改动。
+
+**验证（§4.83）**：全 21 篇「**配置文件**：」块 grep 全命中；「全部可配置项/快速上手/完整配置/字段说明」旧标题 0 残留；biome 132 files 0 error；`pnpm --filter site check` 0 errors 0 warnings；`CI=true pnpm --filter site build` exit 0（Indexed 30 pages 与文章数一致）。子代理逐篇汇报表格键行数与原文一致（如 site-config 17 行、post-features 10+19 行等），互链与提示块零丢失。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

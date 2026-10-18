@@ -11,7 +11,9 @@ seriesGroup: 功能配置
 seriesOrder: 18
 ---
 
-本篇覆盖站点统计的完整配置——Google Analytics、Microsoft Clarity、Umami、51.la 四家按需选配，全部集中在 `site/src/config/analyticsConfig.ts`。
+本篇覆盖站点统计的完整配置——Google Analytics、Microsoft Clarity、Umami、51.la 四家按需选配。
+
+**配置文件**：`site/src/config/analyticsConfig.ts`
 
 ## 顶层配置
 
@@ -22,14 +24,15 @@ seriesOrder: 18
 export const analyticsConfig: ThemeConfig["analytics"] = {
 	googleAnalyticsId: "",      // Google Analytics（G-XXXX）
 	microsoftClarityId: "",     // Microsoft Clarity 项目 ID
-	umami: { /* 见下 */ },
-	la51: { /* 见下 */ },
 };
 ```
 
-## Umami（官方云或自建）
+## Umami
+
+官方云或自建均可：
 
 ```ts
+// site/src/config/analyticsConfig.ts
 umami: {
 	websiteId: "",            // Website ID
 	scriptUrl: "https://cloud.umami.is/script.js",           // 自建时替换
@@ -48,7 +51,10 @@ umami: {
 
 ## 51.la
 
+`id` 填站点 ID（CK 编码）：
+
 ```ts
+// site/src/config/analyticsConfig.ts
 la51: {
 	id: "",               // 站点 ID（CK 编码）
 	sdkUrl: "",           // 自定义 SDK 地址（防 DNS 污染），留空用默认

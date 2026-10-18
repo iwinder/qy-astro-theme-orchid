@@ -11,10 +11,20 @@ seriesGroup: 功能配置
 seriesOrder: 12
 ---
 
-本篇覆盖樱花飘落特效的全部配置，对应配置文件 `site/src/config/sakuraConfig.ts`；
+本篇覆盖樱花飘落特效的全部配置；
 模块默认关闭，未出现的字段都有主题默认值兜底。
 
-## 全部可配置项
+**配置文件**：`site/src/config/sakuraConfig.ts`
+
+## 樱花配置
+
+全站 canvas 粒子，花瓣**程序化绘制**（零贴图资产）；系统开启
+`prefers-reduced-motion` 时自动停用，无障碍友好。
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `enabled` | `boolean` | `false` | 总开关 |
+| `density` | `number` | `24` | 花瓣密度（同屏数量），配合屏幕宽度缩放 |
 
 ```ts
 // site/src/config/sakuraConfig.ts
@@ -23,14 +33,6 @@ export const sakura: ThemeConfig["sakura"] = {
 	density: 24, // 每屏花瓣数
 };
 ```
-
-| 键 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `enabled` | `boolean` | `false` | 总开关 |
-| `density` | `number` | `24` | 花瓣密度（同屏数量），配合屏幕宽度缩放 |
-
-全站 canvas 粒子，花瓣**程序化绘制**（零贴图资产）；系统开启
-`prefers-reduced-motion` 时自动停用，无障碍友好。
 
 ## 使用效果
 
