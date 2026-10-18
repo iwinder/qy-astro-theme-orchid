@@ -1,6 +1,6 @@
 ---
 title: 快速开始：从零搭建博客
-description: 环境要求、安装命令、目录结构、配置文件概览、常用命令与部署——最快路径跑通一个属于你的站点。
+description: 环境要求、安装启动、部署升级一条龙，外加目录结构与配置文件概览——最快路径跑通一个属于你的站点。
 published: 2026-10-18
 tags:
   - 主题机制
@@ -18,7 +18,7 @@ seriesOrder: 1
 - **Node.js ≥ 20**
 - **pnpm ≥ 9**（推荐，`npm i -g pnpm`）
 
-## 快速上手
+## 安装与启动
 
 ### 方式一：从示例站点开始（推荐）
 
@@ -79,6 +79,24 @@ export const collections = { posts, spec };
 
 frontmatter 字段与写作增强语法见[写作指南](/posts/writing/)。
 
+## 部署
+
+`pnpm build` 产出纯静态 `dist/` 目录，任何静态托管都能用：
+
+- **Vercel / Netlify**：构建命令 `pnpm build`，输出目录 `dist`
+- **GitHub Pages**：官方 Astro action 直接可用
+- **自建 Nginx / 对象存储**：上传 `dist/` 即可
+
+无任何服务端依赖——评论、统计等第三方能力都是纯前端接入。示例站点的 `build` 由 Astro 构建、字体子集化、Pagefind 三段拼接，自己接入时按需复制（后两段为可选增强）。
+
+## 升级
+
+```bash
+pnpm update @windcoder/astro-theme-orchid
+```
+
+主题遵循 semver。站点自定义（`overrides/`、配置、内容）全部留在站点仓库，升级不会丢失。
+
 ## 目录结构
 
 ```
@@ -129,24 +147,6 @@ site/
 | `pnpm check` | `astro check` 类型与语法检查 |
 | `pnpm lqip` | 为画廊图片生成 LQIP 占位 |
 | `node scripts/new-post.mjs "标题"` | 按模板创建新文章（见[写作指南](/posts/writing/)） |
-
-## 部署
-
-`pnpm build` 产出纯静态 `dist/` 目录，任何静态托管都能用：
-
-- **Vercel / Netlify**：构建命令 `pnpm build`，输出目录 `dist`
-- **GitHub Pages**：官方 Astro action 直接可用
-- **自建 Nginx / 对象存储**：上传 `dist/` 即可
-
-无任何服务端依赖——评论、统计等第三方能力都是纯前端接入。示例站点的 `build` 由 Astro 构建、字体子集化、Pagefind 三段拼接，自己接入时按需复制（后两段为可选增强）。
-
-## 升级
-
-```bash
-pnpm update @windcoder/astro-theme-orchid
-```
-
-主题遵循 semver。站点自定义（`overrides/`、配置、内容）全部留在站点仓库，升级不会丢失。
 
 ## 本系列导览
 

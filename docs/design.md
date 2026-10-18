@@ -1460,7 +1460,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **方案**：
 - ①`git mv` 拍平：site/（6）+ content/（1）+ services/（4）+ pages/（3）共 14 个模块文件全部移至 `src/config/` 顶层，删除四个空子目录。`index.ts` 的 import 路径（`./xxxConfig`）自 §4.58 迁移起就是拍平形式，本次让物理结构归位；全套指南文章的路径注释（`// site/src/config/xxxConfig.ts`，共 21 处）自始就是拍平形式，零改动即与新结构一致
-- ②getting-started 全量重写（184→167 行，内容显著减负）：结构对齐 Firefly——环境要求 → 快速上手（方式一 clone 三步命令 / 方式二接入编号步骤 1-3：装包 + astro.config + content.config 代码块，解说各压至一句）→ 目录结构（骨架树）→ **配置文件概览（新增 14 行表：文件 | 说明 | 详细文档链接，跨篇模块如 appearanceConfig/contentConfig 挂双链接）** → 常用命令 → 部署 → 升级 → 系列导览。删除：独立「内容集合」大节（并入方式二步骤 3，`definePostSchema` 19 字段与 spec 展开细节引流 writing/pages-and-data）、「最小化组织 `src/config.ts` 扁平写法」代码示例与逐条说明（压为概览表下一句话）、build 脚本三段拼接 note（压为部署节末一句）、MDX note 与 config 重启提示合并为概览表后单 note
+- ②getting-started 全量重写（184→167 行，内容显著减负）：结构对齐 Firefly——环境要求 → 快速上手（方式一 clone 三步命令 / 方式二接入编号步骤 1-3：装包 + astro.config + content.config 代码块，解说各压至一句）→ 目录结构（骨架树）→ **配置文件概览（新增 14 行表：文件 | 说明 | 详细文档链接，跨篇模块如 appearanceConfig/contentConfig 挂双链接）** → 常用命令 → 部署 → 升级 → 系列导览。删除：独立「内容集合」大节（并入方式二步骤 3，`definePostSchema` 19 字段与 spec 展开细节引流 writing/pages-and-data）、「最小化组织 `src/config.ts` 扁平写法」代码示例与逐条说明（压为概览表下一句话）、build 脚本三段拼接 note（压为部署节末一句）、MDX note 与 config 重启提示合并为概览表后单 note。**推送后用户追加要求：安装/启动/部署/升级属于同一操作主线不应被隔断——「快速上手」节更名「安装与启动」，部署、升级两节上移与其连续，终版章节序：环境要求 → 安装与启动 → 部署 → 升级 → 目录结构 → 配置文件概览 → 常用命令 → 系列导览（操作一条龙在前，认知与速查殿后）**
 
 **设计决策**：
 - **配置文件概览是快速开始的信息枢纽**：14 文件一表挂全 12 篇指南链接，替代被删的 README 配置大表成为「配置→文档」的入口映射；license 归 sidebar-and-profile、banner 归 nav-and-banner、postList/archive 归 postlist-and-archive，归属按各篇实际讲授内容（sidebar-and-profile.md L153 讲 licenseConfig 等，已 grep 核实）
