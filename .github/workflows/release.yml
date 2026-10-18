@@ -12,7 +12,7 @@ on:
     tags: ["v*"]
 
 permissions:
-  contents: read
+  contents: write # 创建 GitHub Release 并上传附件（OIDC 发布用 id-token: write）
   id-token: write # trusted publishing OIDC + npm provenance
 
 jobs:
@@ -59,3 +59,19 @@ jobs:
       - name: Publish to npm（trusted publishing OIDC，无 token）
         run: npm publish --provenance
         working-directory: packages/theme
+
+      # tag 的 source code 归档是 GitHub 平台固定行为（git archive 整仓快照，
+      # 不可定制成子目录），这里把 npm pack 产出的主题包 tarball 挂到
+      # Release 附件，补齐「主题本身」的可下载物。
+      - name: Pack theme tarball
+        run: |
+          mkdir -p /tmp/dist
+          npm pack --pack-destination /tmp/dist
+        working-directory: packages/theme
+
+      - name: Attach tarball to GitHub Release
+        run: |
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes || true
+          gh release upload "$GITHUB_REF_NAME" /tmp/dist/*.tgz --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}

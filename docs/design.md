@@ -1503,6 +1503,22 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.80）**：registry 实测 0.1.0 存在（dist-tags latest=0.1.0，time 2026-10-18T04:03:28Z）；待用户在 npmjs.com 包页面配置 Trusted publisher（iwinder/qy-astro-theme-orchid + release.yml）后由 v0.2.0 发版实战验证（移 tag 重触发或等下个版本）。
 
+### 4.81 GitHub Release 附加主题包 tarball（✅ 2026-10-18 完成）
+
+**背景**：用户指出打 tag 后 GitHub Release 上的「包」是整仓根目录源码快照而非主题本身（提问于移 tag 后，被发版调试插队）。事实：tag 的 Source code 归档由平台 `git archive` 生成整仓快照，GitHub/Gitee 均不可定制成子目录——「统一」无技术路径；npm 包才是安装渠道且已正确指向 `packages/theme`。同时 registry 实测 0.2.0 已上线 latest（2026-10-18T12:49Z）——用户 re-run + 批准，§4.80 的 OIDC 发版闭环实战验证完成（trusted publisher 配置含 staged 模式与 dist-tags 授权）。
+
+**方案**：release.yml 在 publish 成功后新增两步——`npm pack --pack-destination /tmp/dist` 打主题包 tarball，`gh release create --generate-notes || true` + `gh release upload --clobber` 挂为 Release 附件；permissions 的 contents 升为 write（创建 Release/上传附件需要，OIDC 发布仍用 id-token: write）。
+
+**设计决策**：
+- **附件与 source archive 并存而非替代**：后者是源码快照（浏览/克隆用），前者是安装产物（`npm install` 等价物），用途不同不冲突
+- **附件随 publish 成功即挂**：staged 模式下版本公开与否由人工批准决定，附件先行挂出无碍（拒绝批准属低概率场景）
+- **create 容错 `|| true`**：Release 已存在时降级为仅 upload（--clobber 覆盖重传），流水线可 re-run 幂等
+- **0.2.0 手动补挂**：该版已发布，不能重复走流水线，本地 pack + gh 命令直接补附件
+
+**改动**：`.github/workflows/release.yml`（permissions 注释与值 + 新增 Pack theme tarball / Attach tarball to GitHub Release 两步骤）。
+
+**验证（§4.81）**：0.2.0 已经流水线验证 publish 全绿；tarball 附件逻辑待下个 tag 实战，本版由本地 gh 命令补挂 v0.2.0 Release 附件人工确认。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
