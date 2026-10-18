@@ -139,43 +139,32 @@ function initPalette() {
 }
 
 /* ---------- 通用灯箱（PhotoSwipe，§4.69，MIT 替换 Fancybox） ---------- */
-/* 主题公共 API 保持 data-lightbox（单图）与 data-lightbox-group/data-lightbox-item（组浏览）；
-   绑定前把属性翻译为 PhotoSwipe 约定：在容器内 img 上写 data-pswp-src 大图地址（rehypeFigure
-   与文章封面产物均为 figure 包 img，无 href；img 已加载时顺带写 naturalWidth/Height，避免
-   打开时布局跳动）。gallery selector 一次匹配所有容器、children 取容器内 img：单图 figure
-   容器内仅 1 img 天然独组，组容器内多个 img 同组——无需组名计数器。PhotoSwipe v5 内置
-   键盘/滑动/箭头/计数/关闭，wheelToZoom 对齐桌面滚轮缩放；pswp core 经 pswpModule 动态
-   加载，保持代码分割。点击须落在 img 上（children 只匹配后代，figure 空白处不触发）。 */
+/* 主题公共 API 保持 data-lightbox（单图）与 data-lightbox-group/data-lightbox-item（组浏览）。
+   容器内 img 即灯箱项：单图 figure 容器内仅 1 img 天然独组，组容器内多个 img 同组——无需
+   组名计数器。v5 的 _domElementToItemData 只从 <a> 读 data-pswp-*，而 rehypeFigure 与文章
+   封面产物均为 figure 包裸 img（无 <a>），故经 itemData filter 直读 itemData.element（即
+   img 本身）补 src 与 naturalWidth/Height：打开后每个 slide 的 getItemData 都会经过，lazy
+   图此时已加载，尺寸必然准确。preloadFirstSlide 关闭：v5 打开前会在 lightbox 实例上预生成
+   首图 Content 并经 addToCache 注入 core 缓存，数据不全时 core 侧完整的 itemData 也无法
+   生效，直接关掉最稳。PhotoSwipe v5 内置键盘/滑动/箭头/计数/关闭，wheelToZoom 对齐桌面
+   滚轮缩放；pswp core 经 pswpModule 动态加载，保持代码分割。点击须落在 img 上（children
+   只匹配后代，figure 空白处不触发）。 */
 type PswpLightbox = typeof import("photoswipe/lightbox")["default"];
 let pswpLightbox: PswpLightbox | null = null;
 const LB_SELECTOR = "[data-lightbox], [data-lightbox-group]";
 
-function prepLightbox() {
-	const mark = (el: HTMLElement) => {
-		const img =
-			el.tagName === "IMG" ? (el as HTMLImageElement) : el.querySelector("img");
-		if (!img) return;
-		img.setAttribute("data-pswp-src", img.currentSrc || img.src);
-		if (img.naturalWidth > 0) {
-			img.setAttribute("data-pswp-width", String(img.naturalWidth));
-			img.setAttribute("data-pswp-height", String(img.naturalHeight));
-		}
-	};
-	doc.querySelectorAll<HTMLElement>("[data-lightbox]").forEach(mark);
-	doc.querySelectorAll<HTMLElement>("[data-lightbox-item]").forEach(mark);
-}
-
 async function initLightbox() {
 	if (!doc.querySelector(LB_SELECTOR)) return;
-	/* destroy 防御：showDecrypted → initLightbox 重跑时旧实例仍在监听，否则双开 */
-	pswpLightbox?.destroy();
-	pswpLightbox = null;
-	prepLightbox();
 	/* photoswipe/lightbox 仅 default 导出（export { PhotoSwipeLightbox as default }），解构命名导出会拿到 undefined */
 	const { default: PhotoSwipeLightbox } = await import("photoswipe/lightbox");
+	/* destroy 放在 await 之后：initPage 首帧直跑与 astro:page-load 首载也会触发，两次调用
+	   在 await 处交错时，先恢复者创建的实例会被后恢复者覆盖模块变量而泄漏双绑定 */
+	pswpLightbox?.destroy();
+	pswpLightbox = null;
 	pswpLightbox = new PhotoSwipeLightbox({
 		gallery: LB_SELECTOR,
 		children: "img",
+		preloadFirstSlide: false,
 		wheelToZoom: true,
 		pswpModule: () => import("photoswipe"),
 		l10n: {
@@ -183,6 +172,19 @@ async function initLightbox() {
 			arrowPrevTitle: ui("prevImage"),
 			arrowNextTitle: ui("nextImage"),
 		},
+	});
+	/* v5 只从 <a> 读 data-pswp-*，裸 img 结构下 itemData 仅 { element }；
+	   filter 直读 element 本身，不经模块变量间接寻址，任何实例交错状态下都正确 */
+	pswpLightbox.addFilter("itemData", (itemData) => {
+		const el = itemData.element;
+		const img = el instanceof HTMLImageElement ? el : el?.querySelector("img");
+		if (!img) return itemData;
+		if (!itemData.src) itemData.src = img.currentSrc || img.src;
+		if (img.naturalWidth > 0) {
+			itemData.width = img.naturalWidth;
+			itemData.height = img.naturalHeight;
+		}
+		return itemData;
 	});
 	pswpLightbox.init();
 }
