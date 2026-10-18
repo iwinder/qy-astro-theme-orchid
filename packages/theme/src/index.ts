@@ -42,7 +42,11 @@ import {
 	rehypeFigure,
 	rehypeFirstImage,
 } from "./plugins/rehype.js";
-import { rehypeDiagramPanZoom, rehypeMermaid, rehypePlantuml } from "./plugins/rehype-diagram.js";
+import {
+	rehypeDiagramPanZoom,
+	rehypeMermaid,
+	rehypePlantuml,
+} from "./plugins/rehype-diagram.js";
 import { rehypeEcVtRerun } from "./plugins/rehype-ec-vt-rerun.js";
 import { rehypeEmailProtection } from "./plugins/rehype-email.js";
 import { rehypeGithubCard } from "./plugins/rehype-github-card.js";
