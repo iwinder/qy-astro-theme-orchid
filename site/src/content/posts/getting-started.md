@@ -203,3 +203,4 @@ site/
 | [组件覆盖（override）](/posts/theme-override/) | 用同名文件替换主题组件 |
 | [社交图标配置](/posts/social-icons/) | 内置图标名、Iconify 全名、内联 SVG 三种写法 |
 | [MDX 指南](/posts/mdx-guide/) | 启用步骤、组件写作、style-to-js 踩坑与修复 |
+| [URL 迁移与重定向](/posts/url-migration/) | 旧博客链接迁到 /posts/、301 与 redirects 方案 |

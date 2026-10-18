@@ -1552,6 +1552,22 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.83）**：全 21 篇「**配置文件**：」块 grep 全命中；「全部可配置项/快速上手/完整配置/字段说明」旧标题 0 残留；biome 132 files 0 error；`pnpm --filter site check` 0 errors 0 warnings；`CI=true pnpm --filter site build` exit 0（Indexed 30 pages 与文章数一致）。子代理逐篇汇报表格键行数与原文一致（如 site-config 17 行、post-features 10+19 行等），互链与提示块零丢失。
 
+### 4.84 新增《URL 迁移与重定向》指南（✅ 2026-10-18 完成）
+
+**背景**：用户旧博客文章 URL 为根路径扁平形式（windcoder.com/&lt;slug&gt;），迁移到主题后默认为 /posts/&lt;slug&gt;/，询问层级差异的处理方式后要求整理成指南文档。
+
+**方案**：新增 url-migration.md（进阶组 seriesOrder 27，尾接零序号迁移成本），getting-started 导览表「写作与进阶」组补一行。内容：①为什么 /posts/ 前缀（根路径保留路由全表——从 index.ts injectRoute 清单提取；slug 撞名冲突机理；Hugo/Hexo/Fuwari 业界惯例）；②三方案选型表（部署平台 301 / Astro redirects / 改主题扁平化）；③方案 A 按平台落地（Nginx 负向前瞻通配、CF Pages/Netlify _redirects 及其通配局限、Vercel vercel.json 正则）；④方案 B（astro.config redirects 语义：静态构建生成 meta refresh + canonical HTML、平台 adapter 升级真 301；附从旧站 sitemap.xml 生成映射表的一次性脚本）；⑤方案 C 不推荐的三条理由（injectRoute 注入站点侧不可覆盖 / 扁平冲突需构建期校验 / RSS/OG/推荐/canonical/sitemap 全链路拼 /posts/）；⑥迁移检查清单六步（sitemap 备份 → slug 一致性确认 → 选型 → 实测跳转 → Search Console 提交观察 → 换域名叠加）。
+
+**设计决策**：
+- **进阶组尾接**：27 号连续于 26（MDX 指南），无需系列迁移
+- **指南立场「重定向而非扁平化」**：方案 C 详列不推荐理由而非回避，留出「强诉求可作为主题需求」的口子但不主动做（避免为个别迁移场景给主题加路由配置面）
+- **tags 用「主题机制/部署」**：系列首个部署类标签，与配置类文章区分
+- **此篇不套 §4.83 配置体例**：属进阶专题（同 theme-override/mdx-guide 性质），无单一配置文件可列
+
+**改动**：site/src/content/posts/url-migration.md（新建）、getting-started.md（导览表 +1 行）。
+
+**验证（§4.84）**：biome 0 error；`pnpm --filter site check` 0 errors 0 warnings；`CI=true pnpm --filter site build` exit 0（Indexed 31 pages = 30 + 1，新篇产出）；导览表链接与 slug 一致。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
