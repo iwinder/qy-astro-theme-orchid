@@ -8,18 +8,18 @@ tags:
 category: 技术
 series: 主题使用指南
 seriesGroup: 基础配置
-seriesOrder: 6
+seriesOrder: 9
 ---
 
-首页与归档是博客的"货架"。`contentConfig.postList` 管列表形态，
-`siteConfig.categoryBar` 管顶部分类横条，`contentConfig.archive` 管归档折叠——本文讲全这三块。
+首页与归档是博客的"货架"。`postListConfig.ts` 管列表形态，
+`siteConfig.ts` 管顶部分类横条，`archiveConfig.ts` 管归档折叠——本文讲全这三块。
 
 ## 文章列表（postList）
 
 ### 快速上手
 
 ```ts
-// site/src/config/contentConfig.ts（节选）
+// site/src/config/postListConfig.ts（节选）
 export const postList: ThemeConfig["postList"] = {
 	style: "cover",
 	pageSize: 10,
@@ -96,7 +96,7 @@ categoryBar: { enabled: true },
 ## 归档页（archive）
 
 ```ts
-// site/src/config/contentConfig.ts（节选）
+// site/src/config/archiveConfig.ts
 export const archive: ThemeConfig["archive"] = { fold: true };
 ```
 

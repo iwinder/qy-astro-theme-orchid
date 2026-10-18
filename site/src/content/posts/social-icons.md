@@ -8,7 +8,7 @@ tags:
 category: 技术
 series: 主题使用指南
 seriesGroup: 进阶
-seriesOrder: 12
+seriesOrder: 25
 ---
 
 侧栏个人资料卡（`profile.links`）的社交图标不需要手写 SVG，

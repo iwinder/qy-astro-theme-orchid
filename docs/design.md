@@ -1519,6 +1519,23 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.81）**：0.2.0 已经流水线验证 publish 全绿；tarball 附件逻辑待下个 tag 实战，本版由本地 gh 命令补挂 v0.2.0 Release 附件人工确认。
 
+### 4.82 指南系列「一事一文」重构（13→26 篇）与 config 单功能文件化（✅ 2026-10-18 完成）
+
+**背景**：用户三点要求——①每篇文章只写一件事（点名拆《评论、公告、统计与广告》与《侧边栏与个人资料》——侧边栏是功能布局、个人资料只是其中小组件）；②参考 Firefly 文档导航（docs-firefly.cuteleaf.cn，一配置文件对应一篇文档）与参考项目 orchid-blog 的 src/config 拆分；③涉及 ts 配置文件混合的先拆文件再写文档。
+
+**方案**：config 层——appearanceConfig.ts（5 键杂烩）与 contentConfig.ts（11 键杂烩）拆为 16 个单功能文件（banner/sakura/music/live2d/font + postList/archive/toc/expressiveCode/relatedPosts/share/outdated/latex/mermaid/plantuml/emailProtection），index.ts 改为逐键 import 与组装；键名与主题 ThemeConfig 零变化。文档层——5 篇混合文（nav-and-banner/sidebar-and-profile/effects-and-media/comment-and-analytics/pages-and-data）经 4 组并行子代理拆为 17 篇；post-features 摘出 latex/diagram/emailProtection 三节成《内容渲染》篇（11），og 与 sharePoster 并为分享节；保留篇（site-config/postlist-and-archive/theme-override/social-icons/mdx-guide）重排 seriesOrder，最终 26 篇序号 1-26 跨组连续；getting-started 配置概览表重写为 28 文件映射、系列导览表按基础/功能/写作与进阶分组；README 与 writing/site-config 等交叉引用同步更新。
+
+**设计决策**：
+- **一事一文的两处同域豁免**：《文章列表与归档》保留合篇（内容组织同一心智场景）；og+sharePoster 合入 shareConfig.ts（《分享：OG 图与海报》——同一分享功能的两个形态）。其余严格一事一文，哪怕 archive/toc 等单键小文件
+- **布局与内容分层**：sidebar 篇只讲 widgets 体系（挂载/顺序/显隐/sticky/专属参数），profile/announcement/friends/advertisement 各内容配置独立成篇并回链 sidebar——直接落实用户「侧边栏不该和个人资料混在一起」的分层意图
+- **命名对齐参考项目**：代码高亮文件用 expressiveCodeConfig.ts（orchid-blog 与 Firefly 同名，Astro 生态标准词），导出键保持 codeTheme；mermaid/plantuml 分立两文件（对齐 orchid-blog），index.ts 内 `diagram: { mermaid, plantuml }` 组装
+- **事实修正**：license 并非侧栏 widget（九种 widget 类型不含 license），渲染于每篇文章末尾——license 篇按事实表述（子代理核实 sidebarConfig.ts 源码后纠正了任务书中的错误预设）
+- **子代理并行拆分**：4 组各带完整映射表/frontmatter 模板/26 篇 slug 清单/路径注释规范，主流程统一做全局串联（两表重写、保留篇序号、旧链接清扫）
+
+**改动**：config 目录 +16/-2 文件、index.ts 重组装、siteConfig.ts 头注释；文章 -5/+18 篇（sidebar-and-profile 等 5 篇删除，navbar/banner/sidebar/profile/license/sakura/music/live2d/fonts/comment/announcement/analytics/advertisement/friends/sponsor/gallery/pages/content-rendering 新建）；getting-started.md（概览表+导览表）、README.md、writing/site-config/postlist-and-archive/post-features 等引用更新。
+
+**验证（§4.82）**：biome 132 files 0 error（自动修复 index.ts import 排序 1 处）；`CI=true pnpm --filter site build` exit 0（全站 56 页，dist/posts 30 目录 = 26 指南 + 4 demo 全产出，about/friends 等独立页正常渲染）；**pagefind 对照实验**（git stash 后构建 HEAD 对照）：改动前 Indexed 17 pages（= 13 指南 + 4 demo），改动后 Indexed 30 pages（= 26 指南 + 4 demo），与文章数严格一致、无索引回归；「Indexed N pages」实为带 `data-pagefind-body` 标记的文章页数（pagefind v1.5.2「Found a data-pagefind-body element… Ignoring pages without this tag」），历史留痕中 64/74/75 页的记录口径与此不符，以本对照实验为准。seriesOrder 1-26 无冲突（grep 全量核对）；旧 slug（nav-and-banner 等 5 个）与 appearanceConfig/contentConfig 全局扫描 0 残留。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

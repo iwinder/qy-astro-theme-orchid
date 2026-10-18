@@ -1,4 +1,4 @@
-// 配置索引（§4.58 重组后为纯组装：任何键不再在此硬编码，全部来自本目录各模块配置，
+// 配置索引（纯组装：任何键不再在此硬编码，全部来自本目录各模块配置，
 // 「能配什么」以各配置文件为准；未导出的字段均有主题默认值兜底——约定大于配置，
 // astro.config.ts 只需 import { siteConfig, themeConfig } 即可。
 // 注意：本目录任意配置变更不会触发 dev 热更新（config 构建期为虚拟模块快照），
@@ -8,29 +8,31 @@ import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 import { advertisementConfig } from "./advertisementConfig";
 import { analyticsConfig } from "./analyticsConfig";
 import { announcementConfig } from "./announcementConfig";
-import { banner, fonts, live2d, music, sakura } from "./appearanceConfig";
+import { archive } from "./archiveConfig";
+import { banner } from "./bannerConfig";
 import { commentConfig } from "./commentConfig";
-import {
-	archive,
-	codeTheme,
-	diagram,
-	emailProtection,
-	latex,
-	og,
-	outdated,
-	postList,
-	relatedPosts,
-	sharePoster,
-	toc,
-} from "./contentConfig";
+import { emailProtection } from "./emailProtectionConfig";
+import { codeTheme } from "./expressiveCodeConfig";
+import { fonts } from "./fontConfig";
 import { friendsConfig } from "./friendsConfig";
 import { galleryConfig } from "./galleryConfig";
+import { latex } from "./latexConfig";
 import { licenseConfig } from "./licenseConfig";
+import { live2d } from "./live2dConfig";
+import { mermaid } from "./mermaidConfig";
+import { music } from "./musicConfig";
 import { navBarConfig } from "./navBarConfig";
+import { outdated } from "./outdatedConfig";
+import { plantuml } from "./plantumlConfig";
+import { postList } from "./postListConfig";
 import { profileConfig } from "./profileConfig";
+import { relatedPosts } from "./relatedPostsConfig";
+import { sakura } from "./sakuraConfig";
+import { og, sharePoster } from "./shareConfig";
 import { sidebarConfig } from "./sidebarConfig";
 import { siteConfig } from "./siteConfig";
 import { sponsorConfig } from "./sponsorConfig";
+import { toc } from "./tocConfig";
 
 // 组装主题完整入参（键与 @windcoder/astro-theme-orchid 的 ThemeConfig 一一对应）
 export const themeConfig = {
@@ -51,7 +53,7 @@ export const themeConfig = {
 	colorMode: siteConfig.colorMode,
 	pageWidth: siteConfig.pageWidth,
 	footer: siteConfig.footer,
-	// 内容渲染与文章页功能：contentConfig.ts
+	// 内容组织与文章页功能：各同名配置文件
 	archive,
 	postList,
 	toc,
@@ -61,9 +63,9 @@ export const themeConfig = {
 	sharePoster,
 	outdated,
 	latex,
-	diagram,
+	diagram: { mermaid, plantuml },
 	emailProtection,
-	// 视觉特效与悬浮组件：appearanceConfig.ts
+	// 视觉特效与悬浮组件：各同名配置文件
 	banner,
 	sakura,
 	music,
@@ -92,7 +94,6 @@ export {
 	banner,
 	codeTheme,
 	commentConfig,
-	diagram,
 	emailProtection,
 	fonts,
 	friendsConfig,
@@ -100,10 +101,12 @@ export {
 	latex,
 	licenseConfig,
 	live2d,
+	mermaid,
 	music,
 	navBarConfig,
 	og,
 	outdated,
+	plantuml,
 	postList,
 	profileConfig,
 	relatedPosts,

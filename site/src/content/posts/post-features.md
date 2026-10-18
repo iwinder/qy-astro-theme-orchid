@@ -1,6 +1,6 @@
 ---
-title: 文章页功能：toc / codeTheme / relatedPosts 等九个模块
-description: 文章页九大功能模块全量配置——悬浮目录、Expressive Code 代码高亮与折叠、相关推荐、OG 分享图、分享海报、过时提醒、LaTeX、图表、邮箱防爬。
+title: 文章页功能：toc / codeTheme / relatedPosts 等六个模块
+description: 文章页六大功能模块全量配置——目录、Expressive Code 代码高亮与折叠、相关推荐、OG 分享图与分享海报、过时提醒。
 published: 2026-10-18
 tags:
   - 主题机制
@@ -8,15 +8,17 @@ tags:
 category: 技术
 series: 主题使用指南
 seriesGroup: 功能配置
-seriesOrder: 7
+seriesOrder: 10
 ---
 
-文章页是博客的核心阅读场景。主题把它的九个功能模块全部收在
-`contentConfig.ts` 里，每个模块一个顶层键，开关即用。本文逐模块给出全部可配置项。
+文章页是博客的核心阅读场景。本篇讲「文章页上的功能模块」——目录、代码高亮、
+底部推荐、分享图与海报、过时提醒，每个模块一个独立配置文件，开关即用。
+公式、图表、邮箱防爬这三个「内容渲染」模块见[内容渲染](/posts/content-rendering/)。
 
 ## 目录（toc）
 
 ```ts
+// site/src/config/tocConfig.ts
 export const toc: ThemeConfig["toc"] = { enabled: true };
 ```
 
@@ -26,13 +28,14 @@ export const toc: ThemeConfig["toc"] = { enabled: true };
 
 两种形态自动切换：`sidebar.onPost: true`（默认）时由**侧栏 toc widget** 承担；
 侧栏关闭文章页侧栏时，回退为**悬浮目录**（页面右侧浮动面板）。
-侧栏 toc 的显隐配置见[侧边栏与个人资料](/posts/sidebar-and-profile/)。
+侧栏 toc 的显隐配置见[侧边栏与小组件](/posts/sidebar/)。
 
 ## 代码高亮（codeTheme）
 
 主题采用 **Expressive Code**（Astro 生态标准方案），Shiki 双主题，构建期渲染零运行时开销：
 
 ```ts
+// site/src/config/expressiveCodeConfig.ts
 export const codeTheme: ThemeConfig["codeTheme"] = {
 	light: "github-light",
 	dark: "github-dark",
@@ -67,6 +70,7 @@ export const codeTheme: ThemeConfig["codeTheme"] = {
 ## 相关/随机推荐（relatedPosts）
 
 ```ts
+// site/src/config/relatedPostsConfig.ts
 export const relatedPosts: ThemeConfig["relatedPosts"] = {
 	enabled: true,
 	count: 5,       // 相关文章数
@@ -82,28 +86,28 @@ export const relatedPosts: ThemeConfig["relatedPosts"] = {
 
 加密文章**不进两个推荐池**——不会通过推荐区泄露加密文章的存在。
 
-## OG 分享图（og）
+## 分享：OG 图与海报（og / sharePoster）
 
 ```ts
+// site/src/config/shareConfig.ts
+// og —— 构建期为每篇文章生成 OG 分享图
 export const og: ThemeConfig["og"] = { enabled: true };
-```
 
-构建期为每篇文章生成 **1200×630** 分享图到 `/og/<slug>.png`，
-社交媒体（微信、Twitter/X、Telegram 等）分享链接时自动展示。
-Google Fonts 拉取失败时自动降级纯形状占位图，**构建不中断**。
-
-## 分享海报（sharePoster）
-
-```ts
+// sharePoster —— 文章页「生成分享海报」按钮
 export const sharePoster: ThemeConfig["sharePoster"] = { enabled: true };
 ```
 
-文章页出现「生成分享海报」按钮：纯浏览器端 canvas + 二维码合成站点海报图，
+**OG 分享图**：构建期为每篇文章生成 **1200×630** 分享图到 `/og/<slug>.png`，
+社交媒体（微信、Twitter/X、Telegram 等）分享链接时自动展示。
+Google Fonts 拉取失败时自动降级纯形状占位图，**构建不中断**。
+
+**分享海报**：文章页出现「生成分享海报」按钮：纯浏览器端 canvas + 二维码合成站点海报图，
 点开才加载依赖，**构建零开销**。海报含标题、摘要、站点信息与访问二维码。
 
 ## 过时提醒（outdated）
 
 ```ts
+// site/src/config/outdatedConfig.ts
 export const outdated: ThemeConfig["outdated"] = {
 	enabled: true,
 	threshold: 30, // 天
@@ -118,70 +122,14 @@ export const outdated: ThemeConfig["outdated"] = {
 天数由**客户端实时计算**（构建期算会随时间失效）——超过阈值时文章顶部出现
 「最后更新」卡片与过时警告，提示读者内容可能不再准确。
 
-## LaTeX 数学公式（latex）
-
-```ts
-export const latex: ThemeConfig["latex"] = { enabled: true };
-```
-
-remark-math + rehype-katex **构建期渲染**，无客户端运行时。行内 `$E=mc^2$`、块级 `$$...$$` 均可；含 mhchem 扩展（化学方程式）。关闭后 `$...$` 按普通文本输出。
-语法示例见[写作指南](/posts/writing/)。
-
-## 图表（diagram）
-
-```ts
-export const diagram: ThemeConfig["diagram"] = {
-	mermaid: {
-		enabled: true,
-		lightTheme: "github-light",
-		darkTheme: "github-dark",
-	},
-	plantuml: {
-		enabled: true,
-		server: "https://www.plantuml.com/plantuml",
-		lightTheme: "",
-		darkTheme: "",
-	},
-};
-```
-
-| 键 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `mermaid.enabled` | `boolean` | `true` | mermaid 围栏代码块构建期渲染为**双主题静态 SVG** |
-| `mermaid.lightTheme` / `darkTheme` | `string` | `"github-light"` / `"github-dark"` | mermaid 官方主题名 |
-| `plantuml.enabled` | `boolean` | `true` | plantuml 围栏代码块渲染 |
-| `plantuml.server` | `string` | plantuml.com | 渲染服务地址，可替换为自建/内网服务 |
-| `plantuml.lightTheme` / `darkTheme` | `string` | `""` | 服务端主题参数 |
-
-两者都以 ```` ```mermaid ```` / ```` ```plantuml ```` 围栏代码块书写，语法见[写作指南](/posts/writing/)。
-
-## 邮箱防爬（emailProtection）
-
-```ts
-export const emailProtection: ThemeConfig["emailProtection"] = {
-	enabled: true,
-	method: "base64", // "base64" | "rot13"
-};
-```
-
-| 键 | 类型 | 默认值 | 说明 |
-|---|---|---|---|
-| `enabled` | `boolean` | `true` | 总开关 |
-| `method` | `"base64" \| "rot13"` | `"base64"` | base64 抗爬性更好；rot13 零 atob 依赖 |
-
-文章正文里的 `mailto:` 链接在**构建期编码**，HTML 源码里看不到真实邮箱，
-访客点击时内联脚本还原——防采集爬虫，不防人工。
-
 ## 模块总览
 
-| 模块键 | 一句话 |
-|---|---|
-| `toc` | 文章目录（侧栏或悬浮） |
-| `codeTheme` | EC 代码高亮、行号、折叠、复制按钮 |
-| `relatedPosts` | 底部相关 + 随机推荐 |
-| `og` | 每篇一张 OG 分享图 |
-| `sharePoster` | 浏览器端分享海报 |
-| `outdated` | 超期文章过时提醒 |
-| `latex` | KaTeX 数学公式 |
-| `diagram` | mermaid / plantuml 图表 |
-| `emailProtection` | mailto 编码防爬 |
+| 模块键 | 配置文件 | 一句话 |
+|---|---|---|
+| `toc` | `tocConfig.ts` | 文章目录（侧栏或悬浮） |
+| `codeTheme` | `expressiveCodeConfig.ts` | EC 代码高亮、行号、折叠、复制按钮 |
+| `relatedPosts` | `relatedPostsConfig.ts` | 底部相关 + 随机推荐 |
+| `og` / `sharePoster` | `shareConfig.ts` | OG 分享图 + 浏览器端分享海报 |
+| `outdated` | `outdatedConfig.ts` | 超期文章过时提醒 |
+
+正文里的公式、图表、邮箱链接由「内容渲染」模块处理，见[内容渲染](/posts/content-rendering/)。

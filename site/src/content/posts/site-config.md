@@ -85,7 +85,7 @@ pages: {
 },
 ```
 
-置 `false` 后主题**不注入对应路由**——路由在构建期完全不生成，而非运行期 404，对 SEO 干净。页面的正文与数据配置见[独立页面与数据](/posts/pages-and-data/)。
+置 `false` 后主题**不注入对应路由**——路由在构建期完全不生成，而非运行期 404，对 SEO 干净。页面的正文与数据配置见[独立页面](/posts/pages/)。
 
 ## timezone 的作用
 
@@ -116,5 +116,5 @@ favicon: [
 ## 与其它配置的关系
 
 - `siteUrl` → 同步写进 [astro.config.ts](file:///Volumes/zhitai/Work/progarm/web/gitee.com/qy-astro-theme-orchid/site/astro.config.ts) 的 `site` 键（两处保持一致）
-- `pages.gallery/sponsor/friends` 的数据 → [独立页面与数据](/posts/pages-and-data/)
-- 导航栏里的入口 → [导航栏与首页横幅](/posts/nav-and-banner/)
+- `pages.gallery/sponsor/friends` 的数据 → [友链](/posts/friends/) / [赞助](/posts/sponsor/) / [画廊](/posts/gallery/)
+- 导航栏里的入口 → [导航栏](/posts/navbar/)

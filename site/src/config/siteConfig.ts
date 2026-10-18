@@ -1,5 +1,5 @@
-// 站点基础配置（§4.58 瘦身：只留站点身份与全站开关；视觉特效/悬浮组件见 appearanceConfig.ts，
-// 内容渲染/文章页功能见 contentConfig.ts；siteUrl 同时供 astro.config.ts 的 site 键使用）
+// 站点基础配置（只留站点身份与全站开关；各功能配置见同目录同名配置文件；
+// siteUrl 同时供 astro.config.ts 的 site 键使用）
 export const siteConfig = {
 	// 站点域名（RSS/sitemap/canonical 基准），接入真实站点时必改
 	siteUrl: "https://blog.example.com",

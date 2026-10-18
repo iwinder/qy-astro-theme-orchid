@@ -129,7 +129,7 @@ passwordHint: "我们的暗号"
 
 ### 数学公式（LaTeX）
 
-`latex.enabled: true` 时可用（见[文章页功能](/posts/post-features/)）：
+`latex.enabled: true` 时可用（见[内容渲染](/posts/content-rendering/)）：
 
 - 行内：`$E = mc^2$` → $E = mc^2$
 - 块级：`$$\int_a^b f(x)\,dx$$` 独占一行渲染
@@ -137,7 +137,7 @@ passwordHint: "我们的暗号"
 
 ### 图表
 
-围栏代码块直接写（`diagram` 配置见[文章页功能](/posts/post-features/)）：
+围栏代码块直接写（`mermaid` / `plantuml` 配置见[内容渲染](/posts/content-rendering/)）：
 
 ````markdown
 ```mermaid
