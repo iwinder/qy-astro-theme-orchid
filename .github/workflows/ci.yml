@@ -52,7 +52,17 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          set -o pipefail
+          pnpm install --frozen-lockfile 2>&1 | tee /tmp/install.log || {
+            {
+              echo "### Install dependencies failed"
+              echo '```text'
+              tail -150 /tmp/install.log
+              echo '```'
+            } >> "${GITHUB_STEP_SUMMARY:-/dev/null}"
+            exit 1
+          }
 
       - name: Test（node:test 内置运行器，字体子集化脚本）
         run: pnpm test
