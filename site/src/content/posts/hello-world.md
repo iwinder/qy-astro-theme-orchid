@@ -7,8 +7,6 @@ image: "api"
 tags:
   - 随笔
 category: 开始
-series: 主题使用指南
-seriesOrder: 2
 ---
 
 这是 `@windcoder/astro-theme-orchid` 主题包接入后的第一篇文章。

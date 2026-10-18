@@ -7,7 +7,7 @@ tags:
   - 主题机制
 category: 技术
 series: 主题使用指南
-seriesOrder: 1
+seriesOrder: 11
 ---
 
 主题内所有可覆盖组件都通过 `virtual:theme/...` 引用。

@@ -1370,6 +1370,23 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.72）**：`pnpm lint` exit 0（仅存量基线告警）；`pnpm --filter site check` 0 errors 0 warnings（`satisfies ThemeConfig` 对三新键通过）；`pnpm --filter site build` exit 0（116 页 + pagefind 64 页）。dist 抽查：首页 favicon 输出 `<link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">`（显式配置生效）；归档页 8 个年份组全部渲染为 `<button class="archive-year">`，7/8 timeline 带 `fold` 类（最新一年展开、其余折叠），fold 特性经组装层正确传导。
 
+### 4.73 主题使用指南系列：12 篇成体系配置文档（✅ 2026-10-18 完成）
+
+**背景**：§4.72 完成配置三方对齐后，用户要求补「主题使用指南」：从开始使用到各种配置逐一生成文章，每篇详细说明配置内容、全部可配置项、如何使用与使用效果，对齐 Firefly docs 的完整指南形态（getting-started + 按配置文件分篇）。
+
+**方案**：以 site 内容层承载指南——10 篇新文章 + 2 篇既有文重排入列，统一挂 `series: 主题使用指南`，`seriesOrder` 定序；每篇结构固定「引言 → 快速上手最小示例 → 全部可配置项表格（键/类型/默认值/说明）→ demo 站真实配置 → 使用效果与站内链接」。素材以 schema.ts / README 配置表 / site/config 15 模块（§4.72 后三方已对齐）为源真理，逐键核对后成文。
+
+**设计决策**：
+- **分篇粒度对齐配置模块**：getting-started（接入/内容集合/目录结构/命令/部署升级+系列导览）→ site-config → nav-and-banner → sidebar-and-profile → postlist-and-archive → post-features（toc/codeTheme/relatedPosts/og/sharePoster/outdated/latex/diagram/emailProtection 九模块一篇）→ effects-and-media（sakura/music/live2d/fonts）→ pages-and-data（spec 集合/friends/sponsor/gallery）→ comment-and-analytics（五套评论/公告/四家统计/广告位）→ writing（frontmatter 全 19 字段 + 写作增强语法）。banner 虽在 appearanceConfig 但与导航同属"第一印象"归第三篇；categoryBar 在 siteConfig 但与列表强相关归第五篇——按读者心智归篇而非机械按文件
+- **指南文章进 demo 站 gitignore 白名单**：`.gitignore` 对 `site/src/content/posts/*` 全忽略 + 逐条 negation，10 篇新文全部加白名单（否则构建可用但永不入库）
+- **既有文重排**：theme-override 1→11、social-icons 3→12（原系列仅 3 篇且 order 空洞）；hello-world 移出系列（随笔性质，删 series 两行），系列收敛为纯指南 12 篇
+- **写作语法自证**：writing.md 内直接演示 `:::note`/`:::warning[标题]`（26 种 admonition）、`::github` 仓库卡片（真实渲染）、`[grid]`、LaTeX/mermaid/plantuml 语法；字段表以 definePostSchema 19 字段逐一对齐（draft 行为经 grep 路由确认：PROD 剔除、dev 可见）
+- **文风对齐既有样板**：social-icons.md 的「机制说明 + 代码块 + 表格 + 效果」结构；篇间大量互链形成网状导览，getting-started 末尾放全系列目录表
+
+**改动**：`site/src/content/posts/` 新增 10 篇（getting-started/site-config/nav-and-banner/sidebar-and-profile/postlist-and-archive/post-features/effects-and-media/pages-and-data/comment-and-analytics/writing，published 2026-10-18）；`theme-override.md`（order 11）、`social-icons.md`（order 12）、`hello-world.md`（移出系列）；`.gitignore`（+10 白名单）
+
+**验证（§4.73）**：`pnpm lint` exit 0（0 errors，仅存量基线告警）；`CI=true pnpm --filter site build` exit 0，pagefind 索引 74 页（较 §4.72 的 64 页 +10，与新文章数吻合）。dist 抽查：`dist/posts/{getting-started,site-config,writing,comment-and-analytics}/` 均生成；`/series/主题使用指南/` 标题正确，页面内文章链接顺序 = seriesOrder 1-12（getting-started → … → writing → theme-override → social-icons），hello-world 不在系列页——重排与移出生效。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

@@ -17,7 +17,18 @@ _tmp_*
 *.tgz
 
 # 本地开发用真实文章（来自 orchid-blog 的私人内容，永不入库、不进历史）
+# 白名单：主题使用指南系列 + 站点演示文
 site/src/content/posts/*
 !site/src/content/posts/hello-world.md
 !site/src/content/posts/theme-override.md
 !site/src/content/posts/social-icons.md
+!site/src/content/posts/getting-started.md
+!site/src/content/posts/site-config.md
+!site/src/content/posts/nav-and-banner.md
+!site/src/content/posts/sidebar-and-profile.md
+!site/src/content/posts/postlist-and-archive.md
+!site/src/content/posts/post-features.md
+!site/src/content/posts/effects-and-media.md
+!site/src/content/posts/pages-and-data.md
+!site/src/content/posts/comment-and-analytics.md
+!site/src/content/posts/writing.md
