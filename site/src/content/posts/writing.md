@@ -161,7 +161,7 @@ mermaid 构建期渲染为双主题静态 SVG；plantuml 经渲染服务出图�
 自带复制按钮、行号；超长块自动折叠。meta 上支持语言标注与标题：
 
 ````markdown
-```ts title="src/config.ts"
+```ts title="config.ts"
 export const ok = true;
 ```
 ````

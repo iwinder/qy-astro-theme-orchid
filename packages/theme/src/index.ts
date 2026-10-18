@@ -42,11 +42,8 @@ import {
 	rehypeFigure,
 	rehypeFirstImage,
 } from "./plugins/rehype.js";
-import {
-	rehypeDiagramPanZoom,
-	rehypeMermaid,
-	rehypePlantuml,
-} from "./plugins/rehype-diagram.js";
+import { rehypeDiagramPanZoom, rehypeMermaid, rehypePlantuml } from "./plugins/rehype-diagram.js";
+import { rehypeEcVtRerun } from "./plugins/rehype-ec-vt-rerun.js";
 import { rehypeEmailProtection } from "./plugins/rehype-email.js";
 import { rehypeGithubCard } from "./plugins/rehype-github-card.js";
 import { remarkMermaid, remarkPlantuml } from "./plugins/remark-diagram.js";
@@ -242,6 +239,10 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 						frames: { showCopyToClipboardButton: true },
 					},
 				]);
+				// §4.74：必须在 EC 之后追加——社区折叠插件（expressive-code-collapsible）
+				// 注入的内联脚本无 View Transitions 适配，ClientRouter 换页后按钮绑定
+				// 失效；此插件给该脚本打 data-astro-rerun 标记，swap 时由 Astro 重执行
+				rehypePlugins.push(rehypeEcVtRerun);
 				updateConfig({
 					// 主题路由全部按尾斜杠组织（如 /posts/xxx/），统一强制，dev 与 prod 行为一致
 					trailingSlash: "always",

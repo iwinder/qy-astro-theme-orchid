@@ -54,7 +54,7 @@ pnpm add @windcoder/astro-theme-orchid @astrojs/mdx
 import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import orchidTheme from "@windcoder/astro-theme-orchid";
-import { themeConfig } from "./src/config";
+import { themeConfig } from "./config";
 
 export default defineConfig({
 	// 1. 站点域名（RSS、sitemap、OG 图都依赖它，必填）
@@ -106,13 +106,13 @@ export const collections = { posts, spec };
 ```
 site/
 ├── astro.config.ts          # 接入主题（上面三件事）
+├── config/                  # 站点配置（建议拆分模块，见下）
+│   ├── index.ts             # 组装并导出 themeConfig
+│   ├── siteConfig.ts        # 站点基础信息
+│   ├── appearanceConfig.ts
+│   └── ...                  # 共 15 个模块文件
 ├── src/
 │   ├── content.config.ts    # 内容集合定义
-│   ├── config/              # 站点配置（建议拆分模块，见下）
-│   │   ├── index.ts         # 组装并导出 themeConfig
-│   │   ├── siteConfig.ts    # 站点基础信息
-│   │   ├── appearanceConfig.ts
-│   │   └── ...              # 共 15 个模块文件
 │   ├── content/
 │   │   ├── posts/           # 文章（.md / .mdx）
 │   │   └── spec/            # 独立页面正文
@@ -120,12 +120,12 @@ site/
 └── public/                  # 静态资源（logo、画廊图片等）
 ```
 
-`src/config/` 的拆分方式不是强制的——主题只关心最终传入 `orchidTheme()` 的那一个对象。拆成 15 个模块文件是示例站点的组织方式，便于逐篇讲解（本系列后面每篇对应一至几个模块）。
+`config/` 的拆分方式不是强制的——主题只关心最终传入 `orchidTheme()` 的那一个对象。拆成 15 个模块文件是示例站点的组织方式，便于逐篇讲解（本系列后面每篇对应一至几个模块）。
 
 最小化组织也可以只有一个 `config.ts`：
 
 ```ts
-// src/config.ts —— 扁平写法同样有效
+// config.ts —— 扁平写法同样有效
 import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 
 export const themeConfig: ThemeConfig = {

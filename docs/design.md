@@ -1387,6 +1387,20 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.73）**：`pnpm lint` exit 0（0 errors，仅存量基线告警）；`CI=true pnpm --filter site build` exit 0，pagefind 索引 74 页（较 §4.72 的 64 页 +10，与新文章数吻合）。dist 抽查：`dist/posts/{getting-started,site-config,writing,comment-and-analytics}/` 均生成；`/series/主题使用指南/` 标题正确，页面内文章链接顺序 = seriesOrder 1-12（getting-started → … → writing → theme-override → social-icons），hello-world 不在系列页——重排与移出生效。
 
+### 4.74 EC 折叠代码块 ClientRouter 换页后失效修复 + 指南目录勘误（✅ 2026-10-18 完成）
+
+**背景**：用户报障：从文章「专题列」进入另一篇文章后，文中折叠的代码块点击无法展开；同时指出 getting-started.md 把站点配置目录画成了 `src/` 子级（实际站点 `config/` 与 `src/` 同级）。
+
+**方案（根因 → 修复）**：BaseLayout 挂 `<ClientRouter />`，换页由 swap 整体替换 body 完成。EC 官方脚本（copy 按钮等）已用 `astro:page-load` 自适配 View Transitions；社区插件 `expressive-code-collapsible@0.1.0` 的交互脚本只在 `DOMContentLoaded` 绑定一次，且其 `MutationObserver` 闭包引用换页前的旧 body——swap 后内联脚本不重新执行、observer 观察的旧 body 已脱离文档，新页面的 `.ec-collapse__toggle / .ec-collapse__header-toggle` 无 click 监听，折叠块失效。修复：新增 rehype 插件 `rehype-ec-vt-rerun`，扫描 hast 树识别含 `ec-collapse__toggle` 特征的内联 `<script>`，打 `data-astro-rerun` 属性——ClientRouter 对带该属性的脚本在每次 swap 后重新执行；社区脚本自带 `dataset.init` 幂等保护与全文档 querySelectorAll 扫描，重跑即完成新页按钮绑定、observer 亦随新 body 重建。插件在 index.ts 于 EC push 之后、updateConfig 之前 push（顺序必须：EC 未跑时树里还没有该脚本）。仅含折叠块的页面才有该脚本，零额外开销；Giscus/Waline 已用同款 data-astro-rerun 方案，与仓库既有实践一致。
+
+**设计决策**：
+- 选 `data-astro-rerun` 重执行而非自写事件委托层：社区脚本逐按钮绑定 + observer 逻辑完备且幂等，重跑即恢复；自写委托需复刻 toggleCollapse / announce / scrollIntoView 全部行为，维护成本高且随上游漂移
+- 特征串选 `ec-collapse__toggle`（按钮类名，仅该插件产出），不匹配官方脚本、不误伤；官方 plugin-collapsible-sections（meta `collapse={}`）纯 CSS 交互不受 VT 影响——修复面精确收窄到社区插件
+
+**改动**：`packages/theme/src/plugins/rehype-ec-vt-rerun.ts`（新增）；`packages/theme/src/index.ts`（import + `rehypePlugins.push(rehypeEcVtRerun)`）；`site/src/content/posts/getting-started.md`（勘误：目录树 config/ 移至与 src 同级、astro.config 示例改 `from "./config"`、`src/config/` 措辞与扁平注释改为 `config/`）；`site/src/content/posts/writing.md`（代码块 title 示例同步勘误）
+
+**验证（§4.74）**：`CI=true pnpm --filter site build` exit 0（127 页、pagefind 74 页不变）。产物抽查：hello-world 中含 `ec-collapse__toggle` 的脚本开标签已带 `data-astro-rerun`；全站 14 个含折叠脚本的页面均带标记；`grep src/config site/src/content/posts` 0 命中。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
