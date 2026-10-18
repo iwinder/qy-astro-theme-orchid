@@ -17,7 +17,13 @@ import config from "virtual:theme/config";
 import { t } from "../../i18n/index.js";
 import { getLqipStyle } from "../../utils/lqip.js";
 import { getRelatedPosts } from "../../utils/related.js";
-import { formatDate, getSortedPosts, resolveCover } from "../../utils.js";
+import {
+	formatDate,
+	getSortedPosts,
+	resolveCover,
+	type SeriesEntry,
+	seriesEntries,
+} from "../../utils.js";
 
 export async function getStaticPaths() {
 	const all = await getCollection("posts", ({ data }) =>
@@ -25,7 +31,8 @@ export async function getStaticPaths() {
 	);
 	const sorted = getSortedPosts(all);
 
-	// 专题索引（§4.31）：series → 组内按 seriesOrder 升序（未配置排最后），同序按发布时间升序
+	// 专题索引（§4.31→§4.75）：seriesEntries 分块规范化（未分组块最前、
+	// 各分组按组内首篇顺序排列、全局序号连续），与专题详情页共用同一规则
 	const seriesGroups = new Map<string, typeof sorted>();
 	for (const post of sorted) {
 		const name = post.data.series;
@@ -34,40 +41,43 @@ export async function getStaticPaths() {
 		if (list) list.push(post);
 		else seriesGroups.set(name, [post]);
 	}
-	const seriesSorted = new Map<string, typeof sorted>();
+	const seriesSorted = new Map<
+		string,
+		SeriesEntry<(typeof sorted)[number]>[]
+	>();
 	for (const [name, list] of seriesGroups) {
-		seriesSorted.set(
-			name,
-			[...list].sort((a, b) => {
-				const oa = a.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
-				const ob = b.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
-				if (oa !== ob) return oa - ob;
-				return a.data.published.getTime() - b.data.published.getTime();
-			}),
-		);
+		seriesSorted.set(name, seriesEntries(list));
 	}
 
 	// sorted 内 idx+1 为更早一篇（prev），idx-1 为更新一篇（next）
 	return sorted.map((post, idx) => {
-		// 专题导航（§4.31）：当前篇在专题内的位置 + 完整目录
+		// 专题导航（§4.31）：当前篇在专题内的位置 + 完整目录（含分块组头）
 		let seriesInfo: {
 			name: string;
 			total: number;
 			cur: number;
-			items: { title: string; id: string; cur: boolean }[];
+			items: {
+				title: string;
+				id: string;
+				cur: boolean;
+				idx: number;
+				groupHead: string | null;
+			}[];
 		} | null = null;
 		const sName = post.data.series;
 		if (sName) {
-			const list = seriesSorted.get(sName)!;
-			const sIdx = list.findIndex((p) => p.id === post.id);
+			const entries = seriesSorted.get(sName)!;
+			const sIdx = entries.findIndex((e) => e.post.id === post.id);
 			seriesInfo = {
 				name: sName,
-				total: list.length,
+				total: entries.length,
 				cur: sIdx + 1,
-				items: list.map((p, i) => ({
-					title: p.data.title,
-					id: p.id,
-					cur: i === sIdx,
+				items: entries.map((e) => ({
+					title: e.post.data.title,
+					id: e.post.id,
+					cur: e.index === sIdx,
+					idx: e.index + 1,
+					groupHead: e.groupHead,
 				})),
 			};
 		}
@@ -244,20 +254,23 @@ const jsonLd = {
           </span>
         </div>
         <ol class="series-nav-list">
-          {seriesInfo.items.map((item, i) => (
-            <li class:list={["series-nav-item", { cur: item.cur }]}>
-              {item.cur ? (
-                <span class="series-nav-row">
-                  <span class="series-nav-idx">{i + 1}</span>
-                  <span class="series-nav-label">{item.title}</span>
-                </span>
-              ) : (
-                <a class="series-nav-row" href={`/posts/${item.id}/`}>
-                  <span class="series-nav-idx">{i + 1}</span>
-                  <span class="series-nav-label">{item.title}</span>
-                </a>
-              )}
-            </li>
+          {seriesInfo.items.map((item) => (
+            <>
+              {item.groupHead && <li class="series-nav-group" aria-hidden="true">{item.groupHead}</li>}
+              <li class:list={["series-nav-item", { cur: item.cur }]}>
+                {item.cur ? (
+                  <span class="series-nav-row">
+                    <span class="series-nav-idx">{item.idx}</span>
+                    <span class="series-nav-label">{item.title}</span>
+                  </span>
+                ) : (
+                  <a class="series-nav-row" href={`/posts/${item.id}/`}>
+                    <span class="series-nav-idx">{item.idx}</span>
+                    <span class="series-nav-label">{item.title}</span>
+                  </a>
+                )}
+              </li>
+            </>
           ))}
         </ol>
       </nav>

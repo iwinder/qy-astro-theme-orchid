@@ -7,7 +7,8 @@ tags:
   - 配置
 category: 技术
 series: 主题使用指南
-seriesOrder: 6
+seriesGroup: 功能配置
+seriesOrder: 7
 ---
 
 文章页是博客的核心阅读场景。主题把它的九个功能模块全部收在

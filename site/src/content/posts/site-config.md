@@ -7,19 +7,20 @@ tags:
   - 配置
 category: 技术
 series: 主题使用指南
-seriesOrder: 2
+seriesGroup: 基础配置
+seriesOrder: 3
 ---
 
 `siteConfig` 是整个主题的"身份证"模块，只负责**站点身份与全站开关**。
 视觉特效、文章功能等分属其它模块（见[系列导览](/posts/getting-started/#本系列导览)），
-本文逐键讲清 `site/config/siteConfig.ts` 的全部可配置项。
+本文逐键讲清 `site/src/config/siteConfig.ts` 的全部可配置项。
 
 ## 快速上手
 
 最小可用的 `siteConfig` 只需要域名和标题：
 
 ```ts
-// site/config/siteConfig.ts
+// site/src/config/siteConfig.ts
 export const siteConfig = {
 	siteUrl: "https://example.com", // 接入真实站点时必改
 	title: "我的博客",
@@ -105,7 +106,7 @@ favicon: [
 
 ## 使用效果
 
-本演示站的实际配置（`site/config/siteConfig.ts`）启用了上述全部键：
+本演示站的实际配置（`site/src/config/siteConfig.ts`）启用了上述全部键：
 
 - 标题「清言集」+ Logo 显示在导航栏左侧；页脚渲染 ICP 备案链接
 - 强调色 `#4a9d8f`，点导航栏右侧调色按钮可临时换色

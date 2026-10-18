@@ -1207,6 +1207,12 @@ export function definePostSchema(extensions: z.ZodRawShape = {}) {
 			series: z.string().optional(),
 			/** 专题内顺序（小在前）；未配置则按发布时间升序 */
 			seriesOrder: z.number().optional(),
+			/**
+			 * 专题内分组（§4.75）：专题页与文章页专题目录按组分块展示
+			 * （未分组文章块在最前，各分组按组内首篇顺序依次排列，全局序号连续）。
+			 * 组名直接来自本字段文本，无 i18n 参与。
+			 */
+			seriesGroup: z.string().optional(),
 		})
 		.extend(extensions);
 }

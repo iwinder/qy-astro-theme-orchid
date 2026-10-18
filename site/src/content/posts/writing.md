@@ -7,7 +7,8 @@ tags:
   - 配置
 category: 技术
 series: 主题使用指南
-seriesOrder: 10
+seriesGroup: 入门
+seriesOrder: 2
 ---
 
 文章是 `.md` / `.mdx` 文件，放进 `src/content/posts/` 即被收集。
@@ -48,6 +49,7 @@ schema 由主题的 `definePostSchema()` 提供（站点可在 `content.config.t
 | `comment` | `boolean` | `true` | 本篇是否开评论区 |
 | `cardStyle` | `"cover" \| "compact" \| "text"` | 全局 postList.style | 本篇列表卡形态 |
 | `series` / `seriesOrder` | `string` / `number` | — | 专题名与序号（小在前），聚合到 `/series/<name>/` |
+| `seriesGroup` | `string` | — | 专题内分组名（如「入门」「基础配置」），专题页与专题目录按组分块展示 |
 
 最小可用 frontmatter 只有两个必填项：
 
@@ -161,7 +163,7 @@ mermaid 构建期渲染为双主题静态 SVG；plantuml 经渲染服务出图�
 自带复制按钮、行号；超长块自动折叠。meta 上支持语言标注与标题：
 
 ````markdown
-```ts title="config.ts"
+```ts title="src/config.ts"
 export const ok = true;
 ```
 ````
@@ -174,10 +176,12 @@ frontmatter 同填 `series` 与 `seriesOrder` 即入组：
 ---
 title: 指南第一篇
 series: 主题使用指南
+seriesGroup: 入门
 seriesOrder: 1
 ---
 ```
 
 - 同系列按 `seriesOrder` **升序**排列；未配置序号的文章按发布时间排
+- `seriesGroup` 非空时进入分组展示：未分组文章排在最前，各分组按组内首篇顺序依次排列，序号跨组连续——同组文章的 `seriesOrder` 建议保持连续区段，阅读动线更顺
 - `/series/` 聚合全部专题，`/series/<name>/` 展示单系列（含前后篇导航）
-- 本系列就是用这套机制组织的——从[快速开始](/posts/getting-started/)回看全部篇目
+- 本系列就是用这套机制组织的（入门 → 基础配置 → 功能配置 → 进阶）——从[快速开始](/posts/getting-started/)回看全部篇目

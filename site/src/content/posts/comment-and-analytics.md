@@ -7,7 +7,8 @@ tags:
   - 配置
 category: 技术
 series: 主题使用指南
-seriesOrder: 9
+seriesGroup: 功能配置
+seriesOrder: 10
 ---
 
 这一篇把四个"运营向"模块一次讲完：评论区（五套后端任选其一）、
@@ -21,7 +22,7 @@ ID 留空或开关关闭时，对应脚本完全不进构建产物。
 以 Artalk 为例：
 
 ```ts
-// site/config/commentConfig.ts
+// site/src/config/commentConfig.ts
 export const commentConfig: ThemeConfig["comment"] = {
 	enabled: true,
 	provider: "artalk",
@@ -112,7 +113,7 @@ disqus: { shortname: "your-shortname" },
 ## 侧栏公告（announcementConfig）
 
 ```ts
-// site/config/announcementConfig.ts
+// site/src/config/announcementConfig.ts
 export const announcementConfig: ThemeConfig["announcement"] = {
 	title: "公告",
 	content: "主题已支持公告栏、广告位与站点统计，欢迎体验。",
@@ -135,7 +136,7 @@ export const announcementConfig: ThemeConfig["announcement"] = {
 四家统计按需填 ID，**留空即不注入对应脚本**（零副作用）：
 
 ```ts
-// site/config/analyticsConfig.ts
+// site/src/config/analyticsConfig.ts
 export const analyticsConfig: ThemeConfig["analytics"] = {
 	googleAnalyticsId: "",      // Google Analytics（G-XXXX）
 	microsoftClarityId: "",     // Microsoft Clarity 项目 ID
@@ -186,7 +187,7 @@ la51: {
 默认关闭，完整形态：
 
 ```ts
-// site/config/advertisementConfig.ts
+// site/src/config/advertisementConfig.ts
 export const advertisementConfig: ThemeConfig["advertisement"] = {
 	enabled: true,
 	title: "广告",

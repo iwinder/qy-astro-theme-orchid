@@ -7,6 +7,7 @@ tags:
   - 配置
 category: 技术
 series: 主题使用指南
+seriesGroup: 进阶
 seriesOrder: 12
 ---
 
@@ -17,7 +18,7 @@ seriesOrder: 12
 ## 三种写法
 
 ```ts
-// site/config/profileConfig.ts
+// site/src/config/profileConfig.ts
 import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 
 export const profileConfig: ThemeConfig["profile"] = {

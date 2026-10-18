@@ -7,7 +7,8 @@ tags:
   - 配置
 category: 技术
 series: 主题使用指南
-seriesOrder: 5
+seriesGroup: 基础配置
+seriesOrder: 6
 ---
 
 首页与归档是博客的"货架"。`contentConfig.postList` 管列表形态，
@@ -18,7 +19,7 @@ seriesOrder: 5
 ### 快速上手
 
 ```ts
-// site/config/contentConfig.ts（节选）
+// site/src/config/contentConfig.ts（节选）
 export const postList: ThemeConfig["postList"] = {
 	style: "cover",
 	pageSize: 10,
@@ -81,7 +82,7 @@ image: "api"
 ## 分类横条（categoryBar）
 
 ```ts
-// site/config/siteConfig.ts（节选）
+// site/src/config/siteConfig.ts（节选）
 categoryBar: { enabled: true },
 ```
 
@@ -95,7 +96,7 @@ categoryBar: { enabled: true },
 ## 归档页（archive）
 
 ```ts
-// site/config/contentConfig.ts（节选）
+// site/src/config/contentConfig.ts（节选）
 export const archive: ThemeConfig["archive"] = { fold: true };
 ```
 

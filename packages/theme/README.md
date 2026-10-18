@@ -240,7 +240,7 @@ site/
 示例（demo 站即此配置）：
 
 ```ts
-// site/config/appearanceConfig.ts
+// site/src/config/appearanceConfig.ts
 export const fonts: ThemeConfig["fonts"] = [
   {
     name: "Inter",

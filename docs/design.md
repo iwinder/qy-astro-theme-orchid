@@ -1401,6 +1401,22 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.74）**：`CI=true pnpm --filter site build` exit 0（127 页、pagefind 74 页不变）。产物抽查：hello-world 中含 `ec-collapse__toggle` 的脚本开标签已带 `data-astro-rerun`；全站 14 个含折叠脚本的页面均带标记；`grep src/config site/src/content/posts` 0 命中。
 
+### 4.75 config 迁移至 src/config + 专题分组（seriesGroup）（✅ 2026-10-18 完成）
+
+**背景**：用户两问：① 正常标准配置文件是否应在 `src/config`，为何示例站 config 与 `src` 同级，保持一致有无风险；② 专题能否分组（参考 firefly 文档站的入门/基础配置/功能配置形态）——现状 12 篇平铺，新人不知从何读起、如何找。
+
+**方案**：① `git mv site/config site/src/config` 对齐生态惯例（Astro 官方模板与 orchid-blog/firefly 均将 config 置于 src 内，原根目录布局系历史选择、无技术必要性），`astro.config.ts` import 改 `"./src/config"`；② schema 新增 `seriesGroup` 可选字段，utils 新增 `seriesEntries` 分块规范化 helper，专题详情页与文章页专题目录共用该序列渲染组头；12 篇指南按「入门 → 基础配置 → 功能配置 → 进阶」四组重排。
+
+**设计决策**：
+- **迁移零风险确认**：config 唯一引用方是 astro.config.ts（site/src/content.config.ts 不依赖它），tsconfig include `**/*` 天然覆盖新路径；纯文件搬家无运行时行为差异，仅 dev server 注意事项路径变为 `site/src/config/*.ts`（§5 清单同步更新）
+- **分块算法「未分组最前 + 组按组内首篇顺序」**：`seriesEntries` 先按 seriesOrder 全局排序，未分组文章构成最前块（无组头），各分组按组内首篇的出现序依次排列（Map 插入序 = 线性首现序）；组内 seriesOrder 断档自动归拢（同组排序后天然相邻），序号全局连续贯穿分块——对作者唯一要求是同组内 seriesOrder 升序，跨组无需连续
+- **组头无 i18n**：`seriesGroup` 文本即显示文本（如「入门」），与 `series` 专题名同一约定，纯展示层不引入翻译键
+- **指南四组连续区段**：入门(1-2)/基础配置(3-6)/功能配置(7-10)/进阶(11-12)，组内 order 连续使阅读动线与组序严格一致
+
+**改动**：`site/config/` → `site/src/config/`（15 模块，git mv）；`site/astro.config.ts`（import + 注释）；`packages/theme/README.md`（示例路径）；`packages/theme/src/schema.ts`（+seriesGroup）；`packages/theme/src/utils.ts`（PostLike +seriesGroup、compareSeriesOrder/seriesEntries）；`packages/theme/src/routes/series/[name].astro`（改用 entries，组头 `li.series-group-title`）；`packages/theme/src/routes/posts/[...slug].astro`（专题目录改用 entries，组头 `li.series-nav-group`）；`packages/theme/src/styles/global.css`（两组头样式）；指南 12 篇 frontmatter（+seriesGroup、order 重排 1-12）；`writing.md`（seriesGroup 字段表行 + 专题段落要点）；getting-started.md 与 8 篇指南文内配置路径表述 26 处改为 `site/src/config`/`src/config`；另本地验证文 features-demo.md（.gitignore 隔离不入库）残留旧 `series + seriesOrder: 3` 混入专题成为幽灵第 13 条，移出。
+
+**验证（§4.75）**：`CI=true pnpm --filter site build` exit 0（127 页）。dist 抽查：`/series/主题使用指南/` 四组头「入门/基础配置/功能配置/进阶」+ 12 条目序号 1-12 连续、组序正确；`/posts/site-config/` 专题目录含 4 个 `series-nav-group`；`data-astro-rerun` 标记仍在（§4.74 无回归）；全仓 grep `site/config`（design.md 历史留痕除外）0 命中。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
@@ -1443,4 +1459,4 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - Astro 组件 frontmatter（`---` 区）**不能包含 JSX**（返回 JSX 的箭头函数会在 vite import analysis 报 invalid JS syntax），JSX 片段只能写在模板区
 - ⚠️ **Astro 7.3.8 捆绑 Zod v4：`.default({})` 不解析内层默认值**（`.default({})` 命中即短路返回 `{}` 原值，内层字段的 default 全部丢失，实测 `z.object({a: z.boolean().default(true), b: z.object({c: z.number().default(3)}).default({})}).parse({})` → `{a: true, b: {}}`）。schema.ts 惯用法：**object section 的 default 必须写显式完整默认值字面量**（如 `.default({ enabled: true, name: '...' })`），嵌套层同理；新增配置 section 时一并遵守，否则该 section 缺省配置时站点运行期 `undefined` 500
 - 主题包版本升级策略：功能进 `minor`、修复进 `patch`、破坏性配置变更进 `major` 并保留 default 回退
-- ⚠️ **astro.config.ts 的传递依赖（`site/config/*.ts`）变更不触发 dev server 自动重启**——astro 只 watch astro.config.ts 本身的 mtime，其 import 依赖图（config 拆分文件）变化不产生 restart 日志（与参考模板 config 为 src 内组件级 import 有 HMR 的架构不同）；改配置后必须手动重启 dev server 再验证（§4.8 实测）
+- ⚠️ **astro.config.ts 的传递依赖（`site/src/config/*.ts`）变更不触发 dev server 自动重启**——astro 只 watch astro.config.ts 本身的 mtime，其 import 依赖图（config 拆分文件）变化不产生 restart 日志（与参考模板 config 为 src 内组件级 import 有 HMR 的架构不同）；改配置后必须手动重启 dev server 再验证（§4.8 实测，§4.75 迁移后路径）

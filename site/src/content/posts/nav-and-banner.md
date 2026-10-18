@@ -7,7 +7,8 @@ tags:
   - 配置
 category: 技术
 series: 主题使用指南
-seriesOrder: 3
+seriesGroup: 基础配置
+seriesOrder: 4
 ---
 
 导航栏（`navBarConfig`）与首页横幅（`appearanceConfig.banner`）是访客对站点形象的第一印象。
@@ -18,7 +19,7 @@ seriesOrder: 3
 ### 快速上手
 
 ```ts
-// site/config/navBarConfig.ts
+// site/src/config/navBarConfig.ts
 import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 
 export const navBarConfig: ThemeConfig["nav"] = [
@@ -84,7 +85,7 @@ export const navBarConfig: ThemeConfig["nav"] = [
 ### 快速上手
 
 ```ts
-// site/config/appearanceConfig.ts（节选）
+// site/src/config/appearanceConfig.ts（节选）
 export const banner: ThemeConfig["banner"] = {
 	enabled: true,
 	src: "/banner.jpg", // public/banner.jpg

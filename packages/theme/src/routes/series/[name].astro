@@ -2,10 +2,11 @@
 import { getCollection } from "astro:content";
 import BaseLayout from "virtual:theme/components/BaseLayout.astro";
 import { t } from "../../i18n/index.js";
-import { formatDate, type PostLike } from "../../utils.js";
+import { formatDate, type PostLike, seriesEntries } from "../../utils.js";
 import { hydratePosts } from "../_hydrate.js";
 
-// 专题详情页（§4.31）：组内 seriesOrder 升序（未配置排最后），同序按发布时间升序
+// 专题详情页（§4.31→§4.75）：seriesEntries 分块规范化——
+// 未分组文章块最前，各分组按组内首篇顺序排列，全局序号连续
 export async function getStaticPaths() {
 	const all = await getCollection("posts", ({ data }) =>
 		import.meta.env.PROD ? !data.draft : true,
@@ -21,18 +22,17 @@ export async function getStaticPaths() {
 		else groups.set(name, [post]);
 	}
 
-	return [...groups.entries()].map(([name, list]) => {
-		const sorted = [...list].sort((a, b) => {
-			const oa = a.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
-			const ob = b.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
-			if (oa !== ob) return oa - ob;
-			return a.data.published.getTime() - b.data.published.getTime();
-		});
-		return { params: { name }, props: { name, posts: sorted } };
-	});
+	return [...groups.entries()].map(([name, list]) => ({
+		params: { name },
+		props: { name, entries: seriesEntries(list) },
+	}));
 }
 
-const { name, posts } = Astro.props as { name: string; posts: PostLike[] };
+const { name, entries } = Astro.props as {
+	name: string;
+	entries: ReturnType<typeof seriesEntries>;
+};
+const posts = entries.map((e) => e.post);
 const latest = posts.reduce(
 	(max, p) => (p.data.published > max ? p.data.published : max),
 	posts[0]!.data.published,
@@ -49,14 +49,17 @@ const latest = posts.reduce(
   </header>
   <ol class="series-list">
     {
-      posts.map((post, i) => (
-        <li class="series-item reveal">
-          <a class="series-link card" href={`/posts/${post.id}/`}>
-            <span class="series-idx">{i + 1}</span>
-            <span class="series-title">{post.data.title}</span>
-            <span class="series-date">{formatDate(post.data.published)}</span>
-          </a>
-        </li>
+      entries.map((entry) => (
+        <>
+          {entry.groupHead && <li class="series-group-title" aria-hidden="true">{entry.groupHead}</li>}
+          <li class="series-item reveal">
+            <a class="series-link card" href={`/posts/${entry.post.id}/`}>
+              <span class="series-idx">{entry.index + 1}</span>
+              <span class="series-title">{entry.post.data.title}</span>
+              <span class="series-date">{formatDate(entry.post.data.published)}</span>
+            </a>
+          </li>
+        </>
       ))
     }
   </ol>

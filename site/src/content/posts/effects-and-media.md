@@ -7,7 +7,8 @@ tags:
   - 配置
 category: 技术
 series: 主题使用指南
-seriesOrder: 7
+seriesGroup: 功能配置
+seriesOrder: 8
 ---
 
 `appearanceConfig.ts` 收纳页面的"装饰与常驻悬浮件"：banner（见[导航栏与首页横幅](/posts/nav-and-banner/)）、

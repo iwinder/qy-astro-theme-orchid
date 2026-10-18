@@ -7,6 +7,7 @@ tags:
   - 配置
 category: 技术
 series: 主题使用指南
+seriesGroup: 入门
 seriesOrder: 1
 ---
 
@@ -36,7 +37,7 @@ pnpm dev
 
 打开 `http://localhost:4321` 即可看到与官方演示一致的站点。接下来只需要：
 
-1. 把 `site/config/` 里的站点信息改成你自己的（从[站点基础配置](/posts/site-config/)开始）
+1. 把 `site/src/config/` 里的站点信息改成你自己的（从[站点基础配置](/posts/site-config/)开始）
 2. 清空 `src/content/posts/` 里的示例文章，写入你的内容
 
 ### 方式二：接入已有 Astro 站点
@@ -54,7 +55,7 @@ pnpm add @windcoder/astro-theme-orchid @astrojs/mdx
 import { defineConfig } from "astro/config";
 import mdx from "@astrojs/mdx";
 import orchidTheme from "@windcoder/astro-theme-orchid";
-import { themeConfig } from "./config";
+import { themeConfig } from "./src/config";
 
 export default defineConfig({
 	// 1. 站点域名（RSS、sitemap、OG 图都依赖它，必填）
@@ -106,12 +107,12 @@ export const collections = { posts, spec };
 ```
 site/
 ├── astro.config.ts          # 接入主题（上面三件事）
-├── config/                  # 站点配置（建议拆分模块，见下）
-│   ├── index.ts             # 组装并导出 themeConfig
-│   ├── siteConfig.ts        # 站点基础信息
-│   ├── appearanceConfig.ts
-│   └── ...                  # 共 15 个模块文件
 ├── src/
+│   ├── config/              # 站点配置（建议拆分模块，见下）
+│   │   ├── index.ts         # 组装并导出 themeConfig
+│   │   ├── siteConfig.ts    # 站点基础信息
+│   │   ├── appearanceConfig.ts
+│   │   └── ...              # 共 15 个模块文件
 │   ├── content.config.ts    # 内容集合定义
 │   ├── content/
 │   │   ├── posts/           # 文章（.md / .mdx）
@@ -120,12 +121,12 @@ site/
 └── public/                  # 静态资源（logo、画廊图片等）
 ```
 
-`config/` 的拆分方式不是强制的——主题只关心最终传入 `orchidTheme()` 的那一个对象。拆成 15 个模块文件是示例站点的组织方式，便于逐篇讲解（本系列后面每篇对应一至几个模块）。
+`src/config/` 的拆分方式不是强制的——主题只关心最终传入 `orchidTheme()` 的那一个对象。拆成 15 个模块文件是示例站点的组织方式，便于逐篇讲解（本系列后面每篇对应一至几个模块）。
 
-最小化组织也可以只有一个 `config.ts`：
+最小化组织也可以只有一个 `src/config.ts`：
 
 ```ts
-// config.ts —— 扁平写法同样有效
+// src/config.ts —— 扁平写法同样有效
 import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 
 export const themeConfig: ThemeConfig = {

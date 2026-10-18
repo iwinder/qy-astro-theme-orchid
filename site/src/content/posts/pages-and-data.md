@@ -7,7 +7,8 @@ tags:
   - 配置
 category: 技术
 series: 主题使用指南
-seriesOrder: 8
+seriesGroup: 功能配置
+seriesOrder: 9
 ---
 
 主题内置六个独立页面（关于/友链/留言板/赞助/画廊/专题），路由开关在
@@ -35,7 +36,7 @@ site/src/content/spec/
 ### 全部可配置项
 
 ```ts
-// site/config/friendsConfig.ts
+// site/src/config/friendsConfig.ts
 export const friendsConfig: ThemeConfig["friends"] = {
 	title: "友链",
 	description: "山不在高，有仙则名。",
@@ -79,7 +80,7 @@ export const friendsConfig: ThemeConfig["friends"] = {
 ### 全部可配置项
 
 ```ts
-// site/config/sponsorConfig.ts
+// site/src/config/sponsorConfig.ts
 export const sponsorConfig: ThemeConfig["sponsor"] = {
 	title: "打赏",
 	description: "如果内容对你有帮助，请作者喝杯茶。",
@@ -125,7 +126,7 @@ export const sponsorConfig: ThemeConfig["sponsor"] = {
 ### 全部可配置项
 
 ```ts
-// site/config/galleryConfig.ts
+// site/src/config/galleryConfig.ts
 export const galleryConfig: ThemeConfig["gallery"] = {
 	title: "画廊",
 	description: "用镜头收藏时间的碎片。",

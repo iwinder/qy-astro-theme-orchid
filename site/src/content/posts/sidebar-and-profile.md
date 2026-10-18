@@ -7,7 +7,8 @@ tags:
   - 配置
 category: 技术
 series: 主题使用指南
-seriesOrder: 4
+seriesGroup: 基础配置
+seriesOrder: 5
 ---
 
 侧边栏是主题里可玩性最高的模块：**九种 widget 以数组声明**，类型、顺序、显隐、
@@ -18,7 +19,7 @@ seriesOrder: 4
 ### 快速上手
 
 ```ts
-// site/config/sidebarConfig.ts
+// site/src/config/sidebarConfig.ts
 import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 
 export const sidebarConfig: ThemeConfig["sidebar"] = {
@@ -104,7 +105,7 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 ### 全部可配置项
 
 ```ts
-// site/config/profileConfig.ts
+// site/src/config/profileConfig.ts
 export const profileConfig: ThemeConfig["profile"] = {
 	avatar: "",            // 头像 URL；留空渲染昵称首字字头像
 	name: "windcoder",     // 昵称
@@ -149,7 +150,7 @@ export const profileConfig: ThemeConfig["profile"] = {
 ### 全部可配置项
 
 ```ts
-// site/config/licenseConfig.ts
+// site/src/config/licenseConfig.ts
 export const licenseConfig: ThemeConfig["license"] = {
 	enabled: true,
 	name: "CC BY-NC-SA 4.0",

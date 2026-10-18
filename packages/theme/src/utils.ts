@@ -41,6 +41,8 @@ export interface PostLike {
 		series?: string;
 		/** 专题内顺序（小在前）；未配置则按发布时间升序 */
 		seriesOrder?: number;
+		/** 专题内分组（§4.75）：专题页/专题目录按组分块展示 */
+		seriesGroup?: string;
 	};
 }
 
@@ -87,6 +89,56 @@ export function getSortedPosts<T extends PostLike>(posts: T[]): T[] {
 			if (a.data.pinned !== b.data.pinned) return a.data.pinned ? -1 : 1;
 			return b.data.published.getTime() - a.data.published.getTime();
 		});
+}
+
+/** 专题内排序比较器：seriesOrder 升序（未配置排最后），同序按发布时间升序 */
+function compareSeriesOrder<T extends PostLike>(a: T, b: T): number {
+	const oa = a.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
+	const ob = b.data.seriesOrder ?? Number.MAX_SAFE_INTEGER;
+	if (oa !== ob) return oa - ob;
+	return a.data.published.getTime() - b.data.published.getTime();
+}
+
+/** 专题渲染序列条目：groupHead 非空 = 该条目是新分块首条，值为组名（未分组块无头） */
+export interface SeriesEntry<T> {
+	post: T;
+	/** 全局序号（0 起，贯穿分块连续编号） */
+	index: number;
+	groupHead: string | null;
+}
+
+/**
+ * 专题分块序列（§4.75）：按 seriesOrder 排序后分块规范化——
+ * 未分组文章为最前块，各分组（seriesGroup 非空）按组内首篇顺序依次排列。
+ * 同组文章 seriesOrder 不连续时自动归拢，不依赖作者保证组内连续。
+ * 序号贯穿所有分块连续递增，供专题页与文章页专题目录共用。
+ */
+export function seriesEntries<T extends PostLike>(
+	posts: T[],
+): SeriesEntry<T>[] {
+	const sorted = [...posts].sort(compareSeriesOrder);
+	const entries: SeriesEntry<T>[] = [];
+	const groups = new Map<string, T[]>();
+	for (const post of sorted) {
+		const group = post.data.seriesGroup;
+		if (!group) {
+			entries.push({ post, index: entries.length, groupHead: null });
+			continue;
+		}
+		const list = groups.get(group);
+		if (list) list.push(post);
+		else groups.set(group, [post]);
+	}
+	for (const [group, list] of groups) {
+		for (const post of list) {
+			entries.push({
+				post,
+				index: entries.length,
+				groupHead: post === list[0] ? group : null,
+			});
+		}
+	}
+	return entries;
 }
 
 /** 按标签聚合：Map<标签名, 文章[]>，标签按文章数降序 */
