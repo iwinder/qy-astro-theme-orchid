@@ -1417,21 +1417,23 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.75）**：`CI=true pnpm --filter site build` exit 0（127 页）。dist 抽查：`/series/主题使用指南/` 四组头「入门/基础配置/功能配置/进阶」+ 12 条目序号 1-12 连续、组序正确；`/posts/site-config/` 专题目录含 4 个 `series-nav-group`；`data-astro-rerun` 标记仍在（§4.74 无回归）；全仓 grep `site/config`（design.md 历史留痕除外）0 命中。
 
-### 4.76 折叠代码块 VT 失效二次修复：window 级幂等守卫中和（✅ 2026-10-18 完成）
+### 4.76 折叠代码块 VT 失效二次修复：删除 window 级幂等守卫（✅ 2026-10-18 完成，两轮演进）
 
-**背景**：§4.74 修复（data-astro-rerun 重执行）后用户复测仍失效——经专题列进入文章后折叠代码块依旧无法展开。复查发现 §4.74 的验证只到 build 产物 grep 标记（证明"标记在"），未做运行时点击验证（未证"绑定成"），其"脚本自带 dataset.init 幂等保护，重跑即完成新页按钮绑定"的推断有漏。
+**背景**：§4.74 修复（data-astro-rerun 重执行）后用户两轮复测仍失效：①经专题列进入文章后折叠代码块依旧无法展开；②从「写作指南」的专题目录切到「快速开始」不展开，但在快速开始页刷新后能展开。§4.74 验证只到 build 产物 grep 标记（证"标记在"未证"绑定成"），两轮实测暴露了两个连环盲区。
 
-**方案（根因 → 修复）**：从 dev 实际产物提取内联脚本本体复核：data-astro-rerun 标记确实存在、ClientRouter 确实重执行了脚本，但脚本首两行是 **window 级早退守卫**（`if (window.ecCollapsibleInit) return; window.ecCollapsibleInit = true;`）——ClientRouter 换页只换 body 不换 window，标志位跨页存活，重执行被早退拦截，`initCollapseButtons` 整体短路；按钮级 `dataset.init` 守卫只防重复绑定，挡不住这一层（脚本级守卫在它之前）。修复：`rehype-ec-vt-rerun` 打标记的同时将脚本文本中的 `ecCollapsibleInit` 全部改名 `ecCollapsibleInitVtRerun`——守卫永读不中（undefined），每次执行都完整初始化；MutationObserver 每次重建并观察当前 body（旧 observer 附着已脱离文档的旧 body，随其一起 GC）；离开含折叠块的页面后脚本不存在、不重执行，零开销。
+**方案（根因 → 修复，两轮演进）**：从 dev 实际产物提取内联脚本本体复核，data-astro-rerun 标记存在、ClientRouter 确实重执行脚本，但脚本首两行是 **window 级早退守卫**（`if (window.ecCollapsibleInit) return; window.ecCollapsibleInit = true;`）——ClientRouter 换页只换 body 不换 window，标志位在同一浏览器会话内跨页存活，重执行被早退拦截，`initCollapseButtons` 整体短路（按钮级 `dataset.init` 守卫只防重复绑定，挡不住脚本级早退）。
+- 第一轮修复（被第二轮推翻）：把 `ecCollapsibleInit` 全部改名 `ecCollapsibleInitVtRerun`——只在「干净 window」下有效，漏了**新名字的标志照样同会话跨页残留**：实测写作指南页 0 个折叠块但 EC 照注入该脚本并置标志，此后 VT 进入任何有折叠块的文章（快速开始）重执行即早退——正是用户第②轮报障场景；E2E 未覆盖「A（带脚本页）→ B（带折叠块页）」序列故未暴露
+- 第二轮修复（终版）：脚本文本中**整段删除守卫语句与标志赋值**（`GUARD_RE`/`FLAG_SET_RE` 两条正则，容忍不命中），每次执行都完整初始化。安全性：按钮级 `dataset.init` 防重复绑定；MutationObserver 每次重建观察当前 body，旧 observer 附着已脱离文档的旧 body 随其 GC；data-astro-rerun 每次 swap 恰执行一次、full load 一次，无同 DOM 重入；离开含折叠块的页面后脚本不存在不执行；且不读任何 window 标志，天然免疫用户浏览器里的历史残留标志
 
 **设计决策**：
-- **改名而非删守卫语句**：单条正则 `\becCollapsibleInit\b` 对任意空白形态命中，且上游若重排语句顺序也不受影响；守卫/赋值语义保留（读不中即恒 false），JS 合法性零风险
+- **删守卫而非改名**：守卫的语义是"整进程只初始化一次"，与 ClientRouter「每页需重新绑定」根本冲突——任何保留 window 状态的写法（改名/重置/换存储）都只是推迟撞墙；唯一正确语义是"每 DOM 一次"，恰好由按钮级 dataset.init 承担
 - **不外置重置标志位**（如 astro:after-swap 里置回 false）：需在 app.ts 埋 EC 专属知识、跨文件耦合、且要赌事件时序（须在 rerun 脚本执行前跑）；改产物文本把闭环收在插件一处
-- **退化安全**：上游插件若改标志位名/改结构，正则不命中即退化为 §4.74 行为（仅重执行不中和守卫），不会更糟
-- **验证方法论修正**：交互类修复必须真实浏览器走点击链路；产物 grep 只能证明标记存在，不能证明绑定成立（§4.74 翻车原因）
+- **退化安全**：上游插件若改守卫名/改结构，删除正则不命中即退化为 §4.74 行为（仅重执行不删守卫），不会更糟
+- **验证方法论修正（两课）**：①交互类修复必须真实浏览器走点击链路，产物 grep 只能证明标记存在（§4.74 翻车）；②E2E 起步状态必须覆盖**脏 window**——从带脚本的页面换页进入才复现（第一轮翻车），干净 window 起步的用例全部通过是假阴性
 
-**改动**：`packages/theme/src/plugins/rehype-ec-vt-rerun.ts`（`INIT_FLAG_RE`/`INIT_FLAG_VT_NAME` 常量 + walk 内对命中的内联脚本文本节点做改名替换；头注释补 §4.76 双层根因与安全性论证）
+**改动**：`packages/theme/src/plugins/rehype-ec-vt-rerun.ts`（`GUARD_RE`/`FLAG_SET_RE` + walk 内对命中的内联脚本文本节点删除守卫与赋值；头注释完整记录两轮根因与安全性论证）
 
-**验证（§4.76）**：biome 全仓 0 error。dev（`npx astro dev stop` + 删 `site/.astro` 重建后）产物：脚本含 `ecCollapsibleInitVtRerun`、原名 0 残留、`data-astro-rerun` 保留。浏览器 E2E 全链路实测：专题页 → 点进 site-config（VT 换页成功、window 标志位已置 = 脚本重执行实证）→ **专题列点进 getting-started（用户报障精确路径）** → 新页 2 个折叠块按钮 `dataset.init` 全部 true（重执行已绑定新页按钮，修复前此处 unbound）→ 点击展开按钮 → `ec-collapse--expanded`/`aria-expanded=true` → 再点收起复原（`collapsed:2`）；console 无脚本错误。build（先删 `site/node_modules/.astro`）exit 0：14 个含折叠脚本页面全部带改名守卫、原名 0 残留、标记无回归。
+**验证（§4.76 终版）**：biome 0 error。dev（`npx astro dev stop` + 删 `site/.astro` 重建）产物：writing 与 getting-started 的折叠脚本 `window.ecCollapsibleInit` 0 残留、`data-astro-rerun` 保留。浏览器 E2E 按**用户报障精确路径**：full load /posts/writing/（脚本执行、无标志可置）→ 专题目录点「快速开始」（VT）→ 4 个按钮 `dataset.init` 全 true → 点击展开 `192→490px`/`ec-collapse--expanded` → 收起复原；再走往返序列 getting-started → writing → getting-started，第二次进入后按钮依然全绑定、再次点击展开成功；console 无脚本错误。build（先删 `site/node_modules/.astro`）exit 0：14 个含折叠脚本页面守卫 0 残留、`data-astro-rerun` 无回归。
 
 ## 5. 里程碑路线
 
@@ -1473,6 +1475,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 - integration 更新 markdown processor 后 content store 不自动清除——重启 dev 前删 `site/.astro/` 可排除陈旧缓存干扰
 - ⚠️ **content layer 渲染缓存对插件产物零失效感知（§4.70 实测）**：渲染后的 markdown HTML 持久化在 `site/node_modules/.astro/data-store.json`（dev 为 `site/.astro/`），**rehype/remark 插件变更不使缓存失效**——构建/实测管线产物类改动前必须先 `rm -rf site/node_modules/.astro`（dev 还需重启 server，integration 层代码不热更、touch md 也无效）
 - ⚠️ **schema 新增 frontmatter 字段后 dev 内容层缓存可能不失效（§4.75 实测）**：dev 启动 sync 时若判定 config 未变会**复用旧 data store**（schema 变更前的解析产物），运行时 parseData 丢新字段——seriesGroup 分组组头不渲染即此因（数据在 store 里 12 个、类型文件也是新的，唯独运行时拿不到）；普通重启未必触发重建，需 `npx astro dev stop` + 重新 `astro dev`（启动日志出现 `[content] Astro config changed → Clearing content store → Synced content` 即重建成功）或直接删 `site/.astro/` 再重启。注意：Astro 7 有 dev 单例守护，第二个实例会被拒，停旧进程用官方 `npx astro dev stop`
+- ⚠️ **ClientRouter（VT）下 window/document 级单例状态跨页残留（§4.76 两轮翻车）**：换页只换 body 不换 window——第三方内联脚本的 window 幂等守卫/标志位会在"任何注入过该脚本的页面 → 另一需要它的页面"序列中拦截初始化（注入条件宽于使用条件：无折叠块的文章也注入折叠脚本）；处置一律**删除/绕过 window 级守卫**而非改名或重置（改名只清历史残留，同会话内新标志照样残留）；E2E 复现必须从"带脚本的页面换页进入"起步，干净 window 起步全部通过是假阴性
 - Astro 组件 frontmatter（`---` 区）**不能包含 JSX**（返回 JSX 的箭头函数会在 vite import analysis 报 invalid JS syntax），JSX 片段只能写在模板区
 - ⚠️ **Astro 7.3.8 捆绑 Zod v4：`.default({})` 不解析内层默认值**（`.default({})` 命中即短路返回 `{}` 原值，内层字段的 default 全部丢失，实测 `z.object({a: z.boolean().default(true), b: z.object({c: z.number().default(3)}).default({})}).parse({})` → `{a: true, b: {}}`）。schema.ts 惯用法：**object section 的 default 必须写显式完整默认值字面量**（如 `.default({ enabled: true, name: '...' })`），嵌套层同理；新增配置 section 时一并遵守，否则该 section 缺省配置时站点运行期 `undefined` 500
 - 主题包版本升级策略：功能进 `minor`、修复进 `patch`、破坏性配置变更进 `major` 并保留 default 回退
