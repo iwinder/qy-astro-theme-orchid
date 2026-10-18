@@ -1417,6 +1417,22 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.75）**：`CI=true pnpm --filter site build` exit 0（127 页）。dist 抽查：`/series/主题使用指南/` 四组头「入门/基础配置/功能配置/进阶」+ 12 条目序号 1-12 连续、组序正确；`/posts/site-config/` 专题目录含 4 个 `series-nav-group`；`data-astro-rerun` 标记仍在（§4.74 无回归）；全仓 grep `site/config`（design.md 历史留痕除外）0 命中。
 
+### 4.76 折叠代码块 VT 失效二次修复：window 级幂等守卫中和（✅ 2026-10-18 完成）
+
+**背景**：§4.74 修复（data-astro-rerun 重执行）后用户复测仍失效——经专题列进入文章后折叠代码块依旧无法展开。复查发现 §4.74 的验证只到 build 产物 grep 标记（证明"标记在"），未做运行时点击验证（未证"绑定成"），其"脚本自带 dataset.init 幂等保护，重跑即完成新页按钮绑定"的推断有漏。
+
+**方案（根因 → 修复）**：从 dev 实际产物提取内联脚本本体复核：data-astro-rerun 标记确实存在、ClientRouter 确实重执行了脚本，但脚本首两行是 **window 级早退守卫**（`if (window.ecCollapsibleInit) return; window.ecCollapsibleInit = true;`）——ClientRouter 换页只换 body 不换 window，标志位跨页存活，重执行被早退拦截，`initCollapseButtons` 整体短路；按钮级 `dataset.init` 守卫只防重复绑定，挡不住这一层（脚本级守卫在它之前）。修复：`rehype-ec-vt-rerun` 打标记的同时将脚本文本中的 `ecCollapsibleInit` 全部改名 `ecCollapsibleInitVtRerun`——守卫永读不中（undefined），每次执行都完整初始化；MutationObserver 每次重建并观察当前 body（旧 observer 附着已脱离文档的旧 body，随其一起 GC）；离开含折叠块的页面后脚本不存在、不重执行，零开销。
+
+**设计决策**：
+- **改名而非删守卫语句**：单条正则 `\becCollapsibleInit\b` 对任意空白形态命中，且上游若重排语句顺序也不受影响；守卫/赋值语义保留（读不中即恒 false），JS 合法性零风险
+- **不外置重置标志位**（如 astro:after-swap 里置回 false）：需在 app.ts 埋 EC 专属知识、跨文件耦合、且要赌事件时序（须在 rerun 脚本执行前跑）；改产物文本把闭环收在插件一处
+- **退化安全**：上游插件若改标志位名/改结构，正则不命中即退化为 §4.74 行为（仅重执行不中和守卫），不会更糟
+- **验证方法论修正**：交互类修复必须真实浏览器走点击链路；产物 grep 只能证明标记存在，不能证明绑定成立（§4.74 翻车原因）
+
+**改动**：`packages/theme/src/plugins/rehype-ec-vt-rerun.ts`（`INIT_FLAG_RE`/`INIT_FLAG_VT_NAME` 常量 + walk 内对命中的内联脚本文本节点做改名替换；头注释补 §4.76 双层根因与安全性论证）
+
+**验证（§4.76）**：biome 全仓 0 error。dev（`npx astro dev stop` + 删 `site/.astro` 重建后）产物：脚本含 `ecCollapsibleInitVtRerun`、原名 0 残留、`data-astro-rerun` 保留。浏览器 E2E 全链路实测：专题页 → 点进 site-config（VT 换页成功、window 标志位已置 = 脚本重执行实证）→ **专题列点进 getting-started（用户报障精确路径）** → 新页 2 个折叠块按钮 `dataset.init` 全部 true（重执行已绑定新页按钮，修复前此处 unbound）→ 点击展开按钮 → `ec-collapse--expanded`/`aria-expanded=true` → 再点收起复原（`collapsed:2`）；console 无脚本错误。build（先删 `site/node_modules/.astro`）exit 0：14 个含折叠脚本页面全部带改名守卫、原名 0 残留、标记无回归。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
