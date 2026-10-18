@@ -1472,6 +1472,22 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.78）**：biome 0 error；`rm -rf site/node_modules/.astro` 后 `CI=true pnpm --filter site build` exit 0；`site/dist/posts/getting-started/index.html` 重新生成且含配置文件概览表。
 
+### 4.79 v0.2.0 发版 + 示例文章入库 + npm publish 报错防御（✅ 2026-10-18 完成）
+
+**背景**：①用户将个人私密文章移出站点、删除 .gitignore 的文章白名单隔离并暂存三篇演示文章（encrypted-demo/features-demo/mdx-demo），要求提交并作为新版本基线；②tag v0.2.0 触发的 Release workflow 在 Publish to npm 步骤失败，用户贴出日志：`npm error *** is not a legal HTTP header value`。
+
+**方案**：
+- ①三篇演示文入库前修正过时表述：features-demo 的「b4 批次本地验证文章…（不提交，仅本地验证）」「已被 .gitignore 隔离，不会提交」改为正式示例描述；mdx-demo 去除「§4.67 本地验证文章」「§4.65 标准化迁移」两处内部编号引用；两者 category/tags 与 encrypted-demo 对齐为「主题演示」。根与 packages/theme 版本 0.1.0 → 0.2.0，打 tag v0.2.0 三路推送
+- ②报错归因：`***` 是 GitHub secret 掩码，provenance 签名与透明日志均成功（网络/OIDC 正常），非法的是 Authorization 头的 token 值——几乎确定为创建 NPM_TOKEN secret 时粘贴带入的换行/空白（GitHub 保存 secret 不 trim）。防御性修复：publish 步骤内 `tr -d '[:space:]'` 剥除 token 全部空白后再发布
+
+**设计决策**：
+- **workflow 加 trim 而非只让用户重贴 secret**：setup-node 写入的 .npmrc 用 `${NODE_AUTH_TOKEN}` 占位符在运行时展开，npm token 本身不含空白字符，剥除全部空白安全无损；该修复对今后所有发版生效，不依赖用户粘贴手法
+- **不主动移 tag 重触发**：re-run 失败任务使用原 tag 指向的旧 workflow（不含 trim），修复版需移 tag 才生效——force 移动 tag 属破坏性操作，留作用户选择：重贴 secret 后 re-run（旧 workflow 即可成功）或移 tag 用修复版 workflow
+
+**改动**：`site/src/content/posts/`（三篇演示文入库 + 表述修正）；`.gitignore`（白名单机制移除，用户操作）；`package.json`/`packages/theme/package.json`（0.2.0）；`.github/workflows/release.yml`（publish 步骤 trim token）。
+
+**验证（§4.79）**：本地 build exit 0（三篇演示文均产出 dist 页面，含加密渲染）；biome 118 files 0 error；提交 20e05b8 + tag v0.2.0 三路推送成功，main CI success；Release run 前 8 步（tag 校验/单测/完整构建）全过，仅 publish 失败（403 归因 + 日志掩码特征定位）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

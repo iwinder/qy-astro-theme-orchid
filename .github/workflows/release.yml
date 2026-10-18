@@ -51,7 +51,11 @@ jobs:
           pnpm --filter site build
 
       - name: Publish to npm
-        run: npm publish --provenance
+        # Secret 粘贴时可能带入换行/空白，进入 Authorization 头会报
+        # "is not a legal HTTP header value"，发布前统一剥除。
+        run: |
+          export NODE_AUTH_TOKEN="$(printf '%s' "$NODE_AUTH_TOKEN" | tr -d '[:space:]')"
+          npm publish --provenance
         working-directory: packages/theme
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
