@@ -1488,6 +1488,21 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.79）**：本地 build exit 0（三篇演示文均产出 dist 页面，含加密渲染）；biome 118 files 0 error；提交 20e05b8 + tag v0.2.0 三路推送成功，main CI success；Release run 前 8 步（tag 校验/单测/完整构建）全过，仅 publish 失败（403 归因 + 日志掩码特征定位）。
 
+### 4.80 发版发布切至 trusted publishing（OIDC），弃用 NPM_TOKEN（✅ 2026-10-18 完成）
+
+**背景**：v0.2.0 发版踩坑连环——①publish 步骤报 illegal HTTP header（secret 带换行）；②用户换建免 2FA token 后报 EOTP；③用户实测 npm 当前对新建免 2FA token 只允许 staged publish、无法直接发布（公告原定 2027-01 的「2FA-bypass token 失去直接发布能力」已对新建 token 提前落地）。同时核实 `@windcoder/astro-theme-orchid@0.1.0` 已由用户于 2026-10-18 04:03 UTC 本地首发成功（82 files），修正此前「包未发布」的误判——trusted publishing 的包前提已满足。
+
+**方案**：release.yml 弃用 `NPM_TOKEN` secret，publish 步骤回归 `npm publish --provenance`（+ `working-directory: packages/theme`），发布凭证改由 GitHub Actions OIDC 工作负载身份自动换取（短期、无 token、无 OTP，不受 2026-08/2027-01 新规影响）。新增 Upgrade npm 步骤（`npm install -g npm@11`）——Node 22 自带 npm 10.x 仅支持 provenance 不支持 OIDC 发布，trusted publishing 需 npm ≥ 11.5。头注释同步改写前置配置说明。
+
+**设计决策**：
+- **一步到位切 OIDC 而非修 token**：EOTP/illegal header/staged-only 三个症状同根——免 2FA token 的发布能力被 npm 持续收窄，任何 token 方案都是死路或倒计时；OIDC 是 npm 官方推荐终态，且 workflow 已具备 `id-token: write` 与 `--provenance` 全部前置
+- **npm@11 而非 npm@latest**：latest 已是 v12（install-time security defaults 开启），发布流水线求稳，11.x 即满足 OIDC 最低版本且无 v12 行为变更
+- **本地首发仍可用**：用户交互式 `npm publish` 带 OTP 不受影响；CI 侧从此零凭证
+
+**改动**：`.github/workflows/release.yml`（头注释/permissions 注释/publish 步骤重写 + Upgrade npm 步骤新增）。
+
+**验证（§4.80）**：registry 实测 0.1.0 存在（dist-tags latest=0.1.0，time 2026-10-18T04:03:28Z）；待用户在 npmjs.com 包页面配置 Trusted publisher（iwinder/qy-astro-theme-orchid + release.yml）后由 v0.2.0 发版实战验证（移 tag 重触发或等下个版本）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

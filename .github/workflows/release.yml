@@ -1,7 +1,9 @@
 # 发版流程（M4-4）：推送 v* tag 触发 → 校验 tag 与包版本一致 →
 # test + 完整构建验证 → npm 发布（public scoped + provenance）。
-# 前置配置：仓库 Secrets 配置 NPM_TOKEN（npmjs.com 生成 Automation token，
-# 需对 @windcoder scope 有发布权）；provenance 依赖 id-token: write。
+# 发布走 trusted publishing（OIDC）：无需 NPM_TOKEN secret，npm 在
+# GitHub Actions 内自动以仓库工作负载身份换取短期发布凭证。
+# 前置配置（一次性）：npmjs.com 包页面 Settings → Trusted publishing，
+# 填 iwinder/qy-astro-theme-orchid + workflow 文件名 release.yml。
 # 注意：tag push 不会触发 ci.yml，本工作流自带发布前验证。
 name: Release
 
@@ -11,7 +13,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write # npm provenance
+  id-token: write # trusted publishing OIDC + npm provenance
 
 jobs:
   publish:
@@ -23,12 +25,16 @@ jobs:
       - name: Setup pnpm（版本读根 package.json 的 packageManager 字段）
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
 
-      - name: Setup Node.js 22（自带 npm ≥ 10，支持 provenance）
+      - name: Setup Node.js 22
         uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
         with:
           node-version: 22
           cache: pnpm
           registry-url: https://registry.npmjs.org
+
+      # Node 22 自带 npm 10.x，trusted publishing 的 OIDC 发布需 npm ≥ 11.5
+      - name: Upgrade npm
+        run: npm install -g npm@11
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -50,12 +56,6 @@ jobs:
           pnpm --filter site lqip
           pnpm --filter site build
 
-      - name: Publish to npm
-        # Secret 粘贴时可能带入换行/空白，进入 Authorization 头会报
-        # "is not a legal HTTP header value"，发布前统一剥除。
-        run: |
-          export NODE_AUTH_TOKEN="$(printf '%s' "$NODE_AUTH_TOKEN" | tr -d '[:space:]')"
-          npm publish --provenance
+      - name: Publish to npm（trusted publishing OIDC，无 token）
+        run: npm publish --provenance
         working-directory: packages/theme
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
