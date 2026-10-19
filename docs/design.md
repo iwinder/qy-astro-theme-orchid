@@ -1585,6 +1585,24 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.85）**：starter 本地 `pnpm install`（pnpm v11.10.0，registry 拉真实 0.2.0）5.3s exit 0（顺手清理 pnpm 自动写入的 minimumReleaseAgeExclude 本机配置噪音）；`pnpm check` 0 errors 0 warnings 1 hint；`CI=true pnpm build` exit 0——dist 全站产出（about/friends/guestbook/sponsor/gallery/series/archive/tags/categories/og/api/pagefind/rss/sitemap 齐全），dist/posts/hello-world 带 data-pagefind-body。主仓库两处文档改动待 build 验证后随本节提交。
 
+### 4.86 相册详情页布局修复（banner 宽度反推 + 照片墙零间距）（✅ 2026-10-19 完成）
+
+**背景**：用户报告相册详情页两处问题——①第一行照片与封面横幅零间距；②存在超出封面宽度的图片（整体溢出不美观）；③点击照片无灯箱效果（期望与文章页一致）。
+
+**排查（本地 preview 4322 + 浏览器实机验证，elementFromPoint 真实命中测试）**：
+- **布局①②确认为真 bug，量化定位**：`bannerBottom(242) === masonryTop(242) === firstPhotoTop(242)`、`masonryMarginTop: 0px`——封面与照片墙完全贴合；`bannerWidth: 600 > mainWidth: 549`、`hasHScroll: true`——根因是 `.gallery-banner { aspect-ratio: 3/1; min-height: 200px }` 在窄容器（宽 <600px）下：比例算出的高度 183 被 min-height 拉到 200，aspect-ratio **反推宽度** 200×3=600px 穿透容器 51px，页面横向滚动（用户看到的「超出封面宽度的图片」实为封面自身溢出牵连照片墙观感）。
+- **灯箱③未复现**：五个场景实测全部正常——普通相册/加密相册（密码解密后）/外链相册（picsum，naturalWidth 800 可用）/View Transitions 导航进入（列表页点入而非直开 URL）/elementFromPoint 真实命中（照片中心命中 IMG、cursor zoom-in；qy-lqip 占位层有 pointer-events:none 不挡点击）。灯箱 dialog 全套 UI（1/6 计数、缩略图条、全屏、自动播放、Zoom、Prev/Next）均正常打开。归因：用户当时所见应为修复前的旧构建产物或浏览器缓存。
+
+**修复**（global.css 两处）：`.gallery-banner` 加 `width: 100%`（显式定宽阻断 aspect-ratio 反推——width 与 min-height 并存时 width 参与比例计算、min-height 只 clamp 高度，标准行为）；`.gallery-masonry` 加 `margin-top: 24px`（对无封面降级头 gallery-head-plain 同样生效）。
+
+**设计决策**：
+- **width:100% 而非去掉 min-height**：min-height 保证窄屏封面不至过扁，保留；定宽后比例在窄屏退化为 2.75/1（549/200）无碍观感，标准阻断手法
+- **灯箱不改代码**：五个场景含真实命中测试全绿，无 bug 可修；避免为不可复现问题盲改稳健代码
+
+**改动**：`packages/theme/src/styles/global.css`（.gallery-banner 加 width:100%、.gallery-masonry 加 margin-top:24px，均带注释）。
+
+**验证（§4.86）**：rebuild 后实机复测——`gap: 24`、`bannerWidth: 517`（容器内）、`hasHScroll: false`、`docScrollWidth === clientWidth`；灯箱 dialog 在普通/加密/外链/VT 四场景复开确认。build exit 0。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

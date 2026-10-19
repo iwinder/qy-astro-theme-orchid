@@ -3088,6 +3088,9 @@ html.dark .series-nav-item.cur .series-nav-row {
 .gallery-banner {
 	position: relative;
 	overflow: hidden;
+	/* 显式定宽阻断 aspect-ratio 反推：窄容器下 min-height 拉高后 3/1 会
+	   反解出 200×3=600px 的宽度穿透容器，导致页面横向滚动（§4.86） */
+	width: 100%;
 	border-radius: var(--radius);
 	aspect-ratio: 3 / 1;
 	min-height: 200px;
@@ -3208,6 +3211,8 @@ gallery-filter {
 .gallery-masonry {
 	column-count: 2;
 	column-gap: 12px;
+	/* 与封面横幅/降级头部的间隔（§4.86，原来零间距贴合） */
+	margin-top: 24px;
 }
 @media (min-width: 640px) {
 	.gallery-masonry {
