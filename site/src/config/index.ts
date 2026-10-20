@@ -52,6 +52,7 @@ export const themeConfig = {
 	categoryBar: siteConfig.categoryBar,
 	huePanel: siteConfig.huePanel,
 	colorMode: siteConfig.colorMode,
+	darkMode: siteConfig.darkMode,
 	pageWidth: siteConfig.pageWidth,
 	footer: siteConfig.footer,
 	noReferrer: siteConfig.noReferrer,

@@ -100,3 +100,24 @@ noReferrer: {
 域名匹配规则：裸域名（`i0.hdslb.com`）匹配自身及其子域；
 `*.` 前缀（`*.bilibili.com`）**只匹配子域**，裸域需另行列出。
 清单制而非全站 no-referrer——不影响站内统计与外链 SEO。
+
+## 暗色外链图适配（darkMode.adaptExternalImages）
+
+暗色模式下白底外链截图/图表往往刺眼。开启后，构建期给正文里的
+`http(s)://` 外链图片打 `data-external` 标记，暗色下对其施加
+`brightness(0.85)` 亮度滤镜（300ms 过渡，随深浅切换平滑变化）；
+本地图（封面/画廊/`/public` 图）不受影响，说说页图片同享适配。
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `adaptExternalImages` | `boolean` | `false` | 暗色下压暗外链图 |
+
+```ts
+// site/src/config/siteConfig.ts
+darkMode: {
+	adaptExternalImages: true,
+},
+```
+
+个别图片不想被压暗（如深底图表）：在 markdown 里用内联 HTML 写
+`<img class="no-adapt" src="..." />` 豁免。

@@ -70,7 +70,7 @@ const fontRoleCss = config.fonts
 ---
 
 <!doctype html>
-<html lang={config.lang} style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%;--page-width:${config.pageWidth}px`} data-accent-h={h} data-color-mode={config.colorMode}>
+<html lang={config.lang} style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%;--page-width:${config.pageWidth}px${config.darkMode.adaptExternalImages ? ";--img-adapt-b:.85" : ""}`} data-accent-h={h} data-color-mode={config.colorMode}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

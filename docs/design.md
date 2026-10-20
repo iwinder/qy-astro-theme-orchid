@@ -1643,6 +1643,25 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.88）**：run #7（tag v0.2.1 → 825e8e1）全部步骤 success——test/build 过、Stage publish 成功暂存 0.2.1（`npm view versions` 仅 0.0.0-stage/0.1.0/0.2.0，staged 版本批准前公开不可见，符合预期）、Pack tarball + GitHub Release 附件成功。人工批准后 `npm view @windcoder/astro-theme-orchid version` 应为 0.2.1（starter 切包验证的前置条件）。排错沉淀：① tag 重推必须先本地 `git tag -f` 移动再删远端重推，否则远端 workflow 仍跑旧 commit 的 workflow 文件（本轮 run #3/#4 即假重推）；② GitHub Actions 公开仓库免登录排障链 = Actions API 步骤级结论 + check-runs annotations，logs 下载与 artifact 下载均需 admin token；③ `npm stage publish` 后 registry 不出现新版本号属正常，勿据此误判失败。
 
+### 4.89 C5 暗色外链图适配（✅ 2026-10-20 完成）
+
+C 批剩余项第 1 件。暗色下白底外链截图/图表刺眼，构建期标记 + CSS 亮度滤镜适配，零 JS 零新依赖。
+
+**方案**：
+- **标记**：`rehypeExternalLinks` 扩展——`http(s)://` 外链 `<img>` 追加 `data-external="true"`（标记零副作用，无配置时仅多一个 data 属性）；相对路径不标记
+- **适配**：schema 顶层 `darkMode.adaptExternalImages`（默认 false 保持中性）；开启时 BaseLayout `<html>` style 注入 `--img-adapt-b:.85`，global.css `html.dark .prose img[data-external], html.dark .moment-content img[data-external] { filter: brightness(var(--img-adapt-b,1)); transition: filter .3s }`——CSS 变量未注入时 `brightness(1)` 无操作，规则可常驻；说说页图片同享
+- **豁免**：单图加 `class="no-adapt"`（markdown 内联 HTML）`filter: none`
+
+**设计决策**：
+- **构建期 data 属性标记而非 CSS :is() 判断**：CSS 无法识别「外链」，src 前缀判断只能在插件层做；标记一次全站可用（未来任何暗色图策略都挂同一标记）
+- **CSS 变量注入开关而非条件输出规则**：规则恒在、变量控值，避免配置分流两套 CSS；亮度值要调可直接覆盖 `--img-adapt-b`
+- **只压亮度不反色**：invert 只适合线稿图表，照片反色必坏；brightness(.85) 对两类图都无害，深底图单图豁免
+- **默认 false**：滤镜改观感，与 moments/categoryBar 同口径「能力默认关、demo 演示开」
+
+**改动**：rehype.ts（rehypeExternalLinks img 分支）、schema.ts（darkMode section，Zod v4 显式完整默认值）、BaseLayout.astro（html style 条件注入）、global.css（两组规则带注释）、site siteConfig.ts（demo 开 true）+ config/index.ts（透传）、content-rendering.md 指南新增「暗色外链图适配」一节。
+
+**验证（§4.89）**：清内容渲染缓存（插件变更不失效缓存，§4.70 口径）后 biome 0 error、`pnpm --filter site check` 0/0/0、`CI=true build` 真实 exit 0；dist 断言——features-demo 6 张 picsum 外链图全部 `data-external="true"`（grep -c 按行计数显示 2 属行合并，-o 逐个核对）、本地 favicon.svg 未标记、首页 html style 含 `--img-adapt-b:.85`、CSS 产物含两组完整规则。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

@@ -51,6 +51,11 @@ export const siteConfig = {
 	// 默认深浅模式（访客未手动切换时的初值）：light / dark / system；
 	// as const 防止 TS 把 "system" 拓宽为 string（ThemeConfig["colorMode"] 是字面量联合）
 	colorMode: "system" as const,
+	// 暗色模式适配（§4.89）：暗色下对外链内容图（白底截图/图表）压亮度防刺眼；
+	// 单图豁免给 img 加 class="no-adapt"
+	darkMode: {
+		adaptExternalImages: true,
+	},
 	// 内容区页宽（800-1920 px，≥1280 屏按 min(92vw, 此值) 计算）；
 	// 文章页维持 1120px 阅读行宽不跟随铺开
 	pageWidth: 1600,

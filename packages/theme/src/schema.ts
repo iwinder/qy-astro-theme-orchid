@@ -290,6 +290,16 @@ export const themeConfigSchema = z.object({
 	 */
 	colorMode: z.enum(["light", "dark", "system"]).default("system"),
 	/**
+	 * 暗色模式适配（§4.89）：adaptExternalImages 开启后，暗色下对外链内容图
+	 * （data-external 标记，白底截图/图表易刺眼）施加亮度滤镜压暗；
+	 * 本地图与 .no-adapt 单图豁免。默认关闭保持中性。
+	 */
+	darkMode: z
+		.object({
+			adaptExternalImages: z.boolean().default(false),
+		})
+		.default({ adaptExternalImages: false }),
+	/**
 	 * 代码高亮（§4.61）：Expressive Code（Astro 生态标准方案）接管代码块渲染，
 	 * 替代 §4.17 自研 shiki 管线与 §4.37 自研折叠。light/dark 为 EC 支持的 Shiki
 	 * 主题名（EC 约定 [dark, light] 顺序加载），跟随站点深浅模式切换。

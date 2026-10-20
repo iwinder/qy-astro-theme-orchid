@@ -2218,6 +2218,18 @@ html.dark .ec-collapse__toggle:hover {
 .prose figure img {
 	width: 100%;
 }
+/* 暗色外链图适配（§4.89）：rehypeExternalLinks 给外链 img 打 data-external 标记，
+   暗色下压亮度防白底截图/图表刺眼。--img-adapt-b 由 BaseLayout 按配置注入（关闭时
+   brightness(1) 无操作）；.no-adapt 供单图豁免（markdown 内联 HTML class） */
+html.dark .prose img[data-external],
+html.dark .moment-content img[data-external] {
+	filter: brightness(var(--img-adapt-b, 1));
+	transition: filter 0.3s ease;
+}
+html.dark .prose img[data-external].no-adapt,
+html.dark .moment-content img[data-external].no-adapt {
+	filter: none;
+}
 .prose figcaption {
 	padding: 8px 14px;
 	font-size: 13px;

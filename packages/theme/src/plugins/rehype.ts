@@ -35,12 +35,20 @@ function getClassList(props: any): string[] {
 /* ---------------------------------------------------------------- 外链 */
 
 /**
- * 外链新窗口打开：http(s) 绝对链接追加 target="_blank" rel="noopener noreferrer"
+ * 外链新窗口打开：http(s) 绝对链接追加 target="_blank" rel="noopener noreferrer"；
+ * 外链 <img> 追加 data-external 标记（暗色外链图适配 §4.89 的 CSS 挂点，标记本身零副作用）
  */
 export function rehypeExternalLinks(): Transformer {
 	return (tree) => {
 		visit(tree, (node) => {
-			if (node.type !== "element" || node.tagName !== "a") return;
+			if (node.type !== "element") return;
+			if (node.tagName === "img") {
+				if (/^https?:\/\//i.test(String(node.properties?.src ?? ""))) {
+					node.properties["data-external"] = "true";
+				}
+				return;
+			}
+			if (node.tagName !== "a") return;
 			const href = String(node.properties?.href ?? "");
 			if (!/^https?:\/\//i.test(href)) return;
 			node.properties.target = "_blank";
