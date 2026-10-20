@@ -103,6 +103,9 @@ importers:
       web-vitals:
         specifier: ^6.2.3
         version: 6.2.3
+      yaml:
+        specifier: ^2.9.1
+        version: 2.9.1
     devDependencies:
       '@types/pako':
         specifier: ^2.0.3

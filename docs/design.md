@@ -1746,6 +1746,29 @@ C 批剩余项第 5 件，兑现决策 4 中「暂时舍弃」的番组追番页
 
 **验证（§4.93）**：biome --write 后全量 0 error；astro check 0 errors/0 warnings/0 hints；默认关 `CI=true build` exit 0——dist 无 /bangumi 目录、0 页注入 bangumi-grid（CSS 静态打包保留，同 C7/C8 口径）；临时开启 userId=sai 重建 exit 0——dist/bangumi/index.html 渲染 30 卡片（封面/标题/进度/评分徽标/条目链接各 30），进度文案「看到 13 / 26 集」与 API 实测样本一致，batch 30 < LIMIT 50 分页边界 break 正确；还原 demo 关闭态。
 
+### 4.94 C10 文章迁移工具 migrate-posts（✅ 2026-10-20 完成）
+
+C 批剩余项第 6 件：站点根目录运行的 frontmatter 迁移脚本，把 Hexo / Hugo 或通用 Markdown 博客的旧文批量转换为符合 `definePostSchema` 的形态（title/published 必需，其余尽力映射），默认 dry-run 只出报告、`--write` 才落盘，正文一字不动。
+
+**方案**：
+- **脚本结构（scripts/migrate-posts.mjs）**：check-friends 同款惯例——头部 JSDoc 用法注释、parseArgs、11 个纯函数全 export 供测试直调、main guard（pathToFileURL 比对）；main 校验三态 exit code：缺 `--src` exit 1、未知 platform exit 1、目录不可读 exit 1，无 md 文件 exit 0
+- **三平台映射（mapFrontmatter）**：目标白名单 title/description/published/updated/draft/image/tags/category，键序固定输出；多候选键按序取第一个有值（候选键一律记已消费，不进未映射报告）；hexo 特有 `published: false`→draft、photos[0]→image、嵌套 categories 拍平取首；hugo 特有 lastmod 优先于 updated、slug 字段供输出文件名；generic 候选序把已用目标键名的 `published`/`created` 排前，源文件已按目标命名时不误判未映射
+- **日期归一化（normalizeDate/formatDate）**：Date 与字符串统一转 YAML 友好字符串；date-only（YYYY-MM-DD）原样保留；hexo 斜杠格式转无时区后缀的本地墙钟 ISO（`2023/07/01 12:34:56` → `2023-07-01T12:34:56`）；其余 `new Date` 兜底，非法返回 null
+- **单篇迁移（migrateFile）**：标题三级回退（frontmatter → 正文首个 `# 标题` 并剥行内符号 → 文件名）、published 缺失用文件 mtime 兜底、正文相对路径图片去重提示、slug 净化（空白转 `-`、剔除文件系统不安全字符与 `\p{Cc}` 控制字符、保留中文、首尾 `.-` 修剪、空值兜底 "post"）、输出路径冲突 `-2`/`-3` 递增、子目录默认保留 `--flat` 拍平、产物 `---\n${yaml}---\n\n正文`（剥正文首部空行）
+- **报告**：逐篇 `source → output` + notes（未映射字段清单、相对图片、解析失败、各类兜底提示），末尾汇总「N 篇，M 篇有提示」
+
+**设计决策**：
+- **引入 yaml ^2.9.1**：frontmatter 解析/序列化自实现必踩 YAML 边角（多行字符串、嵌套、特殊字符转义）；eemeli/yaml 是 YAML 1.2 实现，date-only 解析回 **string**，与 Astro 侧 gray-matter/js-yaml（YAML 1.1，解析为 **Date**）行为不同——但主题 schema 的 `z.coerce.date()`（schema.ts:1268）对 string/Date 双收，string 直存由消费端解析，双保险往返保真；日期样式字符串 stringify 输出无引号 plain scalar，产物 frontmatter 干净
+- **date-only 与无时区后缀**：`2024-01-05` 若经 `new Date`（UTC 零点）再格式化，东八区会漂回前一天；纯日期原样透传、斜杠日期转不带 Z 后缀的墙钟 ISO，js-yaml 侧按本地时间解析，往返不漂
+- **白名单外字段只报告不写入**：abbrlink/permalink 等源站特有字段写入目标只是死配置，报告列出交人工核对，产物保持 schema 干净——迁移工具的产出应是「能直接进站的文章」，不是「什么都留着的大杂烩」
+- **dry-run 默认**：批量写盘不可逆，先看报告再 `--write` 是迁移工具的安全底线；无 md 文件 exit 0（无事可做不是错误）
+- **正文一字不动**：主题无 `<!-- more -->` 摘要分隔符机制（remark-excerpt 取正文首段自动兜底），正文无任何转换需求；相对图片只提示不重写——拷图、调路径是人工决策，脚本替用户猜路径反而危险
+- **文档落 site 指南、README 不动**：C6 check-friends 先例，脚本文档归 site 新文《文章迁移》（进阶组 seriesOrder 30，与 url-migration 29 相邻同属迁移场景）
+
+**改动**：scripts/migrate-posts.mjs（新建，约 370 行）、scripts/migrate-posts.test.mjs（新建，21 个 node:test + spawnSync CLI 集成）、theme package.json（dependencies 加 yaml ^2.9.1 + lockfile，files 含 scripts 随包分发）、site 新文 migrate-posts.md（进阶 30，互链 writing/content-rendering/url-migration）。
+
+**验证（§4.94）**：`pnpm test` 33/33（新增 21 + 存量 12）；新文件与全量 biome 0 error（189 warnings 为 HEAD 存量基线——修复过程：`noControlCharactersInRegex` ×2 换 `\p{Cc}`+u flag、`noAssignInExpressions` 的 `while ((m = re.exec()))` 换 `matchAll`，stash 比对证实 exit 1 全由新文件导致）；真实 hexo fixture CLI 端到端双态：dry-run 报告正确（「hello world.md」slug 净化为「hello-world.md」、abbrlink 未映射提示、相对图片提示）且不落盘，`--write` 保留子目录落盘，产物 frontmatter 六字段全对（嵌套 categories 取首「技术」、photos[0]→image、斜杠日期转 ISO）且正文逐字一致。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
