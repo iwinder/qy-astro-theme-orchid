@@ -699,6 +699,34 @@ html.dark #modeToggle .i-sun {
 	text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
 }
 
+/* ---------- 3.5b 全站背景壁纸（§4.92）：fixed 视口背景，与顶部 banner（§4.42）独立 ---------- */
+/* body 背景传播为画布底色：负 z-index 定位子元素画在其上、内容之下——壁纸加载中仍有底色兜底，
+   body 自身的径向渐变装饰同样在画布层，被壁纸自然覆盖 */
+.site-wallpaper {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+	pointer-events: none;
+}
+.site-wallpaper img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	filter: blur(var(--wp-blur, 0px));
+	/* 模糊边缘泛出透明底：按模糊量轻微放大补偿（服务端算好 --wp-scale） */
+	transform: scale(var(--wp-scale, 1));
+}
+/* 遮罩层：浅/暗双档不透明度（--wp-dim / --wp-dim-dark），保证任意壁纸下正文可读 */
+.site-wallpaper-dim {
+	position: absolute;
+	inset: 0;
+	background: rgb(0 0 0 / var(--wp-dim, 0.45));
+}
+html.dark .site-wallpaper-dim {
+	background: rgb(0 0 0 / var(--wp-dim-dark, 0.65));
+}
+
 /* ---------- 4. Main 通用 ---------- */
 .site-main {
 	min-height: calc(100vh - var(--header-h) - 200px);

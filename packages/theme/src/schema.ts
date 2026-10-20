@@ -109,6 +109,29 @@ export const themeConfigSchema = z.object({
 			sub: "",
 		}),
 	/**
+	 * 全站背景壁纸（§4.92）：body 级 fixed 视口背景，与顶部 banner（§4.42）相互独立。
+	 * 经遮罩压暗后从页缝与卡片间隙透出；正文卡片保持不透明保证可读。
+	 */
+	background: z
+		.object({
+			/** 总开关：false 时即使配了 src 也不渲染（默认关） */
+			enabled: z.boolean().default(false),
+			/** 图源（public 路径或外链）：单图 URL 或多图数组（构建期随机取一） */
+			src: z.union([z.string(), z.array(z.string())]).optional(),
+			/** 浅色模式遮罩不透明度（0-1），压暗壁纸保证正文可读 */
+			dimOpacity: z.number().min(0).max(1).default(0.45),
+			/** 暗色模式遮罩不透明度（0-1），暗色下压更暗 */
+			darkDimOpacity: z.number().min(0).max(1).default(0.65),
+			/** 壁纸模糊半径 px（0-20）：模糊时自动轻微放大防止边缘露底 */
+			blur: z.number().min(0).max(20).default(0),
+		})
+		.default({
+			enabled: false,
+			dimOpacity: 0.45,
+			darkDimOpacity: 0.65,
+			blur: 0,
+		}),
+	/**
 	 * hue 调色面板（M3b-b5）：导航栏调色按钮 + 预设色板 + hue 滑杆。
 	 * 运行时覆写 --accent-h（s/l 保持配置值），持久化 localStorage('qy-hue')。
 	 * 色板预设为代码级常量，不进 schema。

@@ -1,6 +1,6 @@
 ---
 title: 首页横幅（banner）
-description: 首页横幅 bannerConfig 全部配置——多图轮换、语录 <em> 强调色、高度与暗化遮罩、homeOnly 开关，以及与导航入口、独立页开关的配合。
+description: 首页横幅 bannerConfig 全部配置——多图轮换、语录 <em> 强调色、高度与暗化遮罩、homeOnly 开关、与导航入口/独立页开关的配合，附全站背景壁纸（background）。
 published: 2026-10-18
 tags:
   - 主题机制
@@ -89,3 +89,33 @@ quote: "山中何事？<em>松花酿酒</em>，<em>春水煎茶</em>。",
 ## 导航入口与页面开关的配合
 
 导航项（见[导航栏](/posts/navbar/)）指向的页面由 `siteConfig.pages` 控制（见[站点基础配置](/posts/site-config/#pages-独立页开关)）。若把 `pages.gallery` 关了，记得同步删掉导航里的「画廊」项——路由不生成后，指向它的导航会得到 404。
+
+## 全站背景壁纸（background）
+
+banner 是页顶横幅，`background` 则是铺满视口的**全站背景壁纸**：固定不随滚动，从页缝与卡片间隙透出。两者相互独立、可同时开启。**配置文件**：`site/src/config/backgroundConfig.ts`，默认关闭。
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `enabled` | `boolean` | `false` | 总开关，`false` 时即使配了 `src` 也不渲染 |
+| `src` | `string \| string[]` | `""` | 单图 URL 或多图数组（构建期随机取一张，同 banner 惯例） |
+| `dimOpacity` | `number` | `0.45` | 浅色模式遮罩不透明度 0–1，压暗壁纸保证正文可读 |
+| `darkDimOpacity` | `number` | `0.65` | 暗色模式遮罩不透明度 0–1，暗色下压更暗 |
+| `blur` | `number` | `0` | 模糊半径 px（0–20），模糊时自动轻微放大防止边缘露底 |
+
+```ts
+// site/src/config/backgroundConfig.ts
+export const background: ThemeConfig["background"] = {
+	enabled: true,
+	src: ["/wallpaper/a.jpg", "/wallpaper/b.jpg"],
+	dimOpacity: 0.45,
+	darkDimOpacity: 0.65,
+	blur: 0,
+};
+```
+
+要点：
+
+- 壁纸 `position: fixed` 铺满视口、滚动不动（未用 `background-attachment: fixed`，iOS Safari 同样安全）
+- 正文卡片保持不透明，壁纸从卡片间隙、页面边缘与半透明导航栏透出；壁纸加载中或失败时仍有主题底色兜底，暗色模式不会闪白
+- 遮罩浅/暗各一档，切深色模式自动加深，任意壁纸下正文对比度都有保障
+- 与 banner 叠用时注意「图上叠图」：壁纸偏花哨时可加大 `blur` 或 `dimOpacity` 让它退为氛围层

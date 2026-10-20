@@ -50,6 +50,17 @@ const showBanner =
 /* hero 文案（§4.42）：quote 留空不渲染；有 banner 时叠加其上，否则渲染为列表上方独立区块 */
 const heroEnabled = config.banner.enabled && Boolean(config.banner.quote);
 const heroOnBanner = heroEnabled && showBanner && page === "home";
+/* 全站背景壁纸（§4.92）：与 banner 相互独立；数组时构建期随机选一张（每页各自取，零 JS） */
+const bgSrc = Array.isArray(config.background.src)
+	? config.background.src.length
+		? config.background.src[
+				Math.floor(Math.random() * config.background.src.length)
+			]
+		: ""
+	: config.background.src || "";
+const showWallpaper = config.background.enabled && Boolean(bgSrc);
+/* 模糊边缘会泛出透明底：按模糊量轻微放大补偿（1px blur ≈ 1% 放大），服务端算好 scale */
+const bgScale = (1 + config.background.blur / 100).toFixed(3);
 /* 字体角色映射（§4.66）：配置了 role 的字体生成 html:root 规则，把主题三角色
    变量重定向为 var(字体变量), 原角色回退栈（取自 global.css :root 默认值，
    字体未覆盖的字形如中文自然回落）。html:root Specificity (0,1,1) 高于
@@ -126,6 +137,20 @@ const fontRoleCss = config.fonts
   <!-- 客户端动态文案载体（i18n，M3b-b5）：app.ts 读取，VT swap 后随新 body 重建 -->
   <script type="application/json" id="qy-ui-labels" set:html={JSON.stringify({ close: t('close'), prevImage: t('prevImage'), nextImage: t('nextImage'), copied: t('copied'), fullscreen: t('fullscreen'), slideshow: t('slideshow'), thumbs: t('thumbs'), sharePoster: t('sharePoster'), generatingPoster: t('generatingPoster'), copyLink: t('copyLink'), savePoster: t('savePoster'), scanToRead: t('scanToRead'), author: t('author'), searchLoading: t('searchLoading'), searchNoResults: t('searchNoResults'), searchUnavailable: t('searchUnavailable'), searchTypeSomething: t('searchTypeSomething') })} />
   <body data-page={page}>
+    <!-- 全站背景壁纸（§4.92）：fixed 于视口、z-index:-1，叠在 body 传播的画布底色之上、
+         内容之下——壁纸加载中仍有画布底色兜底；enabled=false / src 未配置不渲染 -->
+    {
+      showWallpaper && (
+        <div
+          class="site-wallpaper"
+          aria-hidden="true"
+          style={`--wp-dim:${config.background.dimOpacity};--wp-dim-dark:${config.background.darkDimOpacity};--wp-blur:${config.background.blur}px;--wp-scale:${bgScale}`}
+        >
+          <img src={bgSrc} alt="" loading="eager" decoding="async" />
+          <div class="site-wallpaper-dim" />
+        </div>
+      )
+    }
     <a class="skip-link" href="#main">{t('skipToContent')}</a>
     <Header />
     <!-- 首页 banner（§4.42，hero+壁纸合并单配置）：Header 之后下沉横幅 + 黑蒙层；enabled=false / src 未配置 / homeOnly 非首页不渲染 -->

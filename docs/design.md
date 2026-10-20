@@ -1705,6 +1705,26 @@ C 批剩余项第 3 件。厂商无关的 Core Web Vitals 采集：Google 官方
 
 **验证（§4.91）**：biome 0 error、`pnpm --filter site check` 0 error、默认关闭态 `CI=true build` exit 0 且 dist 全 HTML 无 `orchid-webvitals` 痕迹；临时开 demo 配置重建——div 注入 `data-endpoint/data-site-id/data-sample-rate/hidden` 五属性、独立 chunk 生成且 LCP/CLS/INP/FCP/TTFB/rating/navType/keepalive 全命中，还原配置重建回零注入态（exit 0）。pnpm add 经 `--store-dir` 指向旧 store 完成（pnpm 11 起不再读 .npmrc 的 store-dir，本地 node_modules 链接自旧 store，为不动 CI 面貌采用一次性 CLI flag 而非提交 workspace 配置）。
 
+### 4.92 C8 全站背景壁纸 background（✅ 2026-10-20 完成）
+
+C 批剩余项第 4 件，兑现决策 4 中「暂时舍弃」的背景壁纸特效：body 级 fixed 视口背景壁纸，经遮罩压暗后从页缝与卡片间隙透出，与顶部 banner（§4.42）相互独立、可叠用。
+
+**方案**：
+- **schema**：顶层新增 `background` section（`banner` 之后、`huePanel` 之前）：`enabled`（默认 **false**）、`src`（string | string[]，构建期随机取一，与 banner 同惯例）、`dimOpacity`（浅色遮罩 0-1 默认 0.45）、`darkDimOpacity`（暗色遮罩 0-1 默认 0.65）、`blur`（模糊半径 0-20px 默认 0）；default 显式完整字面量（Zod v4 惯例）
+- **渲染（BaseLayout.astro）**：frontmatter 计算 `bgSrc`（数组随机，同 bannerSrc 逻辑）、`showWallpaper = enabled && Boolean(bgSrc)`、`bgScale = (1 + blur/100).toFixed(3)`；body 首子元素渲染 `.site-wallpaper`（`aria-hidden` + 内联 style 四变量 `--wp-dim/--wp-dim-dark/--wp-blur/--wp-scale`）内含 `<img loading="eager">` 与遮罩 div；零 JS
+- **CSS（global.css §3.5b）**：`.site-wallpaper { position:fixed; inset:0; z-index:-1; pointer-events:none }`；img `object-fit:cover` + `filter:blur(var(--wp-blur))` + `transform:scale(var(--wp-scale))`（模糊边缘泛透明底，按模糊量放大补偿）；遮罩 `rgb(0 0 0 / var(--wp-dim,.45))`，`html.dark` 下换 `--wp-dim-dark`
+
+**设计决策**：
+- **负 z-index 免 body 透明化**：body 背景传播为画布底色，负 z-index 定位子元素画在画布之上、内容之下——无需 `body.has-wallpaper` 置透明类，壁纸加载中/失败时主题底色自然兜底，暗色模式不闪白；body 原径向渐变装饰同在画布层被壁纸自然覆盖
+- **fixed div 而非 background-attachment:fixed**：后者 iOS Safari 不支持；fixed 定位 div 全端安全
+- **双档遮罩深浅各一**：壁纸常量只有一张，可读性靠遮罩分深浅模式两档（默认 0.45/0.65），暗色自动加深
+- **scale 服务端算**：CSS `calc(1 + <length>/100)` 类型不合法（length 不可与 number 相加），放大系数在 frontmatter 算好传 `--wp-scale`
+- **demo 站演示开**：视觉功能按「demo 演示开」惯例开启（picsum 种子图外链，与 features-demo 图源惯例一致）
+
+**改动**：schema.ts（background section）、BaseLayout.astro（bgSrc/showWallpaper/bgScale + body 首子渲染）、global.css（§3.5b 四条规则）、site 新增 backgroundConfig.ts（demo 开）并接入 config/index.ts、getting-started.md 配置表加 backgroundConfig 行、banner.md 文末新增「全站背景壁纸（background）」一节（定位区分/参数表/要点四条）。
+
+**验证（§4.92）**：biome（format/import 排序 --write 后 0 error）、`pnpm --filter site check` 0/0/0；node 26 type-stripping 直跑 schema parse 3 断言（全缺省补全默认值 / 显式形态保留 / banner 回归不受影响）；demo 开启态 `CI=true build` exit 0——dist 首页 div 四变量注入（`--wp-dim:0.45;--wp-dim-dark:0.65;--wp-blur:0px;--wp-scale:1.000`）、img src picsum 种子图、CSS 产物四条规则齐（含 `html.dark` 暗遮罩）、69 个 HTML 页全量渲染；临时 `enabled:false` 重建——全 dist 0 页注入（CSS 属全局样式静态打包保留，无 DOM 引用即无效果，符合预期），还原后复归开启态。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

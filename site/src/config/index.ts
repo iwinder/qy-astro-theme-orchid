@@ -9,6 +9,7 @@ import { advertisementConfig } from "./advertisementConfig";
 import { analyticsConfig } from "./analyticsConfig";
 import { announcementConfig } from "./announcementConfig";
 import { archive } from "./archiveConfig";
+import { background } from "./backgroundConfig";
 import { banner } from "./bannerConfig";
 import { commentConfig } from "./commentConfig";
 import { emailProtection } from "./emailProtectionConfig";
@@ -70,6 +71,7 @@ export const themeConfig = {
 	emailProtection,
 	// 视觉特效与悬浮组件：各同名配置文件
 	banner,
+	background,
 	sakura,
 	music,
 	live2d,
@@ -96,6 +98,7 @@ export {
 	analyticsConfig,
 	announcementConfig,
 	archive,
+	background,
 	banner,
 	codeTheme,
 	commentConfig,

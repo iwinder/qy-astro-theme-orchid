@@ -132,6 +132,7 @@ site/
 | `siteConfig.ts` | 站点基础信息：标题、域名、主题色、页宽、页脚 | [站点基础配置](/posts/site-config/) |
 | `navBarConfig.ts` | 导航栏菜单与外链 | [导航栏](/posts/navbar/) |
 | `bannerConfig.ts` | 首页横幅（大图与语录） | [首页横幅](/posts/banner/) |
+| `backgroundConfig.ts` | 全站背景壁纸（fixed 视口背景） | [首页横幅](/posts/banner/#全站背景壁纸-background) |
 | `sidebarConfig.ts` | 侧边栏 widget 布局 | [侧边栏与小组件](/posts/sidebar/) |
 | `profileConfig.ts` | 个人资料卡与社交图标 | [个人资料卡](/posts/profile/) |
 | `licenseConfig.ts` | 文章版权声明 | [版权声明](/posts/license/) |
