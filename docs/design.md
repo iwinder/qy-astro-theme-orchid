@@ -1769,6 +1769,31 @@ C 批剩余项第 6 件：站点根目录运行的 frontmatter 迁移脚本，�
 
 **验证（§4.94）**：`pnpm test` 33/33（新增 21 + 存量 12）；新文件与全量 biome 0 error（189 warnings 为 HEAD 存量基线——修复过程：`noControlCharactersInRegex` ×2 换 `\p{Cc}`+u flag、`noAssignInExpressions` 的 `while ((m = re.exec()))` 换 `matchAll`，stash 比对证实 exit 1 全由新文件导致）；真实 hexo fixture CLI 端到端双态：dry-run 报告正确（「hello world.md」slug 净化为「hello-world.md」、abbrlink 未映射提示、相对图片提示）且不落盘，`--write` 保留子目录落盘，产物 frontmatter 六字段全对（嵌套 categories 取首「技术」、photos[0]→image、斜杠日期转 ISO）且正文逐字一致。
 
+### 4.95 C11 PWA（manifest + Service Worker）（✅ 2026-10-20 完成）
+
+C 批收官件：`pwa.enabled` 开启后构建期产出 `/manifest.webmanifest` 清单与 `/sw.js` Service Worker（手写、零客户端运行时依赖），站点可安装 + 离线兜底；关闭时两路由均不注入、head 无 manifest 链接与注册脚本，零痕迹。
+
+**方案**：
+- **schema（pwa 段）**：bangumi 后 huePanel 前；enabled/name/shortName/description/themeColor(#f6f4ef)/backgroundColor(#f6f4ef)/display(standalone)/icons[{src,sizes,type,purpose}]；不进 pages.*（无 spec 正文、双端点复合注入的站点级能力）
+- **manifest.webmanifest.ts**：GET 端点 `JSON.stringify(manifest, null, 2)` + `application/manifest+json`；scope/start_url 由 site 根 pathname 派生（主题根路径假定，site 兜底 blog.example.com）；回落链 name→title、short_name→name→title、description→站点 description；icons 全字段映射
+- **sw.js.ts**：构建期生成 SW 文本（text/javascript），常量经 JSON.stringify 注入——`CACHE = "orchid-pwa-" + (DEV ? "dev" : Date.now().toString(36))`、`BASE`（site pathname）、`SCOPE_MAX = 60`；SW 文本内不用模板字符串（防与 TS 模板嵌套转义）
+- **三策略**：导航 network-first（fresh clone 回填缓存；离线 `caches.match(req)`、再兜预缓存首页）；`/_astro/` 内容哈希 cache-first；其余同源 GET stale-while-revalidate（桶超 60 删 `keys[0]`）；非 GET、跨域、`api/`、`og/` 一律 passthrough
+- **生命周期**：install `cache.add(new Request(BASE, { cache: "reload" }))` 预缓存首页 + `skipWaiting()`；activate 删全部非当前 CACHE + `clients.claim()`
+- **接线**：index.ts og push 后 `if (config.pwa.enabled)` 注入 `/manifest.webmanifest` 与 `/sw.js` 双端点；BaseLayout head——theme-color 双 meta 后 manifest link、boot script 后 `is:inline + define:vars` 注册脚本（load 后 register、catch 静默）
+
+**设计决策**：
+- **手写 SW 不引 workbox**：主题零客户端运行时依赖哲学，三策略约 100 行文本即可，无需 8KB+ 运行时
+- **缓存名带构建号**：新构建 activate 全清旧缓存，「发布即换缓存」，无版本协商负担、无缓存顽疾
+- **不造 offline.html**：install 预缓存首页作离线兜底（离线时任意未缓存导航至少能回首页），控范围不扩路由
+- **api//og/ 显式 passthrough**：随机数据端点不该缓存、og 分享图按文章数增长体积大；SWR 桶 60 条上限防无限膨胀
+- **默认色取 light 画布 #f6f4ef**：与 BaseLayout theme-color meta 同源，安装外壳与网页视觉无割裂
+- **is:inline + define:vars 注册**：VT swap 不重执行（全站仅注册一次），load 后注册不抢首屏，失败静默（离线兜底属增强能力）
+- **demo 关（惯例例外第三例，C7 无端点、C9 外部 API 之后）**：SW 以构建为单位接管访客浏览器缓存，demo 频繁重建/预览时旧 SW 缓存干扰预览新鲜度
+
+**改动**：theme routes/manifest.webmanifest.ts 与 routes/sw.js.ts（新建端点）、schema.ts（pwa 段）、index.ts（条件注入）、BaseLayout.astro（head 双注入）；site pwaConfig.ts（demo 关）、config/index.ts 三处接线（import 字母序/组装/再导出）；文档 pwa.md（功能配置组 seriesOrder 31）+ getting-started 配置表行 + README 特性一览（工程化行）与功能组（《PWA》）。
+
+**验证（§4.95）**：新文件 2 处行长 format error 由 biome --write 自动修后，全量 biome 0 error（189 warnings 存量基线）；`pnpm test` 33/33；默认关 `CI=true build` exit 0——dist 无 manifest.webmanifest/sw.js、index.html 无 manifest link 与 serviceWorker 字样（零痕迹）；临时开（icons 192/512 any+maskable）重建 exit 0——manifest name/short_name 正确回落站点 title「清言集」、description 回落站点描述、双 icons purpose 映射无误，sw.js 含构建号缓存名（orchid-pwa-mvgvc3fc）/BASE/SCOPE_MAX 60 与三策略全文，index.html 注入 `<link rel="manifest" href="/manifest.webmanifest">` 与 `serviceWorker.register(swUrl)`；还原 demo 关闭态。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

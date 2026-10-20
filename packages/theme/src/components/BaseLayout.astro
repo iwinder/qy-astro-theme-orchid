@@ -108,6 +108,8 @@ const fontRoleCss = config.fonts
     <link rel="alternate" type="application/rss+xml" title={config.title} href={Astro.site ? new URL("rss.xml", Astro.site).href : "/rss.xml"} />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f4ef" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#131516" />
+    {/* PWA（§4.95）：manifest 清单链接，端点由 pwa.enabled 门控注入 */}
+    {config.pwa.enabled && <link rel="manifest" href="/manifest.webmanifest" />}
     {/* OG/Twitter meta（b9.4）：ogImage 仅文章页传入；绝对链接依赖 site 配置 */}
     <meta property="og:type" content={ogImage ? 'article' : 'website'} />
     <meta property="og:title" content={pageTitle} />
@@ -133,6 +135,18 @@ const fontRoleCss = config.fonts
     <script is:inline>
       (function(){var m=localStorage.getItem('qy-mode');var d=document.documentElement.dataset.colorMode||'system';if(m==='dark'||(!m&&d==='dark')||(!m&&d==='system'&&matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark');var h=localStorage.getItem('qy-hue');if(h)document.documentElement.style.setProperty('--accent-h',h);})();
     </script>
+    {/* PWA（§4.95）：SW 注册。load 后注册不抢占首屏；is:inline + define:vars 在
+        ClientRouter VT swap 时不重复执行，全站仅注册一次；注册失败静默（离线兜底
+        属增强能力，不影响正常浏览） */}
+    {config.pwa.enabled && (
+      <script is:inline define:vars={{ swUrl: "/sw.js" }}>
+        if ("serviceWorker" in navigator) {
+          window.addEventListener("load", function () {
+            navigator.serviceWorker.register(swUrl).catch(function () {});
+          });
+        }
+      </script>
+    )}
   </head>
   <!-- 客户端动态文案载体（i18n，M3b-b5）：app.ts 读取，VT swap 后随新 body 重建 -->
   <script type="application/json" id="qy-ui-labels" set:html={JSON.stringify({ close: t('close'), prevImage: t('prevImage'), nextImage: t('nextImage'), copied: t('copied'), fullscreen: t('fullscreen'), slideshow: t('slideshow'), thumbs: t('thumbs'), sharePoster: t('sharePoster'), generatingPoster: t('generatingPoster'), copyLink: t('copyLink'), savePoster: t('savePoster'), scanToRead: t('scanToRead'), author: t('author'), searchLoading: t('searchLoading'), searchNoResults: t('searchNoResults'), searchUnavailable: t('searchUnavailable'), searchTypeSomething: t('searchTypeSomething') })} />

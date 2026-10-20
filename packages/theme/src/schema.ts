@@ -148,6 +148,52 @@ export const themeConfigSchema = z.object({
 		})
 		.default({ enabled: false, userId: "", title: "追番", description: "" }),
 	/**
+	 * PWA（§4.95）：构建期产出 /manifest.webmanifest 与 /sw.js（手写 Service
+	 * Worker，零运行时依赖），可安装 + 离线兜底。enabled=false 时两路由均不
+	 * 注入，head 无 manifest 链接与注册脚本，零痕迹。
+	 */
+	pwa: z
+		.object({
+			/** 总开关：false 时不生成 manifest 与 Service Worker（默认关） */
+			enabled: z.boolean().default(false),
+			/** 安装后的应用名：留空回落站点 title */
+			name: z.string().default(""),
+			/** 安装后启动器短名：留空回落 name */
+			shortName: z.string().default(""),
+			/** 应用描述：留空回落站点 description */
+			description: z.string().default(""),
+			/** 清单 theme_color：安装 UI / 标题栏着色（独立于页面 theme-color meta） */
+			themeColor: z.string().default("#f6f4ef"),
+			/** 清单 background_color：启动画面底色 */
+			backgroundColor: z.string().default("#f6f4ef"),
+			/** 显示形态：standalone 独立应用窗口（默认）/ fullscreen / minimal-ui / browser */
+			display: z
+				.enum(["standalone", "fullscreen", "minimal-ui", "browser"])
+				.default("standalone"),
+			/** 图标清单（public 下路径）：至少 192x192 + 512x512 各一张才满足可安装性 */
+			icons: z
+				.array(
+					z.object({
+						src: z.string(),
+						sizes: z.string().default("512x512"),
+						type: z.string().default("image/png"),
+						/** maskable：安装后按平台形状裁切的容错图标，可与 any 各配一张 */
+						purpose: z.enum(["any", "maskable"]).default("any"),
+					}),
+				)
+				.default([]),
+		})
+		.default({
+			enabled: false,
+			name: "",
+			shortName: "",
+			description: "",
+			themeColor: "#f6f4ef",
+			backgroundColor: "#f6f4ef",
+			display: "standalone",
+			icons: [],
+		}),
+	/**
 	 * hue 调色面板（M3b-b5）：导航栏调色按钮 + 预设色板 + hue 滑杆。
 	 * 运行时覆写 --accent-h（s/l 保持配置值），持久化 localStorage('qy-hue')。
 	 * 色板预设为代码级常量，不进 schema。

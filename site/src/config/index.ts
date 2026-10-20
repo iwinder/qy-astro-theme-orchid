@@ -28,6 +28,7 @@ import { outdated } from "./outdatedConfig";
 import { plantuml } from "./plantumlConfig";
 import { postList } from "./postListConfig";
 import { profileConfig } from "./profileConfig";
+import { pwa } from "./pwaConfig";
 import { relatedPosts } from "./relatedPostsConfig";
 import { rss } from "./rssConfig";
 import { sakura } from "./sakuraConfig";
@@ -86,6 +87,7 @@ export const themeConfig = {
 	license: licenseConfig,
 	friends: friendsConfig,
 	bangumi,
+	pwa,
 	gallery: galleryConfig,
 	sponsor: sponsorConfig,
 	comment: commentConfig,
@@ -120,6 +122,7 @@ export {
 	plantuml,
 	postList,
 	profileConfig,
+	pwa,
 	relatedPosts,
 	rss,
 	sakura,

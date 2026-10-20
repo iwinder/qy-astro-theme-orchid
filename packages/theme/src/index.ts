@@ -356,6 +356,12 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 				if (config.og.enabled) {
 					routes.push(["/og/[...slug]", "og/[...slug].ts"]);
 				}
+				// PWA（§4.95）：manifest 与 Service Worker 为构建期生成的端点，enabled 才注入；
+				// head 里的 manifest 链接与 SW 注册脚本由 BaseLayout 按 pwa.enabled 输出
+				if (config.pwa.enabled) {
+					routes.push(["/manifest.webmanifest", "manifest.webmanifest.ts"]);
+					routes.push(["/sw.js", "sw.js.ts"]);
+				}
 				for (const [pattern, file] of routes) {
 					injectRoute({
 						pattern,
