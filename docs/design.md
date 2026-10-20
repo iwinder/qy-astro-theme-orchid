@@ -1662,6 +1662,28 @@ C 批剩余项第 1 件。暗色下白底外链截图/图表刺眼，构建期�
 
 **验证（§4.89）**：清内容渲染缓存（插件变更不失效缓存，§4.70 口径）后 biome 0 error、`pnpm --filter site check` 0/0/0、`CI=true build` 真实 exit 0；dist 断言——features-demo 6 张 picsum 外链图全部 `data-external="true"`（grep -c 按行计数显示 2 属行合并，-o 逐个核对）、本地 favicon.svg 未标记、首页 html style 含 `--img-adapt-b:.85`、CSS 产物含两组完整规则。
 
+### 4.90 C6 友链存活检测（✅ 2026-10-20 完成）
+
+C 批剩余项第 2 件。友链会随时间失联，主题包自带零依赖检测脚本：读构建产物友链页、并发探测、判级报告。不挂进 build——构建保持离线可复现，发布后或 CI cron 手动跑。
+
+**方案**：
+- **数据源**：`dist/friends/index.html` 产物而非 TS 配置源文件——免解析 TS 配置（无 ts 运行时依赖，Node 版本兼容），且 `enabled: false` 天然不参与检测；抽取依赖主题自有稳定标记 `a.friend-card.card[href]` + `.friend-name`
+- **判级三档**：ok = 2xx/3xx；warn = 403/405/406/429/999（常见 WAF/反爬拦截，未必失联，提示人工复核）；dead = 网络层失败（域名解析/超时/拒绝/重置/证书）与其余 4xx/5xx——避免把反爬误判成失联
+- **重试策略**：仅网络层失败（code 0）与 5xx 重试；4xx 是确定应答，重试无意义
+- **零依赖**：node ≥18 全局 `fetch` + `AbortSignal.timeout`，GET + 立即 `res.body.cancel()`（只看状态码不下载页面）、浏览器式 UA
+- **并发**：固定 worker pool（`--concurrency` 默认 6）共享游标，避免 Promise.all 全量并发打爆对端
+- **产物**：终端 CJK 感知对齐表格 + 可选 `--json` 报告（时间戳/汇总/逐条）；`--fail-on-dead` 时 dead>0 退出码 1 供 CI 门禁；友链页缺失或无卡片时提示后 exit 0（不炸 CI）
+
+**设计决策**：
+- **独立脚本而非 build 集成**：网络探测不可复现、CI 抖动会炸构建，且友链死活与本次构建产物正确性无关
+- **从产物 HTML 正则抽取而非解析 config**：脚本可能跑在与站点不同的机器/CI 上，产物总是现成的；正则锚定主题自有 class 组合，结构稳定可控
+- **warn/dead 分级而非二值**：GitHub Pages 403、百度 403/999 等反爬站点对脚本不可达但对浏览器正常，一律判死会误导下架
+- **脚本随包分发**（`files` 已含 `scripts`，`*.test.mjs` 已排除）、node:test 单测（extractFriends 实体解码/嵌套标签剥离、classify 全判级、CLI 缺页 exit 0）
+
+**改动**：新增 `packages/theme/scripts/check-friends.mjs`（约 235 行）与 `check-friends.test.mjs`（4 例）；根 package.json `test` 改 `node --test packages/theme/scripts/*.test.mjs`（目录扫描在 Node 26 不识别，glob 交 shell 展开）；friends.md 指南新增「存活检测」一节（用法/参数/判级表/Actions cron 示例）。
+
+**验证（§4.90）**：biome 0 error；`pnpm test` 7/7 过（subset-fonts 3 + check-friends 4）；live 实跑 site/dist（5 条 demo 友链 example.com 子路径全部 404 → dead 5，符合预期）——抽取条数/标题/URL 与配置一致、`--json` 报告结构完整、友链页缺失路径提示后 exit 0、`--fail-on-dead` dead>0 exit 1。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

@@ -84,3 +84,54 @@ list: [
 	},
 ],
 ```
+
+## 存活检测（check-friends.mjs）
+
+友链会随时间失联，主题自带一个零依赖检测脚本：读取构建产物里的友链页，并发探测各站点可达性，输出判级报告。**不挂进 build**（构建保持离线可复现），发布后或 CI 定时手动运行。
+
+```bash
+# 站点根目录（构建产物已生成后）
+node node_modules/@windcoder/astro-theme-orchid/scripts/check-friends.mjs \
+	--dist dist --timeout 8000 --retries 1 --concurrency 6 \
+	--json friends-report.json --fail-on-dead
+```
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `--dist` | `dist` | 构建产物目录（读取 `dist/friends/index.html`） |
+| `--timeout` | `8000` | 单次请求超时（毫秒） |
+| `--retries` | `1` | 网络层失败与 5xx 的重试次数（4xx 重试无意义） |
+| `--concurrency` | `6` | 并发探测数 |
+| `--json` | — | 额外写一份 JSON 报告（含时间戳与逐条结果） |
+| `--fail-on-dead` | — | 存在 dead 站点时以退出码 1 结束（供 CI 门禁） |
+
+判级分三档，避免把"反爬"误判成"失联"：
+
+| 判级 | 含义 | 状态码 |
+|---|---|---|
+| `ok` | 正常可达 | 2xx / 3xx |
+| `warn` | 疑似 WAF/反爬拦截，未必失联，建议浏览器人工复核 | 403 / 405 / 406 / 429 / 999 |
+| `dead` | 网络层失败（域名解析/超时/拒绝）或其余 4xx / 5xx | — |
+
+CI 定时巡检示例（GitHub Actions，每周一 04:00 检测并上传报告）：
+
+```yaml
+on:
+  schedule:
+    - cron: "0 4 * * 1" # 每周一 04:00 UTC
+jobs:
+  friends-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile && pnpm build
+      - run: node node_modules/@windcoder/astro-theme-orchid/scripts/check-friends.mjs --dist dist --json friends-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: friends-report
+          path: friends-report.json
+```
+
+注意：脚本读的是**构建产物**而非配置源文件，所以先 `pnpm build` 再检测；`enabled: false` 的友链不参与检测。

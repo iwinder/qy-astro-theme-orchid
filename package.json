@@ -14,7 +14,7 @@
 		"check": "pnpm --filter site check",
 		"lint": "biome check .",
 		"format": "biome check --write .",
-		"test": "node --test packages/theme/scripts/subset-fonts.test.mjs"
+		"test": "node --test packages/theme/scripts/*.test.mjs"
 	},
 	"engines": {
 		"node": ">=20"
