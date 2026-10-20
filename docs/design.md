@@ -1624,6 +1624,25 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.87）**：biome 0 error（134 files）；`pnpm --filter site check` 0 errors 0 warnings 0 hints；`CI=true pnpm --filter site build` 真实 exit 0（log 落 /tmp，echo BUILD_EXIT 取证）；C1 产物「技术」分类 27 篇三页（index.html + 2/ + 3/）；C2 产物 dist/moments/index.html 含 3 条 moment card（meta/mood/content/tags 齐全）、首页导航含 /moments/、灯箱组标记确认在路由源码（示例无图故产物不渲染，机制与画廊同源已实测）；C4 实测 fullText=true 构建后 rss.xml 含 21 个 content:encoded、全文 HTML 与转义正确、加密文章跳过（验后回滚默认 false）；C3 插件逻辑简单 + build 兜底（demo 无 B 站图床文章无产物可断言）。排错记录：验证管道 `build | grep ; echo $?` 取到 grep 退出码造成 C1 假绿（build 实败 dist 为旧产物）——页面级验证一律改 `> /tmp/x.log 2>&1; echo $?` 取真实 exit code。
 
+### 4.88 v0.2.1 发版排障：npm trusted publishing stage-only 改造（✅ 2026-10-20 完成）
+
+**背景**：B3 发版收尾——v0.2.1（包内 scripts 随 npm 分发 + starter 切包内脚本）推 tag 触发 release.yml，Publish to npm 步骤连续失败 6 轮；test/build 全过，失败集中在 npm publish 本身，且前 5 轮日志止于 Tarball Details 后静默 exit 1、无任何 error 行。
+
+**方案（排障三步）**：
+1. **免登录诊断通道**：release.yml publish 步骤改造——`npm publish 2>&1 | tee /tmp/npm-publish.log`，失败分支 grep 精准错误行（`npm error|[0-9]{3} [A-Z]|forbidden|denied|EPERM|EACCES|OIDC|provenance`，head 5，ASCII 控制字符清洗 + `%`/CR 转义）输出 `::error::` 注解——公开仓库 check-runs annotations 可经 api.github.com 匿名读取（job id == check-run id）；另加 upload-artifact 兜底（后证实匿名下载 artifact 401 需认证，注解才是有效通道）
+2. **变量隔离**：`npm view npm time --json` 证明 11.x 最新仍为 11.21.1（10-15 发布），成功（0.2.0，10-18）与失败（10-20 起）两轮 CLI 版本相同——排除 npm CLI 回归；固定 `runs-on: ubuntu-24.04` 重试仍失败——排除 ubuntu-latest 10-19 迁移 Ubuntu 26 的影响（时间巧合曾误导排查方向）
+3. **根因落定（run #6 注解）**：`npm error 403 Forbidden - PUT .../astro-theme-orchid - OIDC permission denied for this action`，且同轮日志 provenance 签名/transparency log 写入均成功——OIDC token 正常签发，是 npm 校验 **trusted publisher 的 Allowed actions** 时拒绝 PUT。官方文档实锤：2026-09-03 之后新建的 trusted publisher 配置默认仅允许 `npm stage publish`，直接 `npm publish` 即报此 403
+
+**设计决策**：
+- **用户拍板 stage-only 姿态**（不在 npm 侧放开 publish 权限）：CI `npm stage publish` 暂存（该动作在 trusted publishing 下永远被允许）→ 维护者在 npmjs.com「Staged Packages」或 CLI `npm stage approve <stage-id>` 批准（2FA）上线——官方推荐的最高安全姿态，代价是每次发版多一步人工确认
+- **npm 钉 11.21.1**：stage publish 需 npm ≥ 11.15（trusted publishing OIDC 需 ≥ 11.5），钉版本保证发版环境可复现
+- **runner 固定 ubuntu-24.04 保留**：虽证实与本故障无关，但固定版本避免平台迁移类环境漂移再次干扰发版
+- **诊断 artifact 步骤移除、精准注解保留**：注解被证实为唯一免登录排障通道且零额外成本
+
+**改动**：仅 release.yml——头注释记录 stage-only 策略与 403 根因；Upgrade npm 钉 11.21.1（注释列两条版本门槛）；runs-on 固定 ubuntu-24.04；publish 步骤改 `npm stage publish`（成功行提示批准入口，失败分支保留精准注解）。
+
+**验证（§4.88）**：run #7（tag v0.2.1 → 825e8e1）全部步骤 success——test/build 过、Stage publish 成功暂存 0.2.1（`npm view versions` 仅 0.0.0-stage/0.1.0/0.2.0，staged 版本批准前公开不可见，符合预期）、Pack tarball + GitHub Release 附件成功。人工批准后 `npm view @windcoder/astro-theme-orchid version` 应为 0.2.1（starter 切包验证的前置条件）。排错沉淀：① tag 重推必须先本地 `git tag -f` 移动再删远端重推，否则远端 workflow 仍跑旧 commit 的 workflow 文件（本轮 run #3/#4 即假重推）；② GitHub Actions 公开仓库免登录排障链 = Actions API 步骤级结论 + check-runs annotations，logs 下载与 artifact 下载均需 admin token；③ `npm stage publish` 后 registry 不出现新版本号属正常，勿据此误判失败。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
@@ -1633,7 +1652,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 | **M2 内容对齐** | `definePostSchema` 对齐 orchid-blog 全部 frontmatter（补 lang/author/sourceLink/licenseName/licenseUrl/comment）；reading-time、excerpt 插件进主题包 | ✅ 完成（主题包侧） |
 | **M2.5 站点迁移** | orchid-blog 私人站点仓库接入 `@windcoder/astro-theme-orchid`（58 篇文章 / 真实域名 / 评论数据）；**主题仓库保持中性 demo，不含任何私人内容** | 待开始 |
 | **M3 功能移植** | M3a = P0 全部；M3b = P1 全部（评论先 Artalk，其余 4 套留实现口）+ P2 保留 5 项（hue 调色/i18n/PlantUML/广告位/邮箱防爬） | **M3a ✅ 完成（2026-10-11，含偏差清单见 §4.1）**；**M3b ✅ 完成（2026-10-11，b0-b9 九批次全过：P1 全部 + P2 保留 5 项，批次划分见 §4.2；b8 的 LQIP 占位已并入 b9）**；**评论五套收官 + 过时提醒 ✅ 补齐（2026-10-12，见 §4.11，决策 3 留口兑现）** |
-| **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | ✅ 完成（2026-10-11，实现记录见 §4.5；CI/Release 真实验证待 push） |
+| **M4 工程化** | CI（build 矩阵 + 发布流）、biome、字体子集化、主题包发版流程 | ✅ 完成（2026-10-11，实现记录见 §4.5；Release 流水线 2026-10-20 真实验证通过——v0.2.1 stage publish 成功，排障与 stage-only 改造见 §4.88） |
 
 ## 6. 决策记录（2026-10-11 确认）
 
@@ -1642,7 +1661,7 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 3. **评论方案**：先实现 Artalk（站点当前在用）；Twikoo/Waline/Giscus/Disqus 留出统一实现口（评论适配层）
 4. **P2 拆分**：保留 hue 动态调色 / i18n / PlantUML / 广告位 / 邮箱防爬；暂时舍弃音乐播放器 / 看板娘 / 番组追番 / 背景壁纸特效
 5. **视觉基线**：强调色默认青瓷绿 `#4a9d8f`（配置可改 + hue 预设切换），字体方案随原型确认后冻结
-6. **发布渠道**（2026-10-11 确认）：npm 公开发布——scope 定为 `@windcoder`（用户 npm 账号）；GitHub 仓库名 `iwinder`（原账号被抢注）与 npm scope 分离，互不影响；发版走 release.yml（tag v* → 验证 → `npm publish --provenance`），前置配置仓库 Secrets `NPM_TOKEN`
+6. **发布渠道**（2026-10-11 确认；**2026-10-20 修订为 stage-only，见 §4.88**）：npm 公开发布——scope 定为 `@windcoder`（用户 npm 账号）；GitHub 仓库名 `iwinder`（原账号被抢注）与 npm scope 分离，互不影响；发版走 release.yml（tag v* → 验证 → trusted publishing OIDC **`npm stage publish` 暂存** → 维护者 2FA 批准上线），**无需 NPM_TOKEN secret**（原 token 方案已被取代；直接 `npm publish` 因 2026-09-03 后 trusted publisher 默认 stage-only 会 403）
 7. **文章列表展示样式可配置**（2026-10-11 补充）：主题配置 `postList.style: 'cover' | 'compact'`（默认 cover 图卡；compact 为紧凑行，小图 + 单行摘要），文章 frontmatter `cardStyle: 'cover' | 'compact' | 'text'` 按篇覆盖、可混排；无封面文章自动降级为纯文字卡（text）。原型首页演示全部四种形态（featured 大图 / cover 图卡 / compact 图行 / compact 文字行）
 8. **友链双形态**（2026-10-11 补充）：同一数据源（`friends.yaml`：名称/头像/描述/链接/权重/启用）驱动两处渲染——首页侧栏友链 widget（`sidebar.friends: { enabled, count, random }`，默认开、显示 3 条）+ 友链内页全量渲染；widget 可整体关闭
 9. **封面图三级回退**（2026-10-11 补充）：frontmatter `cover`（手动指定，优先级最高）> 正文首图（构建时 rehype 插件提取第一张 `<img>` 的 src 存入文章元数据）> 自动降级纯文字卡（`postList.fallbackCover` 可选配置默认占位图，默认不启用）。写文章无需为封面单独配图
