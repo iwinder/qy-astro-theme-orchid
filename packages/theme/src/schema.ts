@@ -342,6 +342,8 @@ export const themeConfigSchema = z.object({
 			gallery: z.boolean().default(true),
 			/** 专题（§4.31）：frontmatter series 聚合页 /series/ 与 /series/[name]/ */
 			series: z.boolean().default(true),
+			/** 说说页（§4.87）：/moments/ 短内容时间流；站点需定义 moments collection。默认关——老站点无该集合，开启前先在 content.config.ts 定义 */
+			moments: z.boolean().default(false),
 		})
 		.default({
 			about: true,
@@ -350,6 +352,7 @@ export const themeConfigSchema = z.object({
 			sponsor: true,
 			gallery: true,
 			series: true,
+			moments: false,
 		}),
 	/**
 	 * 画廊/相册（M3b-b8）。相册数据纯配置驱动，照片两个来源：
@@ -916,6 +919,26 @@ export const themeConfigSchema = z.object({
 		})
 		.default({ enabled: false, method: "base64" }),
 	/**
+	 * 图片防盗链（§4.87）：部分图床/CDN（如 B 站）校验 Referer，站内引用返回 403。
+	 * 命中域名列表的外链图片构建期追加 referrerpolicy="no-referrer"。
+	 * 裸域名匹配自身与全部子域；*.example.com 只匹配子域。留空不处理。
+	 */
+	noReferrer: z
+		.object({
+			domains: z.array(z.string()).default([]),
+		})
+		.default({ domains: [] }),
+	/**
+	 * RSS 输出（§4.87）：fullText 开启后 item 带 content:encoded 全文
+	 * （构建期逐篇容器渲染，构建时间相应增加）；limit 控制输出条数。
+	 */
+	rss: z
+		.object({
+			fullText: z.boolean().default(false),
+			limit: z.number().int().min(1).default(20),
+		})
+		.default({ fullText: false, limit: 20 }),
+	/**
 	 * favicon 图标列表（§4.30）：数组非空时替换默认 /favicon.svg；
 	 * theme 指定 "light"/"dark" 时按系统深浅色经 media 切换（可配双图标）。
 	 */
@@ -1213,6 +1236,27 @@ export function definePostSchema(extensions: z.ZodRawShape = {}) {
 			 * 组名直接来自本字段文本，无 i18n 参与。
 			 */
 			seriesGroup: z.string().optional(),
+		})
+		.extend(extensions);
+}
+
+/**
+ * 内容 schema 工厂：说说集合 frontmatter（§4.87 说说页）。
+ * 站点 content.config.ts 定义 moments collection（loader 扫描
+ * src/content/moments 目录下全部 .md 文件，schema 用本工厂）。
+ * 正文即说说内容（Markdown，支持主题全部增强语法）；主题开关 pages.moments
+ * 打开后注入 /moments/（时间流，按 published 新→旧，每页 20 条）。
+ */
+export function defineMomentSchema(extensions: z.ZodRawShape = {}) {
+	return z
+		.object({
+			published: z.coerce.date(),
+			/** 心情 emoji（卡片右上角展示） */
+			mood: z.string().optional(),
+			tags: z.array(z.string()).default([]),
+			/** 配图（public 路径或外链，网格展示 + 灯箱浏览） */
+			images: z.array(z.string()).default([]),
+			draft: z.boolean().default(false),
 		})
 		.extend(extensions);
 }

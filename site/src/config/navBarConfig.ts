@@ -15,6 +15,7 @@ export const navBarConfig: ThemeConfig["nav"] = [
 			{ label: "专题", href: "/series/" },
 		],
 	},
+	{ label: "说说", href: "/moments/" },
 	{ label: "画廊", href: "/gallery/", external: true },
 	{
 		label: "更多",

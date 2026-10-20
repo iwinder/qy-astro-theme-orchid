@@ -1,0 +1,51 @@
+---
+import { getCollection } from "astro:content";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import Pagination from "virtual:theme/components/Pagination.astro";
+import config from "virtual:theme/config";
+import { t } from "../../../i18n/index.js";
+import { collectTags, formatDate, getSortedPosts } from "../../../utils.js";
+
+/**
+ * 标签详情（§4.87 分页）：每标签按 postList.pageSize 分页，第一页
+ * /tags/<tag>/（page 段省略），后续 /tags/<tag>/2/ 起。结构与分类详情页一致。
+ */
+export async function getStaticPaths({ paginate }: { paginate: any }) {
+	const all = await getCollection("posts", ({ data }) =>
+		import.meta.env.PROD ? !data.draft : true,
+	);
+	// 先排序再聚合，保证每个标签内文章按新→旧排列
+	const sorted = getSortedPosts(all);
+	return [...collectTags(sorted).entries()].flatMap(([tag, posts]) =>
+		paginate(posts, {
+			params: { tag },
+			props: { tag },
+			pageSize: config.postList.pageSize,
+		}),
+	);
+}
+
+const { page, tag } = Astro.props;
+const posts = page.data;
+---
+
+<BaseLayout title={t('tagTitle', { tag })} page="tags">
+  <header class="archive-head reveal">
+    <h1 class="page-title">{tag}</h1>
+    <p class="page-sub">{t('totalPosts', { n: page.total })}</p>
+  </header>
+  <div class="tag-list">
+    {
+      posts.map((post: any) => (
+        <a class="related-card card tag-item reveal" href={`/posts/${post.id}/`}>
+          <div class="rc-title">{post.data.title}</div>
+          <div class="rc-meta">
+            {formatDate(post.data.published)}
+            {post.data.category ? ` · ${post.data.category}` : ''}
+          </div>
+        </a>
+      ))
+    }
+  </div>
+  <Pagination page={page.currentPage} total={page.lastPage} basePath={`/tags/${tag}/`} />
+</BaseLayout>

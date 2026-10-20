@@ -23,6 +23,11 @@ export const siteConfig = {
 	timezone: "Asia/Shanghai",
 	// 建站日期（YYYY-MM-DD，站点信息卡「已运行」），不配置则不显示该行
 	since: "2024-01-01",
+	// 图片防盗链（§4.87）：命中域名的外链图片构建期加 referrerpolicy="no-referrer"，
+	// 绕过 B 站图床等的 Referer 校验；裸域名匹配自身与子域，*.example.com 只匹配子域
+	noReferrer: {
+		domains: ["i0.hdslb.com", "i1.hdslb.com", "i2.hdslb.com", "*.bilibili.com"],
+	},
 	// 独立页开关：置 false 后主题不注入对应路由（路由完全不生成，而非运行期 404）
 	pages: {
 		about: true,
@@ -32,6 +37,8 @@ export const siteConfig = {
 		gallery: true,
 		// 专题聚合页 /series/ 与 /series/[name]/（§4.31）
 		series: true,
+		// 说说页 /moments/（§4.87）：需在 content.config.ts 定义 moments 集合
+		moments: true,
 	},
 	// 分类导航栏：首页 post-list 与文章页 post-main 顶部横条（与正文同列宽不全宽）
 	categoryBar: {

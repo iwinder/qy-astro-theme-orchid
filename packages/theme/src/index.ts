@@ -41,6 +41,7 @@ import {
 	rehypeExternalLinks,
 	rehypeFigure,
 	rehypeFirstImage,
+	rehypeNoReferrer,
 } from "./plugins/rehype.js";
 import {
 	rehypeDiagramPanZoom,
@@ -125,6 +126,8 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 					// GitHub 仓库卡片（§4.10）：github 标签 → 卡片（自带 target，须在外链处理前）
 					rehypeGithubCard,
 					rehypeExternalLinks,
+					// 图片防盗链（§4.87）：命中域名外链图加 no-referrer（domains 空时插件空转）
+					[rehypeNoReferrer, { domains: config.noReferrer.domains }],
 					rehypeCallouts,
 					rehypeFigure,
 					rehypeFirstImage,
@@ -308,9 +311,13 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 					["/page/[page]", "page/[page].astro"],
 					["/archive", "archive.astro"],
 					["/tags", "tags/index.astro"],
-					["/tags/[tag]", "tags/[tag].astro"],
+					// §4.87 分类/标签分页：第一页 /tags/<tag>/（page 段省略），后续 /2/ 起
+					["/tags/[tag]/[...page]", "tags/[tag]/[...page].astro"],
 					["/categories", "categories/index.astro"],
-					["/categories/[category]", "categories/[category].astro"],
+					[
+						"/categories/[category]/[...page]",
+						"categories/[category]/[...page].astro",
+					],
 					["/posts/[...slug]", "posts/[...slug].astro"],
 					// sitemap（§4.63）：改由官方 @astrojs/sitemap integration 产出
 					// sitemap-index.xml，原手写 /sitemap.xml 路由移除
@@ -332,6 +339,10 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 				if (config.pages.series) {
 					routes.push(["/series", "series/index.astro"]);
 					routes.push(["/series/[name]", "series/[name].astro"]);
+				}
+				// 说说页（§4.87）：moments collection 时间流；站点需先定义该集合（默认关）
+				if (config.pages.moments) {
+					routes.push(["/moments/[...page]", "moments/[...page].astro"]);
 				}
 				// 相关/随机文章推荐（P1-12）：随机栏数据源
 				if (config.relatedPosts.enabled) {

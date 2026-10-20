@@ -135,11 +135,11 @@ pageWidth: 1600,
 
 ## 页面开关
 
-`pages` 是六个独立页的路由开关，`categoryBar` 控制首页与文章页顶部的分类横条。
+`pages` 是七个独立页的路由开关，`categoryBar` 控制首页与文章页顶部的分类横条。
 
 | 键 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `pages` | `PagesConfig` | 六项全 `true` | 独立页路由开关（见下文） |
+| `pages` | `PagesConfig` | 七项全 `true` | 独立页路由开关（见下文） |
 | `categoryBar` | `{ enabled }` | `enabled: true` | 首页与文章页顶部的分类横条 |
 
 ```ts
@@ -151,13 +151,14 @@ pages: {
 	sponsor: true,   // /sponsor/  赞助页
 	gallery: true,   // /gallery/  画廊
 	series: true,    // /series/   专题聚合
+	moments: true,   // /moments/  说说页
 },
 categoryBar: {
 	enabled: true,
 },
 ```
 
-置 `false` 后主题**不注入对应路由**——路由在构建期完全不生成，而非运行期 404，对 SEO 干净。页面的正文与数据配置见[独立页面](/posts/pages/)。
+置 `false` 后主题**不注入对应路由**——路由在构建期完全不生成，而非运行期 404，对 SEO 干净。页面的正文与数据配置见[独立页面](/posts/pages/)与[说说页](/posts/moments/)。
 
 ## 页脚
 

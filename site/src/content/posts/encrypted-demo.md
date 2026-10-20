@@ -8,6 +8,8 @@ tags:
 category: 主题演示
 password: 'demo1234'
 passwordHint: '示例密码 demo1234'
+series: 功能演示
+seriesOrder: 3
 ---
 
 恭喜，你已成功解锁本文！

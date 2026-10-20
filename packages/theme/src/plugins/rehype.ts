@@ -53,6 +53,44 @@ export function rehypeExternalLinks(): Transformer {
 	};
 }
 
+/**
+ * 图片防盗链（§4.87）：部分图床/CDN（如 B 站）校验 Referer 头，站内引用返回 403。
+ * 为匹配域名的外链 <img> 追加 referrerpolicy="no-referrer"（浏览器请求图片时不发
+ * Referer，绕过防盗链限制），仅影响外链图片与匹配域名，本地图片不受影响。
+ */
+export interface NoReferrerOptions {
+	/** 域名列表：裸域名匹配自身与全部子域；*.example.com 只匹配子域 */
+	domains: string[];
+}
+
+export function rehypeNoReferrer(options: NoReferrerOptions): Transformer {
+	if (!options.domains.length) return () => {};
+	const matchers = options.domains.map((domain) => {
+		const d = domain.toLowerCase();
+		if (d.startsWith("*.")) {
+			const base = d.slice(2);
+			return (host: string) => host.endsWith(`.${base}`) && host !== base;
+		}
+		return (host: string) => host === d || host.endsWith(`.${d}`);
+	});
+	return (tree) => {
+		visit(tree, (node) => {
+			if (node.type !== "element" || node.tagName !== "img") return;
+			const src = String(node.properties?.src ?? "");
+			if (!/^https?:\/\//i.test(src)) return;
+			let host: string;
+			try {
+				host = new URL(src).hostname.toLowerCase();
+			} catch {
+				return;
+			}
+			if (matchers.some((match) => match(host))) {
+				node.properties.referrerPolicy = "no-referrer";
+			}
+		});
+	};
+}
+
 /* -------------------------------------------------------------- callouts */
 
 const CALLOUT_META: Record<

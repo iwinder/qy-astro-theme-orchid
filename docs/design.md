@@ -1603,6 +1603,27 @@ schema: definePostSchema({ /* 站点自定义字段 */ })
 
 **验证（§4.86）**：rebuild 后实机复测——`gap: 24`、`bannerWidth: 517`（容器内）、`hasHScroll: false`、`docScrollWidth === clientWidth`；灯箱 dialog 在普通/加密/外链/VT 四场景复开确认。build exit 0。
 
+### 4.87 C 批四功能：分类/标签分页、说说页、图片防盗链、RSS 全文开关（✅ 2026-10-20 完成）
+
+**背景**：用户圈定本批范围——「C里面 归档/分类/标签分页、说说/动态页、图片防盗链、RSS 全文输出开关」，C 剩余项（Web Vitals/背景壁纸/番组/友链检测/暗色图适配/迁移工具/PWA）待四件落地后按推荐路线继续。四功能相互独立，均为主题包能力 + demo 配置示例。
+
+**方案**：
+- **C1 分类/标签分页**：路由由 `categories/[category].astro` / `tags/[tag].astro` 单页改为 `[...page]` rest 段，`getStaticPaths` 内用 Astro 7 `paginate()` helper 按分类/标签分组分页（pageSize 取 `config.postList.pageSize`，与首页一致）；第一页 page 段省略（`/tags/<tag>/`），后续 `/tags/<tag>/2/`；底部复用 `Pagination` 组件（basePath 指向分类/标签首页）。旧路由文件删除，`index.ts` injectRoute pattern 同步
+- **C2 说说/动态页**：新增 moments 内容集合——schema 工厂 `defineMomentSchema(extensions?)`（published/mood/tags/images/draft + extend 供站点扩展）；`pages.moments` 开关（默认 false）控制 injectRoute；路由 `moments/[...page].astro` 按 published 降序 paginate（pageSize 20），`render(moment)` 走主题统一 markdown processor（增强语法全可用），images 三列网格接入通用灯箱（data-lightbox-group），tags 链接复用 `/tags/<tag>/`；i18n 补 `momentsTitle`/`momentsEmpty`；CSS 新增 `.moments-list` 全家（480px 断点图片两列）；demo 三条示例说说 + 导航「说说」入口
+- **C3 图片防盗链**：rehype 插件 `rehypeNoReferrer({ domains })`——对 src 匹配域名清单的外链 img 注入 `referrerPolicy="no-referrer"`；支持 `*.bilibili.com` 通配子域（裸域需显式列出）；相对路径不处理；配置 `noReferrer.domains`（默认空数组 = 关闭）；注册于 rehypeExternalLinks 之后
+- **C4 RSS 全文开关**：`rss.fullText`（默认 false）+ `rss.limit`（默认 20 收口已有 limit）；开启时逐篇 `render(post)` + `experimental_AstroContainer` `renderToString(Content)` 输出 HTML 到 `content:encoded`（声明 content 模块命名空间），与文章页同一套 remark/rehype 产物；**加密文章跳过全文**
+
+**设计决策**：
+- **分页复用 paginate() 而非手写切片**：官方 helper 处理 params/props/首尾页，`[...page]` rest 段保证第一页 URL 不带 `/1/`（原单页 URL 即第一页 URL，旧链接天然兼容）
+- **moments 走 content collection 而非 data yaml**：说说本质是轻量 markdown（可含增强语法与图片），复用 content layer 渲染管线零额外成本；schema 工厂暴露 extensions 参数供站点加自定义字段
+- **防盗链用 referrerPolicy 属性而非 CSP/服务端**：静态站无服务端，`no-referrer` 是纯前端唯一可靠手段；域名清单制而非全站 no-referrer——避免误伤站内统计与外链 SEO
+- **RSS 全文跳过加密文章**：全文输出等于把密码后明文送出，验证形同虚设；这是安全边界不是功能缺失
+- **demo 站 fullText 保持 false**：与 0.2.0 行为一致，避免默认行为变化；实测通过后在指南说明开启方式
+
+**改动**：C1——routes/categories/[category]/[...page].astro 与 tags/[tag]/[...page].astro 新建、旧单页路由删除、integration/index.ts pattern 更新。C2——schema.ts（defineMomentSchema + pages.moments）、routes/moments/[...page].astro、integration/index.ts 开关注入、i18n 两文件、global.css 六组样式、site 侧 content.config.ts + siteConfig + navBarConfig + content/moments/ 三示例。C3——plugins/rehype.ts（rehypeNoReferrer）、schema.ts（noReferrer.domains）、integration/index.ts 注册、site siteConfig.ts 域名示例。C4——routes/rss.xml.ts 全文渲染、schema.ts（rss.fullText/limit）、site rssConfig.ts 新建 + config/index.ts 组装。
+
+**验证（§4.87）**：biome 0 error（134 files）；`pnpm --filter site check` 0 errors 0 warnings 0 hints；`CI=true pnpm --filter site build` 真实 exit 0（log 落 /tmp，echo BUILD_EXIT 取证）；C1 产物「技术」分类 27 篇三页（index.html + 2/ + 3/）；C2 产物 dist/moments/index.html 含 3 条 moment card（meta/mood/content/tags 齐全）、首页导航含 /moments/、灯箱组标记确认在路由源码（示例无图故产物不渲染，机制与画廊同源已实测）；C4 实测 fullText=true 构建后 rss.xml 含 21 个 content:encoded、全文 HTML 与转义正确、加密文章跳过（验后回滚默认 false）；C3 插件逻辑简单 + build 兜底（demo 无 B 站图床文章无产物可断言）。排错记录：验证管道 `build | grep ; echo $?` 取到 grep 退出码造成 C1 假绿（build 实败 dist 为旧产物）——页面级验证一律改 `> /tmp/x.log 2>&1; echo $?` 取真实 exit code。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

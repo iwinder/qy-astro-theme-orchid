@@ -6,7 +6,10 @@ pinned: true
 image: "api"
 tags:
   - 随笔
-category: 开始
+  - 功能演示
+category: 主题演示
+series: 功能演示
+seriesOrder: 1
 ---
 
 这是 `@windcoder/astro-theme-orchid` 主题包接入后的第一篇文章。

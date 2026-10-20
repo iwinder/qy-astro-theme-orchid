@@ -157,6 +157,7 @@ site/
 | `friendsConfig.ts` | 友链页 | [友链](/posts/friends/) |
 | `sponsorConfig.ts` | 赞助页 | [赞助](/posts/sponsor/) |
 | `galleryConfig.ts` | 画廊页 | [画廊](/posts/gallery/) |
+| `rssConfig.ts` | RSS 订阅（条数与全文输出） | [RSS 订阅](/posts/rss/) |
 
 拆分方式不是强制的——主题只关心最终传入 `orchidTheme()` 的对象，写成一个 `config.ts` 也可以。
 
@@ -192,7 +193,7 @@ site/
 | 篇目 | 内容 |
 |---|---|
 | [文章页功能](/posts/post-features/) | 目录、代码块、相关文章、分享图与海报、过期提醒 |
-| [内容渲染](/posts/content-rendering/) | LaTeX 公式、图表、邮箱防爬 |
+| [内容渲染](/posts/content-rendering/) | LaTeX 公式、图表、邮箱防爬、图片防盗链 |
 | [樱花特效](/posts/sakura/) | 全站樱花飘落粒子 |
 | [音乐播放器](/posts/music/) | 悬浮播放器与歌词 |
 | [Live2D 看板娘](/posts/live2d/) | 模型、菜单与气泡 |
@@ -205,6 +206,8 @@ site/
 | [赞助](/posts/sponsor/) | 赞助页 |
 | [画廊](/posts/gallery/) | 画廊页与加密相册 |
 | [独立页面](/posts/pages/) | 关于、友链、赞助、画廊页面的开关与正文 |
+| [说说页](/posts/moments/) | 轻量动态流：心情、配图与标签 |
+| [RSS 订阅](/posts/rss/) | 输出条数与全文输出开关 |
 
 ### 写作与进阶
 

@@ -112,6 +112,9 @@ const zhCN = {
 	allTags: "全部",
 	galleryNoAlbums: "还没有相册，在主题配置 gallery.albums 中添加。",
 	galleryNoPhotos: "相册里还没有照片",
+	/* 说说页（§4.87） */
+	momentsTitle: "说说",
+	momentsEmpty: "还没有说说。",
 	encryptedAlbum: "加密相册",
 	searchAlbumNoResults: "没有匹配的相册",
 	/* 加密文章（M3b-b7）：postEncrypted 用于列表/文章 meta 标记，其余构建期渲染进锁 UI */

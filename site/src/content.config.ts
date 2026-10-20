@@ -1,5 +1,8 @@
 import { defineCollection } from "astro:content";
-import { definePostSchema } from "@windcoder/astro-theme-orchid/schema";
+import {
+	defineMomentSchema,
+	definePostSchema,
+} from "@windcoder/astro-theme-orchid/schema";
 import { glob } from "astro/loaders";
 import { z } from "astro/zod";
 
@@ -19,4 +22,11 @@ const spec = defineCollection({
 	schema: z.object({}),
 });
 
-export const collections = { posts, spec };
+// 说说集合（§4.87）：正文即说说内容，published 排序时间流；
+// 配合 siteConfig.ts 的 pages.moments: true 打开 /moments/ 路由
+const moments = defineCollection({
+	loader: glob({ pattern: "**/*.md", base: "./src/content/moments" }),
+	schema: defineMomentSchema(),
+});
+
+export const collections = { posts, spec, moments };

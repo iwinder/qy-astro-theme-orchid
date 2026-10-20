@@ -120,6 +120,13 @@ categoryBar: { enabled: true },
 export const archive: ThemeConfig["archive"] = { fold: true };
 ```
 
+## 分类/标签分页
+
+分类页（`/categories/<分类>/`）与标签页（`/tags/<标签>/`）与首页共用 `postList.pageSize`：
+超出单页自动分页，第二页起为 `/categories/<分类>/2/` 形式，
+第一页不带 `/1/`——旧链接（原本不分页的单页 URL）天然兼容。
+底部复用与首页相同的分页条，无需任何额外配置。
+
 ## 使用效果
 
 - 默认 `cover` 图卡：左图右文（或上下结构），无图文章自动降级纯文字卡

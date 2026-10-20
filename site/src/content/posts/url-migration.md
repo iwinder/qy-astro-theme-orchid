@@ -8,7 +8,7 @@ tags:
 category: 技术
 series: 主题使用指南
 seriesGroup: 进阶
-seriesOrder: 27
+seriesOrder: 29
 ---
 
 从旧博客（Hugo、Hexo、WordPress 等）迁移过来的站点，旧文章 URL 常是根路径扁平形式：

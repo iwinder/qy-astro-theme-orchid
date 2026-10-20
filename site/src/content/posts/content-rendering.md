@@ -1,6 +1,6 @@
 ---
-title: 内容渲染：LaTeX、图表与邮箱防爬
-description: 三个内容渲染模块的配置——KaTeX 数学公式、mermaid 与 plantuml 图表、mailto 邮箱防爬，均在构建期处理，零客户端运行时。
+title: 内容渲染：LaTeX、图表、邮箱防爬与防盗链
+description: 四个内容渲染模块的配置——KaTeX 数学公式、mermaid 与 plantuml 图表、mailto 邮箱防爬、外链图片防盗链，均在构建期处理，零客户端运行时。
 published: 2026-10-18
 tags:
   - 主题机制
@@ -12,7 +12,7 @@ seriesOrder: 11
 ---
 
 写作时正文里的公式、图表、邮箱链接会被主题在**构建期**渲染或编码——
-本篇讲这三个内容渲染模块的配置，语法写法见[写作指南](/posts/writing/)。
+本篇讲这四个内容渲染模块的配置，语法写法见[写作指南](/posts/writing/)。
 
 **配置文件**：
 
@@ -20,6 +20,7 @@ seriesOrder: 11
 - `site/src/config/mermaidConfig.ts` → `diagram.mermaid`（图表）
 - `site/src/config/plantumlConfig.ts` → `diagram.plantuml`（图表）
 - `site/src/config/emailProtectionConfig.ts` → `emailProtection`（邮箱防爬）
+- `site/src/config/siteConfig.ts` → `noReferrer`（图片防盗链）
 
 ## LaTeX 数学公式（latex）
 
@@ -78,3 +79,24 @@ export const emailProtection: ThemeConfig["emailProtection"] = {
 	method: "base64", // "base64" | "rot13"
 };
 ```
+
+## 图片防盗链（noReferrer）
+
+部分图床（B 站图床等）校验请求 Referer，站外引用直接 403 裂图。
+命中域名清单的**外链图片**在构建期加 `referrerpolicy="no-referrer"`，
+浏览器请求时不带 Referer，绕过校验；只处理 `http(s)://` 外链，站内相对路径不受影响。
+
+| 键 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `domains` | `string[]` | `[]` | 域名清单；空数组即关闭 |
+
+```ts
+// site/src/config/siteConfig.ts
+noReferrer: {
+	domains: ["i0.hdslb.com", "i1.hdslb.com", "i2.hdslb.com", "*.bilibili.com"],
+},
+```
+
+域名匹配规则：裸域名（`i0.hdslb.com`）匹配自身及其子域；
+`*.` 前缀（`*.bilibili.com`）**只匹配子域**，裸域需另行列出。
+清单制而非全站 no-referrer——不影响站内统计与外链 SEO。

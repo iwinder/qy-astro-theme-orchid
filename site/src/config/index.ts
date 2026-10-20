@@ -27,6 +27,7 @@ import { plantuml } from "./plantumlConfig";
 import { postList } from "./postListConfig";
 import { profileConfig } from "./profileConfig";
 import { relatedPosts } from "./relatedPostsConfig";
+import { rss } from "./rssConfig";
 import { sakura } from "./sakuraConfig";
 import { og, sharePoster } from "./shareConfig";
 import { sidebarConfig } from "./sidebarConfig";
@@ -53,6 +54,7 @@ export const themeConfig = {
 	colorMode: siteConfig.colorMode,
 	pageWidth: siteConfig.pageWidth,
 	footer: siteConfig.footer,
+	noReferrer: siteConfig.noReferrer,
 	// 内容组织与文章页功能：各同名配置文件
 	archive,
 	postList,
@@ -71,6 +73,8 @@ export const themeConfig = {
 	music,
 	live2d,
 	fonts,
+	// 站点级输出与内容处理：各同名配置文件
+	rss,
 	// 独立功能模块：各同名配置文件
 	nav: navBarConfig,
 	sidebar: sidebarConfig,
@@ -110,6 +114,7 @@ export {
 	postList,
 	profileConfig,
 	relatedPosts,
+	rss,
 	sakura,
 	sharePoster,
 	sidebarConfig,

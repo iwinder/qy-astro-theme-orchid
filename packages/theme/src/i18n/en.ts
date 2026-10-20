@@ -97,6 +97,9 @@ const en: Record<UiKey, string> = {
 	allTags: "All",
 	galleryNoAlbums: "No albums yet. Add one in theme config gallery.albums.",
 	galleryNoPhotos: "No photos in this album",
+	/* 说说页（§4.87） */
+	momentsTitle: "Moments",
+	momentsEmpty: "No moments yet.",
 	encryptedAlbum: "Encrypted album",
 	searchAlbumNoResults: "No matching albums",
 	postEncrypted: "Encrypted",

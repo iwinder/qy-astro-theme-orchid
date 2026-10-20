@@ -1,6 +1,6 @@
 ---
 title: 独立页面（pages）
-description: 六个独立页面（关于/友链/留言板/赞助/画廊/专题）的路由开关 siteConfig.pages，与 about / friends / guestbook 的正文写法（src/content/spec 集合）。
+description: 七个独立页面的路由开关 siteConfig.pages，与 about / friends / guestbook 的正文写法（src/content/spec 集合）。
 published: 2026-10-18
 tags:
   - 主题机制
@@ -33,10 +33,12 @@ pages: {
 	sponsor: true,   // /sponsor/  赞助页
 	gallery: true,   // /gallery/  画廊
 	series: true,    // /series/   专题聚合
+	moments: true,   // /moments/  说说页
 },
 ```
 
 页面开关与全站其余基础配置的联动见[站点基础配置](/posts/site-config/)。
+说说页不走 spec 正文体系（内容来自 moments 集合），单独成篇见[说说页](/posts/moments/)。
 
 ## 页面正文（spec 集合）
 

@@ -6,6 +6,8 @@ tags:
   - 主题功能
   - 示例
 category: 主题演示
+series: 功能演示
+seriesOrder: 2
 ---
 
 本文演示主题内置的各类内容增强特性，全部特性均通过主题注册的 unified processor 在构建期完成处理，无需站点额外配置。

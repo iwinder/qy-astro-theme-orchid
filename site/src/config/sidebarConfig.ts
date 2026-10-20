@@ -23,14 +23,21 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 			type: "calendar",
 			enabled: true,
 			hideOnMobile: true,
+			showOnPost: false,
 			position: "sticky",
 			specificConfig: { postTooltip: false },
 		},
-		{ type: "categories", enabled: true, position: "sticky" },
+		{
+			type: "categories",
+			enabled: true,
+			showOnPost: false,
+			position: "sticky",
+		},
 		// specificConfig.count 展示的热门标签数量（0 = 全部展示），超出收进「…更多」入口（§4.48）
 		{
 			type: "tags",
 			enabled: true,
+			showOnPost: false,
 			position: "sticky",
 			specificConfig: { count: 12 },
 		},
@@ -38,6 +45,7 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 		{
 			type: "friends",
 			enabled: true,
+			showOnPost: false,
 			position: "sticky",
 			specificConfig: { count: 3, random: false },
 		},
@@ -50,7 +58,12 @@ export const sidebarConfig: ThemeConfig["sidebar"] = {
 			hideOnMobile: true,
 			position: "sticky",
 		},
-		{ type: "siteInfo", enabled: true, position: "sticky" },
-		{ type: "advertisement", enabled: true, position: "sticky" },
+		{ type: "siteInfo", enabled: true, showOnPost: false, position: "sticky" },
+		{
+			type: "advertisement",
+			enabled: true,
+			showOnPost: false,
+			position: "sticky",
+		},
 	],
 };

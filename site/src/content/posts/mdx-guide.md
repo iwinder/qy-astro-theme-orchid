@@ -8,7 +8,7 @@ tags:
 category: 技术
 series: 主题使用指南
 seriesGroup: 进阶
-seriesOrder: 26
+seriesOrder: 28
 ---
 
 MDX 让文章里能直接写组件，但它是**站点能力选择**而非主题必需品——是否启用由站点决定。

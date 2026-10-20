@@ -1,0 +1,80 @@
+---
+import { getCollection, render } from "astro:content";
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import Pagination from "virtual:theme/components/Pagination.astro";
+import config from "virtual:theme/config";
+import { t } from "../../i18n/index.js";
+import { formatDate } from "../../utils.js";
+
+/**
+ * 说说页（§4.87）：moments collection 时间流，按 published 新→旧，
+ * 每页 20 条（第一页 /moments/，后续 /moments/2/）。
+ * 正文走主题统一 markdown processor（全部增强语法可用）；配图 images 网格
+ * 展示并接入通用灯箱（data-lightbox-group 组浏览）。
+ */
+export async function getStaticPaths({ paginate }: { paginate: any }) {
+	const all = await getCollection("moments", ({ data }) =>
+		import.meta.env.PROD ? !data.draft : true,
+	);
+	const sorted = [...all].sort(
+		(a, b) => b.data.published.valueOf() - a.data.published.valueOf(),
+	);
+	return paginate(sorted, { pageSize: 20 });
+}
+
+const { page } = Astro.props;
+const rendered = await Promise.all(
+	page.data.map(async (moment: any) => {
+		const { Content } = await render(moment);
+		return { moment, Content };
+	}),
+);
+---
+
+<BaseLayout title={t('momentsTitle')} page="moments">
+  <header class="archive-head reveal">
+    <h1 class="page-title">{t('momentsTitle')}</h1>
+  </header>
+
+  {
+    rendered.length === 0 ? (
+      <p class="gallery-empty reveal">{t('momentsEmpty')}</p>
+    ) : (
+      <div class="moments-list">
+        {rendered.map(({ moment, Content }) => (
+          <article class="moment card reveal">
+            <div class="moment-meta">
+              <time datetime={moment.data.published.toISOString()}>
+                {formatDate(moment.data.published)}
+              </time>
+              {moment.data.mood && <span class="moment-mood">{moment.data.mood}</span>}
+            </div>
+            <div class="moment-content">
+              <Content />
+            </div>
+            {moment.data.images.length > 0 && (
+              <div class="moment-images" data-lightbox-group>
+                {moment.data.images.map((src: string) => (
+                  <figure class="moment-img">
+                    <img src={src} alt={t('momentsTitle')} loading="lazy" decoding="async" />
+                  </figure>
+                ))}
+              </div>
+            )}
+            {moment.data.tags.length > 0 && (
+              <div class="moment-tags">
+                {moment.data.tags.map((tg: string) => (
+                  <a class="moment-tag" href={`/tags/${tg}/`}>
+                    {tg}
+                  </a>
+                ))}
+              </div>
+            )}
+          </article>
+        ))}
+      </div>
+    )
+  }
+
+  <Pagination page={page.currentPage} total={page.lastPage} basePath="/moments/" />
+</BaseLayout>
