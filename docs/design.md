@@ -1684,6 +1684,27 @@ C 批剩余项第 2 件。友链会随时间失联，主题包自带零依赖检
 
 **验证（§4.90）**：biome 0 error；`pnpm test` 7/7 过（subset-fonts 3 + check-friends 4）；live 实跑 site/dist（5 条 demo 友链 example.com 子路径全部 404 → dead 5，符合预期）——抽取条数/标题/URL 与配置一致、`--json` 报告结构完整、友链页缺失路径提示后 exit 0、`--fail-on-dead` dead>0 exit 1。
 
+### 4.91 C7 Web Vitals 通用上报（✅ 2026-10-20 完成）
+
+C 批剩余项第 3 件。厂商无关的 Core Web Vitals 采集：Google 官方 web-vitals 库五指标（LCP/CLS/INP/FCP/TTFB）就绪即 POST 到自建端点，与既有 GA/Clarity/Umami/51la 四家互不依赖。
+
+**方案**：
+- **schema**：`analytics.webVitals = { endpoint, siteId, sampleRate(0~1 默认 1), debug }`，endpoint 留空不注入（Analytics.astro 门控，与四家「ID 留空零注入」同口径）
+- **组件**：`analytics/WebVitals.astro`——配置经隐藏 div 的 data 属性传入 bundled script（无 define:vars，SakuraEffect 同款惯例）；script 内 `import { onCLS…onTTFB } from "web-vitals"` 由 Astro 打包（独立 chunk 约 2KB）；`Math.random() < sampleRate` 客户端采样
+- **发送**：载荷 JSON `{name,value,rating,delta,id,navType,path,site}` 以 `text/plain` 载体走 `navigator.sendBeacon`（CORS 安全清单类型免预检），排队失败回退 `fetch keepalive`；debug 开时控制台镜像
+- **依赖**：theme dependencies 新增 `web-vitals@^6.2.3`（Google 官方，TS 类型内置）
+
+**设计决策**：
+- **独立通道而非寄挂四家**：umami 已有 `collectWebVitals`（厂商内实现），自建端点是唯一厂商无关解，适合暂无统计但想量化性能的站点；两开关互不影响
+- **text/plain 载 JSON 而非 application/json**：sendBeacon 只允许 CORS 安全清单 Content-Type，application/json 会触发预检且 beacon 无法完成——业界标准做法，端点侧按 JSON 解析 body 即可
+- **配置走 DOM data 属性**：bundled script（要打 web-vitals 包）不能配 define:vars（is:inline 专属），组件渲染带 data-* 的挂载点元素是主题既有惯例
+- **整文档口径声明**：ClientRouter 软导航不重置 web-vitals 会话，TTFB/FCP 仅首载有意义——文档明示而非伪 SPA 分桶（过度设计）
+- **demo 站不开启**：无真实端点，指向占位地址只会刷控制台报错，与「demo 演示开」惯例例外并记录原因
+
+**改动**：schema.ts（analytics.webVitals section + 显式完整默认值 + 头注释）、新增 components/analytics/WebVitals.astro、Analytics.astro（showWebVitals 门控挂载）、theme package.json（web-vitals ^6.2.3 + lockfile）、analytics.md 指南新增「Web Vitals 通用上报」一节（配置/载荷表/端点最小实现/三条注意）。
+
+**验证（§4.91）**：biome 0 error、`pnpm --filter site check` 0 error、默认关闭态 `CI=true build` exit 0 且 dist 全 HTML 无 `orchid-webvitals` 痕迹；临时开 demo 配置重建——div 注入 `data-endpoint/data-site-id/data-sample-rate/hidden` 五属性、独立 chunk 生成且 LCP/CLS/INP/FCP/TTFB/rating/navType/keepalive 全命中，还原配置重建回零注入态（exit 0）。pnpm add 经 `--store-dir` 指向旧 store 完成（pnpm 11 起不再读 .npmrc 的 store-dir，本地 node_modules 链接自旧 store，为不动 CI 面貌采用一次性 CLI flag 而非提交 workspace 配置）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

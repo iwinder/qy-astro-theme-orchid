@@ -1,0 +1,72 @@
+---
+/**
+ * Web Vitals 通用上报（§4.91）：与统计厂商无关的 Core Web Vitals 采集。
+ * Google 官方 web-vitals 库经 Astro bundled script 打包（约 2KB gzip），
+ * LCP/CLS/INP/FCP/TTFB 五指标就绪即上报。
+ * 载荷以 text/plain 载 JSON 经 sendBeacon 发送（CORS 安全清单类型，免预检），
+ * sendBeacon 排队失败回退 fetch keepalive。endpoint 留空由 Analytics.astro 门控不注入。
+ * 配置经 DOM data 属性传入（bundled script 无 define:vars，SakuraEffect 同款惯例）。
+ */
+interface Props {
+	/** 上报端点（POST） */
+	endpoint: string;
+	/** 站点标识 */
+	siteId?: string;
+	/** 采样率 0~1 */
+	sampleRate?: number;
+	/** 控制台打印载荷（调试） */
+	debug?: boolean;
+}
+
+const { endpoint, siteId = "", sampleRate = 1, debug = false } = Astro.props;
+---
+
+<div
+	id="orchid-webvitals"
+	data-endpoint={endpoint}
+	data-site-id={siteId}
+	data-sample-rate={sampleRate}
+	data-debug={debug ? "true" : undefined}
+	hidden
+></div>
+
+<script>
+	import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from "web-vitals";
+
+	const el = document.getElementById("orchid-webvitals");
+	const endpoint = el?.dataset.endpoint ?? "";
+	const siteId = el?.dataset.siteId ?? "";
+	const sampleRate = Number(el?.dataset.sampleRate ?? 1);
+	const debug = el?.dataset.debug === "true";
+
+	if (endpoint && Math.random() < sampleRate) {
+		const send = (metric: Metric) => {
+			const payload = JSON.stringify({
+				name: metric.name,
+				value: Math.round(metric.value),
+				rating: metric.rating,
+				delta: Math.round(metric.delta),
+				id: metric.id,
+				navType: metric.navigationType ?? "",
+				path: location.pathname,
+				site: siteId,
+			});
+			if (debug) console.log("[web-vitals]", payload);
+			const blob = new Blob([payload], { type: "text/plain;charset=UTF-8" });
+			if (!navigator.sendBeacon(endpoint, blob)) {
+				// 排队失败（页面卸载瞬间的兜底）
+				fetch(endpoint, {
+					method: "POST",
+					body: payload,
+					keepalive: true,
+					headers: { "content-type": "text/plain;charset=UTF-8" },
+				}).catch(() => {});
+			}
+		};
+		onCLS(send);
+		onFCP(send);
+		onINP(send);
+		onLCP(send);
+		onTTFB(send);
+	}
+</script>

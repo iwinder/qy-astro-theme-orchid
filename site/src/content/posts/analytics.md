@@ -1,6 +1,6 @@
 ---
 title: 站点统计（analytics）
-description: 四家站点统计按需填 ID——Google Analytics / Clarity / umami / 51.la，留空零注入，含 umami 会话回放与 51.la 录屏全字段。
+description: 四家站点统计按需填 ID——Google Analytics / Clarity / umami / 51.la，留空零注入；另有厂商无关的 Web Vitals 通用上报（自建端点）。
 published: 2026-10-18
 tags:
   - 主题机制
@@ -11,7 +11,7 @@ seriesGroup: 功能配置
 seriesOrder: 18
 ---
 
-本篇覆盖站点统计的完整配置——Google Analytics、Microsoft Clarity、Umami、51.la 四家按需选配。
+本篇覆盖站点统计的完整配置——Google Analytics、Microsoft Clarity、Umami、51.la 四家按需选配，以及厂商无关的 Web Vitals 通用上报。
 
 **配置文件**：`site/src/config/analyticsConfig.ts`
 
@@ -64,6 +64,49 @@ la51: {
 	screenRecord: true,   // 网站录屏
 },
 ```
+
+## Web Vitals 通用上报（webVitals）
+
+不依赖任何统计厂商：Google 官方 [web-vitals](https://github.com/GoogleChrome/web-vitals) 库采集 LCP / CLS / INP / FCP / TTFB 五项核心指标，指标就绪即 POST 到你自建的端点。`endpoint` 留空完全不注入采集代码。
+
+```ts
+// site/src/config/analyticsConfig.ts
+webVitals: {
+	endpoint: "",     // 上报端点（POST）；留空不采集
+	siteId: "",       // 站点标识，随载荷上报（多站共用端点时区分来源）
+	sampleRate: 1,    // 采样率 0-1，默认全量
+	debug: false,     // 控制台打印载荷（调试用）
+},
+```
+
+载荷为 JSON（以 `text/plain` 发送，免 CORS 预检）：
+
+```json
+{
+	"name": "LCP",        // 指标名 LCP / CLS / INP / FCP / TTFB
+	"value": 1234,        // 该次会话的值（ms；CLS 为无量纲小数）
+	"rating": "good",     // "good" | "needs-improvement" | "poor"
+	"delta": 1234,
+	"id": "v6-…",         // 指标会话唯一 ID（去重用）
+	"navType": "navigate",
+	"path": "/posts/foo/",
+	"site": "my-site"
+}
+```
+
+端点最小实现（任意 Serverless/自建服务，返回 204 即可）：
+
+```js
+// 例：Node http
+req.on("data", () => {});
+req.on("end", () => res.writeHead(204).end());
+```
+
+注意：
+
+- 发送走 `navigator.sendBeacon`，排队失败回退 `fetch keepalive`——页面关闭瞬间也能送达
+- 指标以**整文档**口径采集：开启视图过渡（ClientRouter）软导航不重置会话，TTFB/FCP 仅首载有意义，LCP/CLS/INP 反映整个文档生命周期
+- demo 站默认不开启（无真实端点，指向占位地址只会刷控制台报错）
 
 ## 使用效果
 

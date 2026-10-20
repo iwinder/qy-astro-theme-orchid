@@ -8,15 +8,18 @@ import GoogleAnalytics from "./analytics/GoogleAnalytics.astro";
 import La51Analytics from "./analytics/La51Analytics.astro";
 import MicrosoftClarity from "./analytics/MicrosoftClarity.astro";
 import UmamiAnalytics from "./analytics/UmamiAnalytics.astro";
+import WebVitals from "./analytics/WebVitals.astro";
 
 const a = config.analytics;
 const showGA = a.googleAnalyticsId.trim() !== "";
 const showClarity = a.microsoftClarityId.trim() !== "";
 const showUmami = a.umami.websiteId.trim() !== "";
 const show51la = a.la51.id.trim() !== "";
+const showWebVitals = a.webVitals.endpoint.trim() !== "";
 ---
 
 {showGA && <GoogleAnalytics analyticsId={a.googleAnalyticsId} />}
 {showClarity && <MicrosoftClarity clarityId={a.microsoftClarityId} />}
 {showUmami && <UmamiAnalytics {...a.umami} />}
 {show51la && <La51Analytics analyticsId={a.la51.id} sdkUrl={a.la51.sdkUrl} ck={a.la51.ck} autoTrack={a.la51.autoTrack} hashMode={a.la51.hashMode} screenRecord={a.la51.screenRecord} />}
+{showWebVitals && <WebVitals {...a.webVitals} />}

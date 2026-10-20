@@ -770,7 +770,7 @@ export const themeConfigSchema = z.object({
 			displayCount: -1,
 		}),
 	/**
-	 * 站点统计（P1-16）：GA / Clarity / Umami / 51la 四选多。
+	 * 站点统计（P1-16）：GA / Clarity / Umami / 51la 四选多，另配 Web Vitals 通用上报。
 	 * 对应 ID 留空即不注入该统计脚本，全部留空零副作用。
 	 */
 	analytics: z
@@ -842,6 +842,19 @@ export const themeConfigSchema = z.object({
 					hashMode: false,
 					screenRecord: true,
 				}),
+			/** Web Vitals 通用上报（§4.91）：与统计厂商无关，POST JSON 到自建端点 */
+			webVitals: z
+				.object({
+					/** 上报端点（载荷以 text/plain 载 JSON 发送，免 CORS 预检；留空不采集） */
+					endpoint: z.string().default(""),
+					/** 站点标识，随载荷一起上报（多站共用一个端点时区分来源） */
+					siteId: z.string().default(""),
+					/** 采样率 0~1，默认全量 */
+					sampleRate: z.number().min(0).max(1).default(1),
+					/** 控制台打印上报载荷（调试用） */
+					debug: z.boolean().default(false),
+				})
+				.default({ endpoint: "", siteId: "", sampleRate: 1, debug: false }),
 		})
 		.default({
 			googleAnalyticsId: "",
@@ -868,6 +881,7 @@ export const themeConfigSchema = z.object({
 				hashMode: false,
 				screenRecord: true,
 			},
+			webVitals: { endpoint: "", siteId: "", sampleRate: 1, debug: false },
 		}),
 	/* ---------- LaTeX 数学公式（M3b-b4） ---------- */
 	latex: z
