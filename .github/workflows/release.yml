@@ -17,7 +17,9 @@ permissions:
 
 jobs:
   publish:
-    runs-on: ubuntu-latest
+    # 固定 24.04：ubuntu-latest 已于 2026-10-19 迁移 Ubuntu 26，实测导致
+    # npm publish（provenance/OIDC 上传阶段）静默 exit 1（v0.2.1 连续失败）
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -32,9 +34,10 @@ jobs:
           cache: pnpm
           registry-url: https://registry.npmjs.org
 
-      # Node 22 自带 npm 10.x，trusted publishing 的 OIDC 发布需 npm ≥ 11.5
+      # Node 22 自带 npm 10.x，trusted publishing 的 OIDC 发布需 npm ≥ 11.5；
+      # 钉住具体版本保证发版环境可复现（0.2.0 即用 11.21.1 发布成功）
       - name: Upgrade npm
-        run: npm install -g npm@11
+        run: npm install -g npm@11.21.1
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -66,27 +69,22 @@ jobs:
             echo "publish ok"
           else
             CODE=$?
-            tail -n 25 /tmp/npm-publish.log | tr -d '\000-\010\013\014\016-\037\177' | while IFS= read -r line; do
-              [ -n "$line" ] && echo "::error::${line:0:180}"
+            grep -aiE 'npm error|[0-9]{3} [A-Z]|forbidden|denied|EPERM|EACCES|OIDC|provenance' /tmp/npm-publish.log | head -n 5 | tr -d '\000-\010\013\014\016-\037\177' | while IFS= read -r line; do
+              ESC=${line//%/%25}; ESC=${ESC//$'\r'/%0D}
+              echo "::error::${ESC:0:180}"
             done
+            echo "::error::publish exit=$CODE log_lines=$(wc -l < /tmp/npm-publish.log)"
             exit "$CODE"
           fi
 
-      # 排障兜底：publish 失败时把完整日志提交到 publish-debug 分支，
-      # contents API 匿名可读（注解可能被 runner 丢弃，分支提交保证可见）。
-      - name: Dump publish log to publish-debug branch
+      # 排障兜底：完整日志传 artifact（诊断期临时步骤，修复后移除）。
+      - name: Upload publish log artifact
         if: failure()
-        run: |
-          if [ -f /tmp/npm-publish.log ]; then
-            git config user.email "ci@windcoder.com"
-            git config user.name "release-debug"
-            git checkout -B publish-debug
-            mkdir -p .publish-debug
-            cp /tmp/npm-publish.log .publish-debug/last.log
-            git add .publish-debug/last.log
-            git commit -m "debug: publish log ($(date -u +%FT%TZ))"
-            git push -f origin publish-debug
-          fi
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-log
+          path: /tmp/npm-publish.log
+          if-no-files-found: ignore
 
       # tag 的 source code 归档是 GitHub 平台固定行为（git archive 整仓快照，
       # 不可定制成子目录），这里把 npm pack 产出的主题包 tarball 挂到
