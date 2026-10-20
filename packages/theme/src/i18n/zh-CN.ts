@@ -90,6 +90,12 @@ const zhCN = {
 	avatarAlt: "{name} 的头像",
 	noFriends: "还没有友链",
 	applyFriend: "申请友链",
+	/* 番组追番页（§4.93） */
+	bangumiEmpty: "还没有在看中的番剧",
+	bangumiFail: "番组数据拉取失败，请重新构建站点后重试",
+	epProgress: "看到 {n} / {total} 集",
+	epProgressOpen: "看到 {n} 集",
+	myRate: "我的评分 {n}",
 	guestbook: "留言板",
 	guestbookSub: "欢迎留下你的足迹",
 	commentComingSoon: "评论区即将开放，敬请期待。",

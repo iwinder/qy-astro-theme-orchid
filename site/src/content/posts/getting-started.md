@@ -156,6 +156,7 @@ site/
 | `analyticsConfig.ts` | 访问统计（四家） | [站点统计](/posts/analytics/) |
 | `advertisementConfig.ts` | 侧栏广告位 | [广告位](/posts/advertisement/) |
 | `friendsConfig.ts` | 友链页 | [友链](/posts/friends/) |
+| `bangumiConfig.ts` | 追番页（bgm.tv 在看收藏） | [追番页](/posts/bangumi/) |
 | `sponsorConfig.ts` | 赞助页 | [赞助](/posts/sponsor/) |
 | `galleryConfig.ts` | 画廊页 | [画廊](/posts/gallery/) |
 | `rssConfig.ts` | RSS 订阅（条数与全文输出） | [RSS 订阅](/posts/rss/) |

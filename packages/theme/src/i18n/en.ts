@@ -77,6 +77,12 @@ const en: Record<UiKey, string> = {
 	avatarAlt: "Avatar of {name}",
 	noFriends: "No friend links yet",
 	applyFriend: "Apply for a link",
+	/* Bangumi watching page (§4.93) */
+	bangumiEmpty: "Nothing being watched yet",
+	bangumiFail: "Failed to fetch Bangumi data. Rebuild the site to retry.",
+	epProgress: "Ep. {n} / {total}",
+	epProgressOpen: "Ep. {n}",
+	myRate: "My rating {n}",
 	guestbook: "Guestbook",
 	guestbookSub: "Leave your trace here",
 	commentComingSoon: "Comments are coming soon. Stay tuned.",

@@ -1,0 +1,110 @@
+---
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import config from "virtual:theme/config";
+import { t } from "../i18n/index.js";
+
+/* 番组追番页（§4.93）：构建期从 bgm.tv v0 API 拉取用户「在看」动画收藏，
+   渲染为静态页。外部依赖 fail-soft：请求失败不中断构建，页面照常生成并提示。 */
+
+interface BgmSubject {
+	id: number;
+	name: string;
+	name_cn?: string;
+	score?: number;
+	eps?: number;
+	images?: { common?: string; medium?: string; large?: string };
+}
+interface BgmCollection {
+	updated_at?: string;
+	subject: BgmSubject;
+	ep_status?: number;
+	rate?: number;
+}
+
+const LIMIT = 50;
+/* 50 * 20 = 1000 条安全上限：防止分页异常（total 失真）导致构建挂死 */
+const MAX_PAGES = 20;
+const UA =
+	"astro-theme-orchid (+https://github.com/iwinder/qy-astro-theme-orchid)";
+
+let items: BgmCollection[] = [];
+let failed = false;
+
+try {
+	const headers = { "User-Agent": UA, Accept: "application/json" };
+	for (let offset = 0; offset < LIMIT * MAX_PAGES; offset += LIMIT) {
+		const url = `https://api.bgm.tv/v0/users/${config.bangumi.userId}/collections?subject_type=2&type=3&limit=${LIMIT}&offset=${offset}`;
+		const res = await fetch(url, {
+			headers,
+			signal: AbortSignal.timeout(10_000),
+		});
+		if (!res.ok) throw new Error(`bgm.tv responded ${res.status}`);
+		const page = (await res.json()) as { data?: BgmCollection[] };
+		const batch = page.data ?? [];
+		items = items.concat(batch);
+		if (batch.length < LIMIT) break;
+	}
+	/* 最近在看优先：按收藏更新时间倒序 */
+	items.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+} catch {
+	failed = true;
+}
+
+/* 进度文案：eps 有值时 clamp 到总集数并显示 x/y，否则只显示已看集数 */
+function progress(item: BgmCollection): string {
+	const eps = item.subject.eps ?? 0;
+	const watched = item.ep_status ?? 0;
+	return eps > 0
+		? t("epProgress", {
+				n: Math.min(watched, eps),
+				total: eps,
+			})
+		: t("epProgressOpen", { n: watched });
+}
+---
+
+<BaseLayout title={config.bangumi.title} description={config.bangumi.description} page="bangumi">
+  <header class="archive-head reveal">
+    <h1 class="page-title">{config.bangumi.title}</h1>
+    {
+      config.bangumi.description && (
+        <p class="page-sub">{config.bangumi.description}</p>
+      )
+    }
+  </header>
+
+  {
+    items.length > 0 ? (
+      <div class="bangumi-grid reveal">
+        {items.map((item) => {
+          const s = item.subject;
+          const cover = s.images?.common ?? s.images?.medium ?? s.images?.large;
+          return (
+            <a
+              class="bangumi-card card"
+              href={`https://bgm.tv/subject/${s.id}`}
+              target="_blank"
+              rel="noopener nofollow"
+            >
+              <div class="bangumi-cover">
+                {cover && <img src={cover} alt={s.name_cn || s.name} loading="lazy" decoding="async" />}
+                {typeof s.score === "number" && s.score > 0 && (
+                  <span class="bangumi-score">{s.score.toFixed(1)}</span>
+                )}
+              </div>
+              <div class="bangumi-title">{s.name_cn || s.name}</div>
+              <div class="bangumi-meta">
+                <span class="bangumi-progress">{progress(item)}</span>
+                {typeof item.rate === "number" && item.rate > 0 && (
+                  <span class="bangumi-rate">{t("myRate", { n: item.rate })}</span>
+                )}
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    ) : (
+      <p class="tag-empty reveal">{failed ? t("bangumiFail") : t("bangumiEmpty")}</p>
+    )
+  }
+</BaseLayout>

@@ -132,6 +132,22 @@ export const themeConfigSchema = z.object({
 			blur: 0,
 		}),
 	/**
+	 * 番组追番页（§4.93）：构建期从 bgm.tv v0 API 拉取用户「在看」动画收藏，
+	 * 渲染静态 /bangumi 页。enabled 与 userId 同时满足才注入路由（默认关）。
+	 */
+	bangumi: z
+		.object({
+			/** 总开关：与 userId 同时非空才生成 /bangumi 路由（默认关） */
+			enabled: z.boolean().default(false),
+			/** bgm.tv 用户名（https://bgm.tv/user/{username} 中的 username） */
+			userId: z.string().default(""),
+			/** 页面标题 */
+			title: z.string().default("追番"),
+			/** 页面副标题（留空不渲染） */
+			description: z.string().default(""),
+		})
+		.default({ enabled: false, userId: "", title: "追番", description: "" }),
+	/**
 	 * hue 调色面板（M3b-b5）：导航栏调色按钮 + 预设色板 + hue 滑杆。
 	 * 运行时覆写 --accent-h（s/l 保持配置值），持久化 localStorage('qy-hue')。
 	 * 色板预设为代码级常量，不进 schema。

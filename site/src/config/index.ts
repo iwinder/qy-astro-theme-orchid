@@ -10,6 +10,7 @@ import { analyticsConfig } from "./analyticsConfig";
 import { announcementConfig } from "./announcementConfig";
 import { archive } from "./archiveConfig";
 import { background } from "./backgroundConfig";
+import { bangumi } from "./bangumiConfig";
 import { banner } from "./bannerConfig";
 import { commentConfig } from "./commentConfig";
 import { emailProtection } from "./emailProtectionConfig";
@@ -84,6 +85,7 @@ export const themeConfig = {
 	profile: profileConfig,
 	license: licenseConfig,
 	friends: friendsConfig,
+	bangumi,
 	gallery: galleryConfig,
 	sponsor: sponsorConfig,
 	comment: commentConfig,
@@ -99,6 +101,7 @@ export {
 	announcementConfig,
 	archive,
 	background,
+	bangumi,
 	banner,
 	codeTheme,
 	commentConfig,

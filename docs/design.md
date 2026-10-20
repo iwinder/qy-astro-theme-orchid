@@ -1725,6 +1725,27 @@ C 批剩余项第 4 件，兑现决策 4 中「暂时舍弃」的背景壁纸特
 
 **验证（§4.92）**：biome（format/import 排序 --write 后 0 error）、`pnpm --filter site check` 0/0/0；node 26 type-stripping 直跑 schema parse 3 断言（全缺省补全默认值 / 显式形态保留 / banner 回归不受影响）；demo 开启态 `CI=true build` exit 0——dist 首页 div 四变量注入（`--wp-dim:0.45;--wp-dim-dark:0.65;--wp-blur:0px;--wp-scale:1.000`）、img src picsum 种子图、CSS 产物四条规则齐（含 `html.dark` 暗遮罩）、69 个 HTML 页全量渲染；临时 `enabled:false` 重建——全 dist 0 页注入（CSS 属全局样式静态打包保留，无 DOM 引用即无效果，符合预期），还原后复归开启态。
 
+### 4.93 C9 番组追番页 bangumi（✅ 2026-10-20 完成）
+
+C 批剩余项第 5 件，兑现决策 4 中「暂时舍弃」的番组追番页：构建期从 bgm.tv v0 API 拉取用户「在看」动画收藏，渲染纯静态 `/bangumi` 页——访客端零请求零 JS，外部依赖只存在于构建机。
+
+**方案**：
+- **schema**：顶层新增 `bangumi` section（`background` 之后、`huePanel` 之前）：`enabled`（默认 **false**）、`userId`、`title`（默认「追番」）、`description`（默认空）；**不进 pages.\***——单页功能门控 `enabled && userId.trim()` 双条件即注入 `/bangumi`，关闭则路由完全不生成
+- **路由（routes/bangumi.astro）**：构建期分页拉取 `GET /v0/users/{userId}/collections?subject_type=2&type=3&limit=50&offset=N`（LIMIT 50、MAX_PAGES 20 即 1000 条安全上限、单请求 `AbortSignal.timeout(10s)`、自定义 UA + Accept 头）；收藏按 `updated_at` 倒序；**fail-soft**——任何失败只置 failed 标志渲染空态提示，不中断构建
+- **卡片**：3/4 封面（images.common 回退 medium/large）+ bgm 全站评分徽标（>0 时 toFixed(1)）+ 标题（name_cn 回退 name，两行截断）+ 进度（eps 有值 clamp 后「看到 n / total 集」，无值「看到 n 集」）+ 我的评分（rate>0）+ 条目链接 `rel="noopener nofollow"`
+- **CSS（global.css §3.5c）**：`.bangumi-grid` auto-fill minmax(150px,1fr)；封面 hover 微放大；`html.dark .bangumi-cover img` 柔和压暗降饱和（类级固定，无配置项——C5 的 data-external 方案仅 prose 域，此处独立实现）
+
+**设计决策**：
+- **顶层 section 不进 pages**：pages.\* 全是有 spec 正文的站点自留页，追番页数据全来自 bgm.tv 无正文，且路由条件是 enabled 之外的 userId 复合条件，独立 section 语义更准
+- **构建期拉取而非客户端**：访客端零请求零延迟零外部依赖；代价是数据更新需重新构建——对「在看」低频更新完全可接受
+- **fail-soft 而非 fail-fast**：外部服务故障不应挂掉部署流水线，页面空态提示比构建报错更友好
+- **demo 站不开（惯例例外）**：构建期外部 API 依赖破坏 demo 离线可复现性，与 C6 check-friends 不挂 build 同理；验证用 userId=sai 临时开启
+- **bgm.tv 必须带自定义 UA**：v0 API 无 UA 直接 403（实测），UA 取「包名 + 仓库地址」惯例格式
+
+**改动**：schema.ts（bangumi section）、i18n zh-CN/en 各 5 键（bangumiEmpty/bangumiFail/epProgress/epProgressOpen/myRate）、routes/bangumi.astro（新建）、index.ts（路由注入双条件）、global.css（§3.5c）、site 新增 bangumiConfig.ts（demo 关）并接入 config/index.ts、新文 bangumi.md（seriesOrder 30）、getting-started.md 配置表加 bangumiConfig 行、README 特性与功能组加「追番」。
+
+**验证（§4.93）**：biome --write 后全量 0 error；astro check 0 errors/0 warnings/0 hints；默认关 `CI=true build` exit 0——dist 无 /bangumi 目录、0 页注入 bangumi-grid（CSS 静态打包保留，同 C7/C8 口径）；临时开启 userId=sai 重建 exit 0——dist/bangumi/index.html 渲染 30 卡片（封面/标题/进度/评分徽标/条目链接各 30），进度文案「看到 13 / 26 集」与 API 实测样本一致，batch 30 < LIMIT 50 分页边界 break 正确；还原 demo 关闭态。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

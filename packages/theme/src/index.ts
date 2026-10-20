@@ -344,6 +344,10 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 				if (config.pages.moments) {
 					routes.push(["/moments/[...page]", "moments/[...page].astro"]);
 				}
+				// 番组追番页（§4.93）：构建期拉 bgm.tv「在看」收藏；enabled + userId 双条件才注入
+				if (config.bangumi.enabled && config.bangumi.userId.trim()) {
+					routes.push(["/bangumi", "bangumi.astro"]);
+				}
 				// 相关/随机文章推荐（P1-12）：随机栏数据源
 				if (config.relatedPosts.enabled) {
 					routes.push(["/api/allPostMeta.json", "api/allPostMeta.json.ts"]);
