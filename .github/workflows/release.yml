@@ -56,9 +56,21 @@ jobs:
           pnpm --filter site lqip
           pnpm --filter site build
 
+      # 失败时把 npm 错误输出为 ::error:: 注解（对公开仓库可经 API 匿名读取，
+      # 免登录即可排障；成功路径与原 npm publish --provenance 完全一致）。
       - name: Publish to npm（trusted publishing OIDC，无 token）
-        run: npm publish --provenance
         working-directory: packages/theme
+        run: |
+          set -o pipefail
+          if npm publish --provenance 2>&1 | tee /tmp/npm-publish.log; then
+            echo "publish ok"
+          else
+            CODE=$?
+            tail -n 25 /tmp/npm-publish.log | cut -c1-200 | while IFS= read -r line; do
+              [ -n "$line" ] && echo "::error::$line"
+            done
+            exit "$CODE"
+          fi
 
       # tag 的 source code 归档是 GitHub 平台固定行为（git archive 整仓快照，
       # 不可定制成子目录），这里把 npm pack 产出的主题包 tarball 挂到
