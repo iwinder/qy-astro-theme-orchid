@@ -1,6 +1,6 @@
 {
 	"name": "@windcoder/astro-theme-orchid",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "清新简约的 Astro 博客主题，以 Integration 形式提供，支持版本化升级与组件覆盖",
 	"type": "module",
 	"keywords": [
@@ -31,7 +31,9 @@
 		"./styles/*": "./src/styles/*"
 	},
 	"files": [
-		"src"
+		"src",
+		"scripts",
+		"!scripts/*.test.mjs"
 	],
 	"peerDependencies": {
 		"@iconify-json/lucide": "^1.2.0",
@@ -61,11 +63,11 @@
 		"remark-math": "^6.0.0",
 		"satori": "^0.47.1",
 		"sharp": "^0.35.5",
+		"subset-font": "^2.5.0",
 		"tailwindcss": "^4.3.2"
 	},
 	"devDependencies": {
 		"@types/pako": "^2.0.3",
-		"@types/qrcode": "^1.5.6",
-		"subset-font": "^2.5.0"
+		"@types/qrcode": "^1.5.6"
 	}
 }

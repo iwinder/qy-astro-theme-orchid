@@ -94,6 +94,9 @@ importers:
       sharp:
         specifier: ^0.35.5
         version: 0.35.5(@types/node@26.6.5)
+      subset-font:
+        specifier: ^2.5.0
+        version: 2.9.0
       tailwindcss:
         specifier: ^4.3.2
         version: 4.3.3
@@ -104,9 +107,6 @@ importers:
       '@types/qrcode':
         specifier: ^1.5.6
         version: 1.5.6
-      subset-font:
-        specifier: ^2.5.0
-        version: 2.9.0
 
   site:
     dependencies:
