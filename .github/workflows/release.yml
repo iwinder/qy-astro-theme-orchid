@@ -66,10 +66,26 @@ jobs:
             echo "publish ok"
           else
             CODE=$?
-            tail -n 25 /tmp/npm-publish.log | cut -c1-200 | while IFS= read -r line; do
-              [ -n "$line" ] && echo "::error::$line"
+            tail -n 25 /tmp/npm-publish.log | tr -d '\000-\010\013\014\016-\037\177' | while IFS= read -r line; do
+              [ -n "$line" ] && echo "::error::${line:0:180}"
             done
             exit "$CODE"
+          fi
+
+      # 排障兜底：publish 失败时把完整日志提交到 publish-debug 分支，
+      # contents API 匿名可读（注解可能被 runner 丢弃，分支提交保证可见）。
+      - name: Dump publish log to publish-debug branch
+        if: failure()
+        run: |
+          if [ -f /tmp/npm-publish.log ]; then
+            git config user.email "ci@windcoder.com"
+            git config user.name "release-debug"
+            git checkout -B publish-debug
+            mkdir -p .publish-debug
+            cp /tmp/npm-publish.log .publish-debug/last.log
+            git add .publish-debug/last.log
+            git commit -m "debug: publish log ($(date -u +%FT%TZ))"
+            git push -f origin publish-debug
           fi
 
       # tag 的 source code 归档是 GitHub 平台固定行为（git archive 整仓快照，
