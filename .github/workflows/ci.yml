@@ -55,7 +55,17 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Test（node:test 内置运行器，字体子集化脚本）
-        run: pnpm test
+        run: |
+          set -o pipefail
+          pnpm test 2>&1 | tee /tmp/test.log
+
+      # 排障临时步骤（同 9428641 惯例）：CI 挂 Test 而本地全绿，
+      # 匿名拉不到完整日志，经 ::error:: 注解带出关键报错，定位后移除
+      - name: 失败注解：测试日志关键段
+        if: failure()
+        run: |
+          test -f /tmp/test.log || { echo "::error::无 /tmp/test.log"; exit 0; }
+          tail -n 60 /tmp/test.log | grep -anE '✖|not ok|Error|ℹ fail|ERR' | head -n 9 | cut -c1-190 | while IFS= read -r l; do echo "::error::$l"; done
 
       - name: Type check（astro check）
         run: pnpm check
