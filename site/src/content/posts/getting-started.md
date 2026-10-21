@@ -131,8 +131,7 @@ site/
 |---|---|---|
 | `siteConfig.ts` | 站点基础信息：标题、域名、主题色、页宽、页脚 | [站点基础配置](/posts/site-config/) |
 | `navBarConfig.ts` | 导航栏菜单与外链 | [导航栏](/posts/navbar/) |
-| `bannerConfig.ts` | 首页横幅（大图与语录） | [首页横幅](/posts/banner/) |
-| `backgroundConfig.ts` | 全站背景壁纸（fixed 视口背景） | [首页横幅](/posts/banner/#全站背景壁纸-background) |
+| `wallpaperConfig.ts` | 统一壁纸：横幅/全屏/覆盖透明/纯色四模式、视频与轮播 | [壁纸](/posts/wallpaper/) |
 | `sidebarConfig.ts` | 侧边栏 widget 布局 | [侧边栏与小组件](/posts/sidebar/) |
 | `profileConfig.ts` | 个人资料卡与社交图标 | [个人资料卡](/posts/profile/) |
 | `licenseConfig.ts` | 文章版权声明 | [版权声明](/posts/license/) |
@@ -185,7 +184,7 @@ site/
 |---|---|
 | [站点基础配置](/posts/site-config/) | siteConfig 全部键：标题、域名、主题色、页宽、页脚 |
 | [导航栏](/posts/navbar/) | 菜单下拉与外链 |
-| [首页横幅](/posts/banner/) | banner 大图与语录 |
+| [壁纸](/posts/wallpaper/) | 横幅/全屏/覆盖透明/纯色四模式与首页文案 |
 | [侧边栏与小组件](/posts/sidebar/) | 九种 widget 的布局、显隐与专属参数 |
 | [个人资料卡](/posts/profile/) | 资料卡内容与社交图标 |
 | [版权声明](/posts/license/) | 文章版权声明与按篇覆盖 |

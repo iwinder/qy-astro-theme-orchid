@@ -484,6 +484,7 @@ window.addEventListener(
 	() => {
 		updateBackTop();
 		updateReadProgress();
+		updateWallpaperScroll();
 	},
 	{ passive: true },
 );
@@ -814,6 +815,48 @@ doc.addEventListener("click", (e) => {
 		return;
 	}
 
+	/* 壁纸模式循环切换（§4.98）：banner→fullscreen→overlay→none，localStorage 持久化；
+	   banner/fullscreen 解除 homeOnly 隐藏，overlay/none 停视频并回实底导航 */
+	if (target.closest("#wallpaperModeToggle")) {
+		const cur = WP_MODES.indexOf(root.dataset.wallpaperMode || "banner");
+		const next = WP_MODES[(cur + 1) % WP_MODES.length];
+		root.dataset.wallpaperMode = next;
+		syncWallpaperNav(next);
+		const stage = doc.querySelector<HTMLElement>(".wp-stage");
+		if (stage) {
+			if (next === "banner" || next === "fullscreen")
+				delete stage.dataset.wallpaperHidden;
+			else stage.setAttribute("data-wallpaper-hidden", "");
+		}
+		if (next === "overlay" || next === "none") pauseWallpaperVideo();
+		try {
+			localStorage.setItem(WP_KEY, next);
+		} catch {
+			/* ignore */
+		}
+		return;
+	}
+
+	/* 壁纸视频播放/暂停（§4.98） */
+	if (target.closest("#wpPlayerToggle")) {
+		const video = doc.querySelector<HTMLVideoElement>(".wp-video");
+		if (video) {
+			if (video.paused) video.play().catch(() => {});
+			else video.pause();
+		}
+		return;
+	}
+
+	/* 壁纸视频上一段/下一段 */
+	if (target.closest("#wpPlayerPrev")) {
+		switchWallpaperVideo(-1);
+		return;
+	}
+	if (target.closest("#wpPlayerNext")) {
+		switchWallpaperVideo(1);
+		return;
+	}
+
 	/* burger 导航 */
 	if (target.closest("#navToggle")) {
 		const nav = doc.getElementById("siteNav");
@@ -1021,6 +1064,208 @@ function initSeriesNav() {
 	}
 }
 
+/* ---------- 壁纸（§4.98）：模式切换 / 图片轮播 / 打字机 / 视频播放器 ---------- */
+const WP_KEY = "qy-wallpaper";
+const WP_MODES = ["banner", "fullscreen", "overlay", "none"];
+// 模块级定时器/游标：VT 换页重复 initWallpaper 时先清后建防泄漏
+let wpCarouselTimer: number | undefined;
+let wpTyperTimer: number | undefined;
+let wpVideoIdx = 0;
+
+function savedWallpaperMode(): string | null {
+	try {
+		const m = localStorage.getItem(WP_KEY);
+		return m && WP_MODES.includes(m) ? m : null;
+	} catch {
+		return null;
+	}
+}
+
+/* 导航栏形态联动：banner/fullscreen 走配置的透明档，overlay/none 回实底 */
+function syncWallpaperNav(mode: string) {
+	root.dataset.wallpaperNav =
+		mode === "banner" || mode === "fullscreen"
+			? root.dataset.wpNavConfig || "solid"
+			: "solid";
+}
+
+/* 恢复访客保存的壁纸模式（after-swap 与 initWallpaper 双入口，幂等）：
+   boot 脚本负责首帧，这里兜底 VT 换页；显式偏好解除 homeOnly 的非首页隐藏 */
+function applySavedWallpaper() {
+	if (root.dataset.wpSwitchable !== "true") return;
+	const m = savedWallpaperMode();
+	if (!m || m === root.dataset.wallpaperMode) return;
+	root.dataset.wallpaperMode = m;
+	syncWallpaperNav(m);
+	const stage = doc.querySelector<HTMLElement>(".wp-stage");
+	if (stage) {
+		if (m === "banner" || m === "fullscreen")
+			delete stage.dataset.wallpaperHidden;
+		else stage.setAttribute("data-wallpaper-hidden", "");
+	}
+}
+
+function pauseWallpaperVideo() {
+	const video = doc.querySelector<HTMLVideoElement>(".wp-video");
+	if (video && !video.paused) video.pause();
+}
+
+/* 图片轮播：desktop/mobile 两组独立游标，--wp-interval 供 kenburns/zoom 动画时长对齐 */
+function initWallpaperCarousel() {
+	const stage = doc.querySelector<HTMLElement>(".wp-stage");
+	if (!stage || stage.dataset.carousel !== "true") return;
+	const groups = Array.from(stage.querySelectorAll<HTMLElement>(".wp-images"));
+	if (groups.length === 0) return;
+	const interval =
+		Math.max(1000, parseInt(stage.dataset.carouselInterval || "5000", 10)) ||
+		5000;
+	stage.style.setProperty("--wp-interval", `${(interval / 1000).toFixed(2)}s`);
+	const cursors = groups.map(() => 0);
+	wpCarouselTimer = window.setInterval(() => {
+		groups.forEach((group, gi) => {
+			const imgs = group.querySelectorAll(".wp-img");
+			if (imgs.length < 2) return;
+			imgs[cursors[gi]].classList.remove("active");
+			cursors[gi] = (cursors[gi] + 1) % imgs.length;
+			imgs[cursors[gi]].classList.add("active");
+		});
+	}, interval);
+}
+
+/* 逐字素切分（中文/emoji 安全），环境不支持时退回码元切分 */
+function splitGraphemes(text: string): string[] {
+	try {
+		const seg = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+		return Array.from(seg.segment(text), (s) => s.segment);
+	} catch {
+		return Array.from(text);
+	}
+}
+
+/* 首页打字机：多条副标题循环（打完→停顿→删完→下一条），单条打完驻留 */
+function initWallpaperTyper() {
+	const el = doc.getElementById("wpTyper");
+	if (!el) return;
+	let subs: string[] = [];
+	try {
+		subs = JSON.parse(el.dataset.subtitles || "[]");
+	} catch {
+		/* ignore */
+	}
+	subs = subs.filter(Boolean);
+	if (subs.length === 0) return;
+	const speed = parseInt(el.dataset.speed || "100", 10) || 100;
+	const delSpeed = parseInt(el.dataset.deleteSpeed || "50", 10) || 50;
+	const pause = parseInt(el.dataset.pauseTime || "2000", 10) || 2000;
+	const chars = subs.map(splitGraphemes);
+	let si = 0;
+	let ci = 0;
+	let deleting = false;
+	const tick = () => {
+		const cur = chars[si];
+		if (!deleting) {
+			ci += 1;
+			el.textContent = cur.slice(0, ci).join("");
+			if (ci >= cur.length) {
+				if (subs.length === 1) return;
+				deleting = true;
+				wpTyperTimer = window.setTimeout(tick, pause);
+			} else {
+				wpTyperTimer = window.setTimeout(tick, speed);
+			}
+		} else {
+			ci -= 1;
+			el.textContent = cur.slice(0, ci).join("");
+			if (ci <= 0) {
+				deleting = false;
+				si = (si + 1) % subs.length;
+				wpTyperTimer = window.setTimeout(tick, 300);
+			} else {
+				wpTyperTimer = window.setTimeout(tick, delSpeed);
+			}
+		}
+	};
+	wpTyperTimer = window.setTimeout(tick, speed);
+}
+
+/* 视频壁纸：初始源依 order/random 选取，自动播放（muted+playsinline 免手势），
+   play/pause 事件同步按钮图标（is-playing）与 stage 播放态（data-video-playing） */
+function initWallpaperVideo() {
+	const video = doc.querySelector<HTMLVideoElement>(".wp-video");
+	if (!video) return;
+	let urls: string[] = [];
+	try {
+		urls = JSON.parse(video.dataset.playerUrls || "[]");
+	} catch {
+		/* ignore */
+	}
+	urls = urls.filter(Boolean);
+	if (urls.length === 0) return;
+	wpVideoIdx =
+		video.dataset.playerMode === "random"
+			? Math.floor(Math.random() * urls.length)
+			: 0;
+	video.src = urls[wpVideoIdx];
+	video.loop = true;
+	const sync = () => {
+		const btn = doc.getElementById("wpPlayerToggle");
+		if (btn) {
+			btn.classList.toggle("is-playing", !video.paused);
+			const label = video.paused ? ui("wpPlay") : ui("wpPause");
+			btn.setAttribute("aria-label", label);
+			btn.title = label;
+		}
+		doc
+			.querySelector(".wp-stage")
+			?.toggleAttribute("data-video-playing", !video.paused);
+	};
+	video.addEventListener("play", sync);
+	video.addEventListener("pause", sync);
+	sync();
+	video.play().catch(() => sync()); // 自动播放被策略拦截时保持暂停态
+}
+
+/* 上一段/下一段视频（初始 idx 由 order/random 决定，此后线性切换） */
+function switchWallpaperVideo(dir: 1 | -1) {
+	const video = doc.querySelector<HTMLVideoElement>(".wp-video");
+	if (!video) return;
+	let urls: string[] = [];
+	try {
+		urls = JSON.parse(video.dataset.playerUrls || "[]");
+	} catch {
+		return;
+	}
+	if (urls.length === 0) return;
+	wpVideoIdx = (wpVideoIdx + dir + urls.length) % urls.length;
+	video.src = urls[wpVideoIdx];
+	video.play().catch(() => {});
+}
+
+/* 导航栏滚动实底（html.wp-scrolled）：顶部走半透明档，滚过阈值回实底 */
+function updateWallpaperScroll() {
+	root.classList.toggle("wp-scrolled", (window.scrollY || 0) > 40);
+}
+
+function initWallpaper() {
+	if (wpCarouselTimer !== undefined) {
+		window.clearInterval(wpCarouselTimer);
+		wpCarouselTimer = undefined;
+	}
+	if (wpTyperTimer !== undefined) {
+		window.clearTimeout(wpTyperTimer);
+		wpTyperTimer = undefined;
+	}
+	applySavedWallpaper();
+	updateWallpaperScroll();
+	if (!doc.querySelector(".wp-stage")) return;
+	initWallpaperCarousel();
+	initWallpaperTyper();
+	initWallpaperVideo();
+}
+
+/* VT swap 替换 <html> 属性后立即恢复偏好模式（不等 page-load，防默认形态闪帧） */
+doc.addEventListener("astro:after-swap", applySavedWallpaper);
+
 /* ---------- 生命周期 ---------- */
 function initPage() {
 	initLightbox();
@@ -1036,6 +1281,7 @@ function initPage() {
 	initCategoryBar();
 	initPostListLayout();
 	initSeriesNav();
+	initWallpaper();
 }
 initPage();
 doc.addEventListener("astro:page-load", initPage);

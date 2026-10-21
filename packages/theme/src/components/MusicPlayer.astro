@@ -27,6 +27,7 @@ interface Props {
 const { music } = Astro.props;
 
 import { t } from "../i18n/index.js";
+import { resolveSiteImage } from "../utils/image.js";
 
 // 客户端动态文案（模式切换 / 播放暂停 aria 需要运行时替换）
 const labels = {
@@ -37,6 +38,15 @@ const labels = {
 	modeRandom: t("musicModeRandom"),
 	noLyrics: t("musicNoLyrics"),
 };
+
+// 封面三格式解析（§4.97）：构建期预解析整份歌单，data-playlist 序列化与
+// SSR 首曲 <img> 共用解析结果——客户端 loadTrack 切歌时拿到的已是产物 URL
+const resolvedPlaylist = await Promise.all(
+	music.playlist.map(async (tr) => ({
+		...tr,
+		cover: tr.cover ? await resolveSiteImage(tr.cover) : tr.cover,
+	})),
+);
 ---
 
 <div
@@ -46,7 +56,7 @@ const labels = {
 	data-position={music.position}
 	data-volume={music.volume}
 	data-play-mode={music.playMode}
-	data-playlist={JSON.stringify(music.playlist)}
+	data-playlist={JSON.stringify(resolvedPlaylist)}
 	data-labels={JSON.stringify(labels)}
 >
 	<!-- 收起态悬浮球：封面旋转 / 无封面唱片图标 -->
@@ -57,8 +67,8 @@ const labels = {
 		aria-label={t("musicOpen")}
 		title={t("musicOpen")}
 	>
-		{music.playlist[0]?.cover ? (
-			<img src={music.playlist[0].cover} alt="" loading="lazy" />
+		{resolvedPlaylist[0]?.cover ? (
+			<img src={resolvedPlaylist[0].cover} alt="" loading="lazy" />
 		) : (
 			<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
 		)}
@@ -68,8 +78,8 @@ const labels = {
 	<div class="mp-panel" role="region" aria-label={t("musicOpen")}>
 		<div class="mp-head">
 			<div class="mp-cover">
-				{music.playlist[0]?.cover ? (
-					<img src={music.playlist[0].cover} alt="" loading="lazy" />
+				{resolvedPlaylist[0]?.cover ? (
+					<img src={resolvedPlaylist[0].cover} alt="" loading="lazy" />
 				) : (
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
 				)}
@@ -718,6 +728,16 @@ const labels = {
 			});
 		}
 
+		/* ---------- widget 联动（§4.100）---------- */
+		// 广播播放状态给侧栏音乐 widget（orchid:music-state）
+		function emitState() {
+			document.dispatchEvent(
+				new CustomEvent("orchid:music-state", {
+					detail: { idx, playing, mode },
+				}),
+			);
+		}
+
 		/* ---------- 核心播放 ---------- */
 		function syncModeUI() {
 			modeBtn.dataset.mode = mode;
@@ -728,6 +748,7 @@ const labels = {
 				mode === "list" ? labels.modeList : mode === "one" ? labels.modeOne : labels.modeRandom;
 			modeBtn.title = label;
 			modeBtn.setAttribute("aria-label", label);
+			emitState();
 		}
 
 		function syncPlayUI() {
@@ -736,6 +757,7 @@ const labels = {
 			playBtn.setAttribute("aria-label", playing ? labels.pause : labels.play);
 			root.classList.toggle("playing", playing);
 			renderPlaylist();
+			emitState();
 		}
 
 		function loadTrack(i: number, autoplay: boolean) {
@@ -759,6 +781,7 @@ const labels = {
 			lrcActive = -1;
 			loadLyrics(tr);
 			renderPlaylist();
+			emitState();
 			if (autoplay) {
 				const v = idx; // 竞态防护：捕获本次序号
 				audio
@@ -887,6 +910,23 @@ const labels = {
 				audio.pause();
 			} else {
 				loadTrack(i, true);
+			}
+		});
+
+		// 侧栏音乐 widget 命令（§4.100）：toggle / next / prev / playIndex / sync
+		document.addEventListener("orchid:music-cmd", (e) => {
+			const cmd = (e as CustomEvent).detail as {
+				type: string;
+				index?: number;
+			};
+			if (cmd.type === "toggle") togglePlay();
+			else if (cmd.type === "next") playNext(false);
+			else if (cmd.type === "prev") playPrev();
+			else if (cmd.type === "playIndex" && typeof cmd.index === "number") {
+				if (cmd.index === idx && playing) audio.pause();
+				else loadTrack(cmd.index, true);
+			} else if (cmd.type === "sync") {
+				emitState();
 			}
 		});
 

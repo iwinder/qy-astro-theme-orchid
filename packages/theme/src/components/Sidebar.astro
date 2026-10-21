@@ -4,13 +4,16 @@ import config from "virtual:theme/config";
 import { Icon } from "astro-icon/components";
 import { t } from "../i18n/index.js";
 import { resolveThemeIcon } from "../icons.js";
+import { resolveSiteImage } from "../utils/image.js";
 import {
 	collectCategories,
 	collectTags,
+	countTotalWords,
 	daysSince,
 	type PostLike,
 } from "../utils.js";
 import Calendar from "./Calendar.astro";
+import MusicWidget from "./MusicWidget.astro";
 import type { TocHeading } from "./Toc.astro";
 
 interface Props {
@@ -38,6 +41,8 @@ const shownTags = tagCount > 0 ? tags.slice(0, tagCount) : tags;
 const tagHidden = tags.length - shownTags.length;
 
 const runDays = config.since ? daysSince(config.since) : null;
+// §4.99 站点信息总字数：全站文章 words 之和（frontmatter words 字段），0 时隐藏该行
+const totalWords = countTotalWords(posts);
 
 // widget 开关与顺序（P2 侧栏改造）：config.sidebar.widgets 数组即渲染顺序；
 // 两个方向的显隐（对齐参考模板 showOnPostPage/hideOnNonPostPage）：
@@ -61,12 +66,18 @@ const annLink = Boolean(ann.link.text && ann.link.url);
 const profile = config.profile;
 const showProfile = Boolean(profile.name || profile.avatar || profile.bio);
 const profileInitial = (profile.name || "?").trim().slice(0, 1) || "?";
+// 头像三格式解析（§4.97）：相对路径相对站点 src/ 构建期解析
+const profileAvatar = profile.avatar
+	? await resolveSiteImage(profile.avatar)
+	: "";
 
 // 广告 widget（P2 保留项，默认关）：enabled + 至少一项内容 + 未过期才渲染
 const ad = config.advertisement;
 const adExpired = ad.expireDate ? new Date() > new Date(ad.expireDate) : false;
 const showAd =
 	ad.enabled && Boolean(ad.image || ad.content || ad.link.text) && !adExpired;
+// 广告图三格式解析（§4.97）
+const adImage = ad.image ? await resolveSiteImage(ad.image) : "";
 
 // 友链 widget（决策 8）：与友链页同源 themeConfig.friends.list；
 // random=false 时 featured 优先、其余按 weight 降序，取前 count 个。
@@ -84,6 +95,12 @@ if (fw?.type === "friends") {
 			});
 	sideFriends = pool.slice(0, sc.count);
 }
+// 友链头像三格式解析（§4.97）：空串跳过（留空用字头像）
+const sideFriendImgs = await Promise.all(
+	sideFriends.map((f) =>
+		f.image ? resolveSiteImage(f.image) : Promise.resolve(""),
+	),
+);
 ---
 
 <aside class="sidebar">
@@ -102,13 +119,13 @@ if (fw?.type === "friends") {
             {profile.url ? (
               <a class="profile-avatar-link" href={profile.url} aria-label={profile.name}>
                 {profile.avatar ? (
-                  <img class="profile-avatar" src={profile.avatar} alt={profile.name} loading="lazy" />
+                  <img class="profile-avatar" src={profileAvatar} alt={profile.name} loading="lazy" />
                 ) : (
                   <span class="profile-avatar avatar-fallback">{profileInitial}</span>
                 )}
               </a>
             ) : profile.avatar ? (
-              <img class="profile-avatar" src={profile.avatar} alt={profile.name} loading="lazy" />
+              <img class="profile-avatar" src={profileAvatar} alt={profile.name} loading="lazy" />
             ) : (
               <span class="profile-avatar avatar-fallback">{profileInitial}</span>
             )}
@@ -132,7 +149,7 @@ if (fw?.type === "friends") {
                   // 未命中跳过图标只渲染文字
                   const icon = lk.icon
                     ? lk.icon.startsWith("<")
-                      ? { html: lk.icon }
+                      ? { html: lk.icon, name: undefined }
                       : resolveThemeIcon(lk.icon)
                     : null;
                   return (
@@ -218,10 +235,10 @@ if (fw?.type === "friends") {
           <section class:list={["side-card", "card", "reveal", { "side-hide-m": w.hideOnMobile }]}>
             <h3>{t('friendLinks')}</h3>
             <div class="side-friends">
-              {sideFriends.map((f) => (
+              {sideFriends.map((f, i) => (
                 <a href={f.site} target="_blank" rel="noopener" title={f.title}>
                   {f.image ? (
-                    <img src={f.image} alt={f.title} loading="lazy" />
+                    <img src={sideFriendImgs[i]} alt={f.title} loading="lazy" />
                   ) : (
                     <span class="avatar-fallback">{f.title.slice(0, 1)}</span>
                   )}
@@ -250,6 +267,9 @@ if (fw?.type === "friends") {
             </nav>
           </section>
         )}
+        {w.type === 'music' && config.music.enabled && config.music.playlist.length > 0 && (
+          <MusicWidget hideMobile={w.hideOnMobile} />
+        )}
         {w.type === 'siteInfo' && (
           <section class:list={["side-card", "card", "reveal", { "side-hide-m": w.hideOnMobile }]}>
             <h3>{t('siteInfo')}</h3>
@@ -258,6 +278,7 @@ if (fw?.type === "friends") {
               <div class="row"><span>{t('categories')}</span><b>{cats.length}</b></div>
               <div class="row"><span>{t('tags')}</span><b>{tags.length}</b></div>
               {runDays !== null && <div class="row"><span>{t('running')}</span><b>{t('daysCount', { n: runDays })}</b></div>}
+              {totalWords > 0 && <div class="row"><span>{t('totalWords')}</span><b>{totalWords.toLocaleString()}</b></div>}
             </div>
           </section>
         )}
@@ -278,10 +299,10 @@ if (fw?.type === "friends") {
               {ad.image &&
                 (ad.imageLink ? (
                   <a href={ad.imageLink} target="_blank" rel="noopener">
-                    <img src={ad.image} alt={ad.imageAlt} loading="lazy" />
+                    <img src={adImage} alt={ad.imageAlt} loading="lazy" />
                   </a>
                 ) : (
-                  <img src={ad.image} alt={ad.imageAlt} loading="lazy" />
+                  <img src={adImage} alt={ad.imageAlt} loading="lazy" />
                 ))}
               {ad.content && <p>{ad.content}</p>}
               {ad.link.text && (

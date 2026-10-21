@@ -187,6 +187,16 @@ const zhCN = {
 	codeFoldCollapse: "收起代码",
 	codeFoldExpanded: "代码已展开",
 	codeFoldCollapsed: "代码已收起",
+	/* 壁纸（§4.98）：Header 控制按钮 aria-label/title */
+	wpPlay: "播放壁纸视频",
+	wpPause: "暂停壁纸视频",
+	wpPrev: "上一段视频",
+	wpNext: "下一段视频",
+	wpMode: "切换壁纸模式",
+	/* 站点信息总字数（§4.99）：Sidebar siteInfo 卡 */
+	totalWords: "总字数",
+	/* 侧栏音乐 widget（§4.100）：标题；播放/切歌等文案复用 music* 键 */
+	musicWidget: "音乐",
 } as const;
 
 export type UiKey = keyof typeof zhCN;

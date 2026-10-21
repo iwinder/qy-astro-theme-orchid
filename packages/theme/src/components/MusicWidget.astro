@@ -1,0 +1,265 @@
+---
+/**
+ * 侧栏音乐 widget（§4.100）：与 MusicPlayer（悬浮播放器）共用 config.music 歌单，
+ * 经 CustomEvent 联动——本组件点击发 orchid:music-cmd，播放器广播 orchid:music-state。
+ * 播放内核仍在 MusicPlayer（transition:persist 跨页常驻），本组件纯遥控 + 状态展示。
+ * 首载时序：播放器于 DOMContentLoaded 初始化，本组件在 astro:page-load 初始化
+ * （晚于播放器），初始化后发 sync 补拉当前状态。
+ */
+import config from "virtual:theme/config";
+import { t } from "../i18n/index.js";
+import { resolveSiteImage } from "../utils/image.js";
+
+interface Props {
+	/** 移动端（<768px）隐藏（widgets 数组项 hideOnMobile） */
+	hideMobile?: boolean;
+}
+
+const { hideMobile = false } = Astro.props;
+
+// 封面三格式解析（§4.97）：构建期解析整份歌单，data-playlist 与 SSR 首曲共用
+const playlist = await Promise.all(
+	config.music.playlist.map(
+		async (tr: { name: string; artist: string; cover?: string }) => ({
+			name: tr.name,
+			artist: tr.artist,
+			cover: tr.cover ? await resolveSiteImage(tr.cover) : "",
+		}),
+	),
+);
+
+const labels = {
+	play: t("musicPlay"),
+	pause: t("musicPause"),
+	prev: t("musicPrev"),
+	next: t("musicNext"),
+};
+---
+
+<section
+	class:list={["side-card", "card", "reveal", "music-widget", { "side-hide-m": hideMobile }]}
+	id="orchid-music-widget"
+	data-playlist={JSON.stringify(playlist)}
+	data-labels={JSON.stringify(labels)}
+>
+	<h3>{t("musicWidget")}</h3>
+	<div class="mw-body">
+		<div class="mw-cover">
+			{playlist[0]?.cover ? (
+				<img class="mw-cover-img" src={playlist[0].cover} alt="" loading="lazy" />
+			) : (
+				<svg class="mw-cover-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+			)}
+		</div>
+		<div class="mw-meta">
+			<span class="mw-name">{playlist[0]?.name ?? ""}</span>
+			<span class="mw-artist">{playlist[0]?.artist ?? ""}</span>
+		</div>
+		<div class="mw-controls">
+			<button class="mw-btn mw-prev" type="button" aria-label={labels.prev} title={labels.prev}>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 8 12l10 6V6Z" fill="currentColor" stroke="none"/><path d="M6 5v14"/></svg>
+			</button>
+			<button class="mw-btn mw-play" type="button" aria-label={labels.play} title={labels.play}>
+				<svg class="ic-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5-11-6.5Z"/></svg>
+				<svg class="ic-pause" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6.5" y="5" width="3.5" height="14" rx="1"/><rect x="14" y="5" width="3.5" height="14" rx="1"/></svg>
+			</button>
+			<button class="mw-btn mw-next" type="button" aria-label={labels.next} title={labels.next}>
+				<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 6 10 6L6 18V6Z" fill="currentColor" stroke="none"/><path d="M18 5v14"/></svg>
+			</button>
+		</div>
+	</div>
+</section>
+
+<style>
+	.mw-body {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+	.mw-cover {
+		width: 52px;
+		height: 52px;
+		flex: none;
+		border-radius: 50%;
+		overflow: hidden;
+		display: grid;
+		place-items: center;
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		color: var(--accent);
+	}
+	.mw-cover img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+	}
+	.mw-cover svg {
+		width: 22px;
+		height: 22px;
+	}
+	.music-widget.playing .mw-cover img {
+		animation: mw-spin 12s linear infinite;
+	}
+	@keyframes mw-spin {
+		to {
+			transform: rotate(360deg);
+		}
+	}
+	.mw-meta {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+	.mw-name {
+		font-size: 14px;
+		font-weight: 600;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.mw-artist {
+		font-size: 12px;
+		color: var(--muted);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.mw-controls {
+		display: flex;
+		align-items: center;
+		gap: 2px;
+		flex: none;
+	}
+	.mw-btn {
+		display: grid;
+		place-items: center;
+		width: 28px;
+		height: 28px;
+		padding: 0;
+		border: none;
+		border-radius: 50%;
+		background: transparent;
+		color: inherit;
+		cursor: pointer;
+	}
+	.mw-btn:hover {
+		background: color-mix(in srgb, var(--accent) 12%, transparent);
+		color: var(--accent);
+	}
+	.mw-btn svg {
+		width: 16px;
+		height: 16px;
+	}
+	.mw-play svg {
+		width: 18px;
+		height: 18px;
+	}
+	/* 播放/暂停图标切换：playing class 由客户端 applyState 维护 */
+	.mw-play .ic-pause {
+		display: none;
+	}
+	.music-widget.playing .mw-play .ic-play {
+		display: none;
+	}
+	.music-widget.playing .mw-play .ic-pause {
+		display: block;
+	}
+</style>
+
+<script>
+	// 模块级单例：状态缓存跨 VT 换页保留；document 级 state 监听只绑一次
+	// （widget DOM 随页面重建，每次 page-load 重查 DOM 重绑按钮），避免监听器累积
+	type MusicState = { idx: number; playing: boolean };
+	let state: MusicState = { idx: 0, playing: false };
+	let docBound = false;
+
+	function sendCmd(detail: Record<string, unknown>) {
+		document.dispatchEvent(new CustomEvent("orchid:music-cmd", { detail }));
+	}
+
+	// 把当前状态应用到本页 widget DOM（换页后由 init 重新调用）
+	function applyState() {
+		const root = document.getElementById("orchid-music-widget");
+		if (!root) return;
+		let playlist: { name: string; artist: string; cover: string }[] = [];
+		try {
+			playlist = JSON.parse(root.dataset.playlist || "[]");
+		} catch {
+			/* 歌单数据异常时保留 SSR 首曲内容 */
+		}
+		const tr = playlist[state.idx];
+		if (tr) {
+			const nameEl = root.querySelector(".mw-name");
+			const artistEl = root.querySelector(".mw-artist");
+			if (nameEl) nameEl.textContent = tr.name;
+			if (artistEl) artistEl.textContent = tr.artist;
+			let coverImg = root.querySelector<HTMLImageElement>(".mw-cover-img");
+			const coverSvg = root.querySelector(".mw-cover-svg");
+			// SSR 只渲染了首曲封面：当前曲有封面而 DOM 里是图标时动态补 img
+			if (tr.cover && !coverImg && coverSvg) {
+				const img = document.createElement("img");
+				img.className = "mw-cover-img";
+				img.alt = "";
+				coverSvg.replaceWith(img);
+				coverImg = img;
+			}
+			if (coverImg instanceof HTMLImageElement) {
+				if (tr.cover) coverImg.src = tr.cover;
+				coverImg.toggleAttribute("hidden", !tr.cover);
+			}
+			coverSvg?.toggleAttribute("hidden", !!tr.cover);
+		}
+		root.classList.toggle("playing", state.playing);
+		let labels: Record<string, string> = {};
+		try {
+			labels = JSON.parse(root.dataset.labels || "{}");
+		} catch {
+			/* labels 异常时沿用 SSR aria */
+		}
+		const playBtn = root.querySelector<HTMLElement>(".mw-play");
+		if (playBtn) {
+			const label = state.playing ? labels.pause : labels.play;
+			if (label) {
+				playBtn.setAttribute("aria-label", label);
+				playBtn.title = label;
+			}
+		}
+	}
+
+	function initMusicWidget() {
+		const root = document.getElementById("orchid-music-widget");
+		if (!root) return;
+
+		// document 级监听仅绑一次；按钮随 DOM 重建每次绑定
+		if (!docBound) {
+			docBound = true;
+			document.addEventListener("orchid:music-state", (e) => {
+				state = (e as CustomEvent<MusicState>).detail;
+				applyState();
+			});
+		}
+
+		root
+			.querySelector(".mw-play")
+			?.addEventListener("click", () => sendCmd({ type: "toggle" }));
+		root
+			.querySelector(".mw-next")
+			?.addEventListener("click", () => sendCmd({ type: "next" }));
+		root
+			.querySelector(".mw-prev")
+			?.addEventListener("click", () => sendCmd({ type: "prev" }));
+		// 点封面/曲名区 = 播放当前 widget 正显示的曲目
+		root.querySelector(".mw-body")?.addEventListener("click", (e) => {
+			if ((e.target as HTMLElement).closest(".mw-btn")) return;
+			sendCmd({ type: "playIndex", index: state.idx });
+		});
+
+		// 先应用缓存状态再向播放器补拉（播放器 DOM persist 常驻，先于本组件就绪）
+		applyState();
+		sendCmd({ type: "sync" });
+	}
+
+	// ClientRouter 下 astro:page-load 首载与每次导航都会触发
+	document.addEventListener("astro:page-load", initMusicWidget);
+</script>

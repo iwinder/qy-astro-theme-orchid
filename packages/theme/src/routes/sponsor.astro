@@ -2,10 +2,23 @@
 import BaseLayout from "virtual:theme/components/BaseLayout.astro";
 import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
+import { resolveSiteImage } from "../utils/image.js";
 
 const cfg = config.sponsor;
 const methods = cfg.methods.filter((m) => m.enabled);
 const sponsors = cfg.sponsors;
+
+// 收款码/打赏者头像三格式解析（§4.97）：空串跳过
+const methodImgs = await Promise.all(
+	methods.map((m) =>
+		m.image ? resolveSiteImage(m.image) : Promise.resolve(""),
+	),
+);
+const sponsorAvatars = await Promise.all(
+	sponsors.map((s) =>
+		s.avatar ? resolveSiteImage(s.avatar) : Promise.resolve(""),
+	),
+);
 ---
 
 <BaseLayout title={cfg.title} page="sponsor">
@@ -25,7 +38,7 @@ const sponsors = cfg.sponsors;
   {
     methods.length > 0 && (
       <div class="sponsor-grid reveal">
-        {methods.map((m) => (
+        {methods.map((m, i) => (
           <div class="sponsor-method card">
             <div class="sm-name">
               {m.icon && <span class="sm-icon">{m.icon}</span>}
@@ -33,7 +46,7 @@ const sponsors = cfg.sponsors;
             </div>
             {m.description && <p class="sm-desc">{m.description}</p>}
             {m.image ? (
-              <img class="sponsor-qr" src={m.image} alt={t('qrAlt', { name: m.name })} loading="lazy" />
+              <img class="sponsor-qr" src={methodImgs[i]} alt={t('qrAlt', { name: m.name })} loading="lazy" />
             ) : m.link ? (
               <a class="btn sm-link" href={m.link} target="_blank" rel="noopener">
                 {t('goSponsor')}
@@ -58,10 +71,10 @@ const sponsors = cfg.sponsors;
         </h3>
         {sponsors.length > 0 ? (
           <div class="sponsor-list">
-            {sponsors.map((s) => (
+            {sponsors.map((s, i) => (
               <div class="sponsor-item">
                 {s.avatar ? (
-                  <img class="sponsor-item-avatar" src={s.avatar} alt={s.name} loading="lazy" />
+                  <img class="sponsor-item-avatar" src={sponsorAvatars[i]} alt={s.name} loading="lazy" />
                 ) : (
                   <span class="sponsor-item-avatar avatar-fallback">{s.name.slice(0, 1)}</span>
                 )}

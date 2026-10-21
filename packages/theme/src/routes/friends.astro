@@ -3,6 +3,7 @@ import { getEntry, render } from "astro:content";
 import BaseLayout from "virtual:theme/components/BaseLayout.astro";
 import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
+import { resolveSiteImage } from "../utils/image.js";
 
 // 数据源 = themeConfig.friends.list（决策 8：与侧栏友链 widget 同源）
 const friends = config.friends.list
@@ -12,6 +13,13 @@ const friends = config.friends.list
 			? Math.random() - 0.5
 			: b.weight - a.weight,
 	);
+
+// 友链头像三格式解析（§4.97）：空串跳过（留空用字头像）
+const friendImgs = await Promise.all(
+	friends.map((f) =>
+		f.image ? resolveSiteImage(f.image) : Promise.resolve(""),
+	),
+);
 
 // 可选 spec 正文（src/content/spec/friends.md），渲染在卡片列表上方
 const entry = await getEntry("spec", "friends").catch(() => null);
@@ -37,11 +45,11 @@ const apply = config.friends.apply;
   {
     friends.length > 0 ? (
       <div class="friend-grid reveal">
-        {friends.map((f) => (
+        {friends.map((f, i) => (
           <a class="friend-card card" href={f.site} target="_blank" rel="noopener">
             <div class="friend-avatar">
               {f.image ? (
-                <img src={f.image} alt={t('avatarAlt', { name: f.title })} loading="lazy" />
+                <img src={friendImgs[i]} alt={t('avatarAlt', { name: f.title })} loading="lazy" />
               ) : (
                 <span class="avatar-fallback">{f.title.slice(0, 1)}</span>
               )}

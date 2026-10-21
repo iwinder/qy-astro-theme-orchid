@@ -38,6 +38,200 @@ const sidebarWidgetBase = z.object({
 });
 
 /**
+ * 统一壁纸体系（§4.98）：原 banner（§4.42）+ background（§4.92）合并为单段配置，
+ * 四种模式 html[data-wallpaper-mode] 驱动：banner 横幅 / fullscreen 全屏首屏 /
+ * overlay 覆盖透明垫底 / none 纯色不渲染。
+ * 图源遵循三格式约定（§4.97）："/" 开头按 public 路径原样输出；http(s)://、//、data:
+ * 外链原样输出；其余相对路径相对站点 src/ 目录解析（构建期查表，支持 assets 内图片）。
+ * 提取为模块级 const 以便使用函数默认值 .default(() => wallpaperSchema.parse({}))：
+ * Zod 的 .default(x) 在输入缺失时直接取 x、不做二次 parse（v3/v4 行为一致），
+ * 本段嵌套深达 4 层，最外层再写一份完整字面量维护成本过高；改用 parse({}) 在
+ * 运行期递归补齐全部内层默认值（内层各段仍按惯例写显式完整字面量）。
+ */
+const wallpaperSchema = z.object({
+	/** 壁纸模式：banner 横幅 / fullscreen 全屏首屏 / overlay 覆盖透明垫底 / none 纯色 */
+	mode: z.enum(["banner", "fullscreen", "overlay", "none"]).default("banner"),
+	/**
+	 * 是否允许访客在导航栏循环切换壁纸模式（banner→fullscreen→overlay→none），
+	 * 选择持久化到 localStorage('qy-wallpaper')，优先于本配置的 mode。
+	 */
+	switchable: z.boolean().default(false),
+	/** 视频壁纸播放器总开关：false 时不渲染 video 元素与播放控制按钮 */
+	playerEnable: z.boolean().default(false),
+	/** 壁纸图源与视频源（三格式约定见 §4.97） */
+	src: z
+		.object({
+			/** 桌面端图源：多图数组构建期随机取一或开启轮播；空数组 = 无壁纸图 */
+			desktop: z.array(z.string()).default([]),
+			/** 移动端图源（<768px）：留空数组则移动端复用 desktop 层全宽显示 */
+			mobile: z.array(z.string()).default([]),
+			/** 视频源列表（playerEnable 开启时生效） */
+			playerUrl: z.array(z.string()).default([]),
+		})
+		.default({ desktop: [], mobile: [], playerUrl: [] }),
+	/** 各模式共用的行为配置 */
+	common: z
+		.object({
+			/** 壁纸蒙层不透明度（0-1），压暗壁纸保证前景可读 */
+			dimOpacity: z.number().min(0).max(1).default(0.2),
+			/** 暗色模式蒙层不透明度（0-1），暗色下压更暗 */
+			darkDimOpacity: z.number().min(0).max(1).default(0.65),
+			/** 视频播放顺序：order 按列表顺序 / random 随机 */
+			playerMode: z.enum(["order", "random"]).default("random"),
+			/** 首页壁纸文案：banner/fullscreen 叠加渲染在壁纸上；无壁纸时复用为独立 hero 区块 */
+			homeText: z
+				.object({
+					/** 文案总开关：false 时标题与副句都不渲染 */
+					enable: z.boolean().default(true),
+					/** 主标题，<em> 标签内文字以强调色渲染；留空不渲染 */
+					title: z.string().default(""),
+					/** 主标题字号（css 长度） */
+					titleSize: z.string().default("3.8rem"),
+					/** 副句：单条或多条（打字机逐条打字；关闭打字机时多条构建期随机取一条静态展示） */
+					subtitle: z.union([z.string(), z.array(z.string())]).default([]),
+					/** 副句字号（css 长度） */
+					subtitleSize: z.string().default("1.5rem"),
+					/** 打字机效果（作用于副句） */
+					typewriter: z
+						.object({
+							/** 是否启用打字机（false 时副句静态展示） */
+							enable: z.boolean().default(true),
+							/** 打字速度 ms/字素 */
+							speed: z.number().int().min(10).default(100),
+							/** 删除速度 ms/字素 */
+							deleteSpeed: z.number().int().min(10).default(50),
+							/** 打完一条后的停留 ms */
+							pauseTime: z.number().int().min(0).default(2000),
+						})
+						.default({
+							enable: true,
+							speed: 100,
+							deleteSpeed: 50,
+							pauseTime: 2000,
+						}),
+				})
+				.default({
+					enable: true,
+					title: "",
+					titleSize: "3.8rem",
+					subtitle: [],
+					subtitleSize: "1.5rem",
+					typewriter: {
+						enable: true,
+						speed: 100,
+						deleteSpeed: 50,
+						pauseTime: 2000,
+					},
+				}),
+			/** 导航栏随壁纸的透明形态 */
+			navbar: z
+				.object({
+					/**
+					 * semi 顶部半透明+滚动后实底 / semifull 顶部全透明+滚动后半透明 /
+					 * full 恒全透明；壁纸不可见（none 模式或 homeOnly 下非首页）时强制实底
+					 */
+					transparentMode: z.enum(["semi", "semifull", "full"]).default("semi"),
+					/** 透明态是否启用背景模糊 */
+					enableBlur: z.boolean().default(true),
+					/** 透明态背景模糊半径 px */
+					blur: z.number().min(0).max(20).default(5),
+				})
+				.default({ transparentMode: "semi", enableBlur: true, blur: 5 }),
+			/** 底部波浪装饰：true 全端开启 / false 关闭 / 对象分端控制（默认移动端关闭参考站惯例） */
+			waves: z
+				.union([
+					z.boolean(),
+					z.object({
+						desktop: z.boolean().default(true),
+						mobile: z.boolean().default(true),
+					}),
+				])
+				.default(false),
+			/** 底部渐变装饰：true 全端开启 / false 关闭 / 对象分端控制 + 高度 */
+			gradient: z
+				.union([
+					z.boolean(),
+					z.object({
+						desktop: z.boolean().default(true),
+						mobile: z.boolean().default(true),
+						/** 渐变层高度（css 长度） */
+						height: z.string().default("10%"),
+					}),
+				])
+				.default(false),
+			/** 多图轮播（单图无效果）；视频播放中自动暂停轮播 */
+			carousel: z
+				.object({
+					/**
+					 * false：构建期随机取一张（零 JS）；true：全列表渲染 + JS 定时轮换。
+					 * 轮播仅在 banner/fullscreen/overlay 三种图片模式生效。
+					 */
+					enable: z.boolean().default(false),
+					/** 轮换间隔 ms */
+					interval: z.number().int().min(1000).default(5000),
+					/** 过渡效果：fade 淡入淡出 / zoom 缩放 / slide 滑动 / kenburns 缓慢推近 */
+					transitionEffect: z
+						.enum(["fade", "zoom", "slide", "kenburns"])
+						.default("fade"),
+				})
+				.default({ enable: false, interval: 5000, transitionEffect: "fade" }),
+		})
+		.default({
+			dimOpacity: 0.2,
+			darkDimOpacity: 0.65,
+			playerMode: "random",
+			homeText: {
+				enable: true,
+				title: "",
+				titleSize: "3.8rem",
+				subtitle: [],
+				subtitleSize: "1.5rem",
+				typewriter: {
+					enable: true,
+					speed: 100,
+					deleteSpeed: 50,
+					pauseTime: 2000,
+				},
+			},
+			navbar: { transparentMode: "semi", enableBlur: true, blur: 5 },
+			waves: false,
+			gradient: false,
+			carousel: { enable: false, interval: 5000, transitionEffect: "fade" },
+		}),
+	/** banner 模式专属（横幅形态） */
+	banner: z
+		.object({
+			/** 横幅高度（vh） */
+			height: z.number().int().min(10).max(90).default(32),
+			/** true 仅首页显示；false 全站显示（overlay 天然全站，忽略此项） */
+			homeOnly: z.boolean().default(true),
+			/** 图片 object-position（center / center 30% 等） */
+			position: z.string().default("center"),
+		})
+		.default({ height: 32, homeOnly: true, position: "center" }),
+	/** fullscreen 模式专属 */
+	fullscreen: z
+		.object({
+			/** 图片 object-position（center / center 30% 等） */
+			position: z.string().default("center"),
+		})
+		.default({ position: "center" }),
+	/** overlay 模式专属：fixed 垫底，正文卡片半透明透出壁纸 */
+	overlay: z
+		.object({
+			/** 壁纸层 z-index（默认 -1，位于 body 背景之上、内容之下） */
+			zIndex: z.number().default(-1),
+			/** 壁纸整体不透明度（0-1），配合蒙层控制透出强度 */
+			opacity: z.number().min(0).max(1).default(0.8),
+			/** 壁纸模糊半径 px（0-20），模糊时自动轻微放大防止边缘露底 */
+			blur: z.number().min(0).max(20).default(0),
+			/** 正文卡片背景不透明度（0-1）：越小壁纸透出越多 */
+			cardOpacity: z.number().min(0).max(1).default(0.5),
+		})
+		.default({ zIndex: -1, opacity: 0.8, blur: 0, cardOpacity: 0.5 }),
+});
+
+/**
  * 主题配置 schema（astro.config.ts 中 defineTheme({...}) 的入参）
  * 后续新增配置项一律给 default，保证老站点升级后无需改动配置
  */
@@ -54,7 +248,7 @@ export const themeConfigSchema = z.object({
 	 * 文章页由 frontmatter tags 覆盖。留空则不输出该 meta。
 	 */
 	keywords: z.array(z.string()).default([]),
-	/** 导航栏 Logo（§4.20）：标题左侧图片 URL（public 路径或外链），留空只渲染文字标题 */
+	/** 导航栏 Logo（§4.20）：三格式图源（§4.97：public / 外链原样，相对路径相对站点 src/ 解析），留空只渲染文字标题 */
 	logo: z.string().default(""),
 	/** 作者名 */
 	author: z.string().default(""),
@@ -76,61 +270,12 @@ export const themeConfigSchema = z.object({
 	 */
 	pageWidth: z.number().int().min(800).max(1920).default(1600),
 	/**
-	 * 首页 banner（§4.42，hero+壁纸合并单配置）：enabled 总开关，false 时图与文案都不渲染。
-	 * src 配置时渲染 Header 下方下沉横幅（数组构建期随机选一张，零 JS）+ 黑蒙层；
-	 * quote 配置时渲染 hero 文案——有 banner 叠加其上，无 banner 为列表上方独立区块。
+	 * 统一壁纸体系（§4.98，breaking：替代原 banner §4.42 + background §4.92 两段）。
+	 * banner 横幅 / fullscreen 全屏 / overlay 覆盖透明 / none 纯色四模式，
+	 * 详见模块级 wallpaperSchema 注释。函数默认值在 wallpaper 键整体缺失时
+	 * 递归补齐全部内层默认值。
 	 */
-	banner: z
-		.object({
-			/** 总开关：false 时即使配了 src/quote 也不渲染 */
-			enabled: z.boolean().default(true),
-			/** 图源（public 路径或外链）：单图 URL 或多图数组（构建期随机取一）；不配置则无图 */
-			src: z.union([z.string(), z.array(z.string())]).optional(),
-			/** banner 高度（vh） */
-			height: z.number().int().min(10).max(90).default(32),
-			/** 黑蒙层不透明度（0-1），深浅模式同色，保证文字可读 */
-			dimOpacity: z.number().min(0).max(1).default(0.2),
-			/** 图片 object-position（center / center 30% 等） */
-			position: z.string().default("center"),
-			/** true 仅首页显示，false 全站显示 */
-			homeOnly: z.boolean().default(true),
-			/** 主句，<em> 标签内文字会以强调色渲染；留空不渲染 hero 文案 */
-			quote: z.string().default(""),
-			/** 副句 */
-			sub: z.string().default(""),
-		})
-		.default({
-			enabled: true,
-			height: 32,
-			dimOpacity: 0.2,
-			position: "center",
-			homeOnly: true,
-			quote: "",
-			sub: "",
-		}),
-	/**
-	 * 全站背景壁纸（§4.92）：body 级 fixed 视口背景，与顶部 banner（§4.42）相互独立。
-	 * 经遮罩压暗后从页缝与卡片间隙透出；正文卡片保持不透明保证可读。
-	 */
-	background: z
-		.object({
-			/** 总开关：false 时即使配了 src 也不渲染（默认关） */
-			enabled: z.boolean().default(false),
-			/** 图源（public 路径或外链）：单图 URL 或多图数组（构建期随机取一） */
-			src: z.union([z.string(), z.array(z.string())]).optional(),
-			/** 浅色模式遮罩不透明度（0-1），压暗壁纸保证正文可读 */
-			dimOpacity: z.number().min(0).max(1).default(0.45),
-			/** 暗色模式遮罩不透明度（0-1），暗色下压更暗 */
-			darkDimOpacity: z.number().min(0).max(1).default(0.65),
-			/** 壁纸模糊半径 px（0-20）：模糊时自动轻微放大防止边缘露底 */
-			blur: z.number().min(0).max(20).default(0),
-		})
-		.default({
-			enabled: false,
-			dimOpacity: 0.45,
-			darkDimOpacity: 0.65,
-			blur: 0,
-		}),
+	wallpaper: wallpaperSchema.default(() => wallpaperSchema.parse({})),
 	/**
 	 * 番组追番页（§4.93）：构建期从 bgm.tv v0 API 拉取用户「在看」动画收藏，
 	 * 渲染静态 /bangumi 页。enabled 与 userId 同时满足才注入路由（默认关）。
@@ -255,7 +400,7 @@ export const themeConfigSchema = z.object({
 	 */
 	profile: z
 		.object({
-			/** 头像图 URL（留空渲染昵称首字 fallback） */
+			/** 头像图（三格式图源 §4.97；留空渲染昵称首字 fallback） */
 			avatar: z.string().default(""),
 			name: z.string().default(""),
 			bio: z.string().default(""),
@@ -511,7 +656,7 @@ export const themeConfigSchema = z.object({
 					z.object({
 						title: z.string(),
 						site: z.string().url(),
-						/** 头像图（外链或 public 路径；留空用字头像） */
+						/** 头像图（三格式图源 §4.97；留空用字头像） */
 						image: z.string().default(""),
 						desc: z.string().default(""),
 						tags: z.array(z.string()).default([]),
@@ -534,7 +679,7 @@ export const themeConfigSchema = z.object({
 	/**
 	 * 侧栏 widget 体系（P2 侧栏改造）：
 	 * - widgets 数组即渲染顺序，可自由增删/排序/开关；类型：
-	 *   announcement / categories / tags / friends / calendar / toc / siteInfo / advertisement / profile
+	 *   announcement / categories / tags / friends / calendar / toc / siteInfo / advertisement / profile / music
 	 * - 公共配置（开关/显隐/位置）配置在数组项上；组件专属参数统一收进 item 的
 	 *   specificConfig 入口（§4.52，对齐参考项目）：tags.specificConfig.count、
 	 *   friends.specificConfig.count/random、calendar.specificConfig.postTooltip
@@ -562,7 +707,7 @@ export const themeConfigSchema = z.object({
 							type: z.literal("tags"),
 							specificConfig: z
 								.object({ count: z.number().int().min(0).default(12) })
-								.default({}),
+								.default({ count: 12 }),
 						}),
 						/**
 						 * 友链 widget：specificConfig.count 展示数量；random=true 构建期随机取样，
@@ -575,7 +720,7 @@ export const themeConfigSchema = z.object({
 									count: z.number().int().min(1).default(3),
 									random: z.boolean().default(false),
 								})
-								.default({}),
+								.default({ count: 3, random: false }),
 						}),
 						sidebarWidgetBase.extend({
 							type: z.literal("calendar"),
@@ -584,9 +729,14 @@ export const themeConfigSchema = z.object({
 									/** 日历下方文章列表条目悬停显示全文 title（§4.41）；默认关 */
 									postTooltip: z.boolean().default(false),
 								})
-								.default({}),
+								.default({ postTooltip: false }),
 						}),
 						sidebarWidgetBase.extend({ type: z.literal("toc") }),
+						/**
+						 * 音乐 widget（§4.100）：与 MusicPlayer 共用 config.music 歌单，
+						 * 播放器未启用或歌单为空时不渲染；播放状态经 CustomEvent 联动
+						 */
+						sidebarWidgetBase.extend({ type: z.literal("music") }),
 						sidebarWidgetBase.extend({ type: z.literal("siteInfo") }),
 						sidebarWidgetBase.extend({ type: z.literal("advertisement") }),
 						sidebarWidgetBase.extend({ type: z.literal("profile") }),
@@ -595,9 +745,20 @@ export const themeConfigSchema = z.object({
 				.default([
 					{ type: "announcement" },
 					{ type: "categories", position: "sticky" },
-					{ type: "tags", position: "sticky" },
-					{ type: "friends" },
-					{ type: "calendar", hideOnMobile: true, position: "sticky" },
+					// 注意：schema default 值不会二次 parse（default 原样返回），
+					// 因此数组项的 specificConfig 必须显式写全，运行时才有值
+					{
+						type: "tags",
+						position: "sticky",
+						specificConfig: { count: 12 },
+					},
+					{ type: "friends", specificConfig: { count: 3, random: false } },
+					{
+						type: "calendar",
+						hideOnMobile: true,
+						position: "sticky",
+						specificConfig: { postTooltip: false },
+					},
 					{
 						type: "toc",
 						postOnly: true,
@@ -613,9 +774,14 @@ export const themeConfigSchema = z.object({
 			widgets: [
 				{ type: "announcement" },
 				{ type: "categories", position: "sticky" },
-				{ type: "tags", position: "sticky" },
-				{ type: "friends" },
-				{ type: "calendar", hideOnMobile: true, position: "sticky" },
+				{ type: "tags", position: "sticky", specificConfig: { count: 12 } },
+				{ type: "friends", specificConfig: { count: 3, random: false } },
+				{
+					type: "calendar",
+					hideOnMobile: true,
+					position: "sticky",
+					specificConfig: { postTooltip: false },
+				},
 				{ type: "toc", postOnly: true, hideOnMobile: true, position: "sticky" },
 				{ type: "siteInfo" },
 				{ type: "advertisement" },
@@ -637,7 +803,7 @@ export const themeConfigSchema = z.object({
 						name: z.string(),
 						/** 文本/emoji 角标（主题不内置图标依赖） */
 						icon: z.string().default(""),
-						/** 收款码图片（public 路径或外链） */
+						/** 收款码图片（三格式图源 §4.97） */
 						image: z.string().default(""),
 						/** 跳转链接（爱发电/ko-fi 等） */
 						link: z.string().default(""),
@@ -651,6 +817,7 @@ export const themeConfigSchema = z.object({
 				.array(
 					z.object({
 						name: z.string(),
+						/** 头像图（三格式图源 §4.97；留空用字头像） */
 						avatar: z.string().default(""),
 						amount: z.string().default(""),
 						date: z.string().default(""),
@@ -822,7 +989,7 @@ export const themeConfigSchema = z.object({
 		.object({
 			enabled: z.boolean().default(false),
 			title: z.string().default("广告"),
-			/** 广告图（public 路径或外链，留空跳过） */
+			/** 广告图（三格式图源 §4.97，留空跳过） */
 			image: z.string().default(""),
 			/** 点击广告图跳转的链接（留空则图不可点） */
 			imageLink: z.string().default(""),
@@ -1050,6 +1217,7 @@ export const themeConfigSchema = z.object({
 	/**
 	 * favicon 图标列表（§4.30）：数组非空时替换默认 /favicon.svg；
 	 * theme 指定 "light"/"dark" 时按系统深浅色经 media 切换（可配双图标）。
+	 * src 仅支持 public 路径 / 外链（不参与 src/assets 三格式解析，ico 无优化需求）。
 	 */
 	favicon: z
 		.array(
@@ -1079,13 +1247,74 @@ export const themeConfigSchema = z.object({
 	 * 樱花飘落特效（§4.30）：全站 canvas 粒子（程序化花瓣，零贴图资产），
 	 * prefers-reduced-motion 自动停用，页签隐藏暂停。
 	 */
+	/**
+	 * 樱花飘落特效（§4.30 / §4.101 八维参数对齐 Firefly）：全站 canvas 粒子
+	 * （程序化花瓣，零贴图资产），prefers-reduced-motion 自动停用，页签隐藏暂停。
+	 * 注意：外层 default 必须全量展开嵌套值——zod 的 default 原样返回不二次 parse，
+	 * 写 `.default({})` 会导致深层字段运行时缺失。
+	 */
 	sakura: z
 		.object({
 			enabled: z.boolean().default(false),
 			/** 同屏花瓣数 */
 			density: z.number().int().min(1).max(200).default(24),
+			/** 飘落轮数：-1 无限循环；>=1 时落满轮数后不再重生，花瓣清空即停止动画 */
+			limitTimes: z.number().int().min(-1).default(-1),
+			/** canvas 层级（z-index），默认 100（低于 Header/悬浮球） */
+			zIndex: z.number().int().default(100),
+			/** 花瓣尺寸倍数区间（相对基准尺寸随机取值） */
+			size: z
+				.object({
+					min: z.number().min(0.1).default(0.5),
+					max: z.number().min(0.1).default(1.1),
+				})
+				.default({ min: 0.5, max: 1.1 }),
+			/** 花瓣透明度区间 */
+			opacity: z
+				.object({
+					min: z.number().min(0).max(1).default(0.3),
+					max: z.number().min(0).max(1).default(0.9),
+				})
+				.default({ min: 0.3, max: 0.9 }),
+			/** 运动速度：horizontal 水平漂移 px/帧（负值向左）、vertical 下落 px/帧、rotation 每帧自转弧度、fadeSpeed 临终淡出速度（不应大于 opacity.min） */
+			speed: z
+				.object({
+					horizontal: z
+						.object({
+							min: z.number().default(-1.7),
+							max: z.number().default(-1.2),
+						})
+						.default({ min: -1.7, max: -1.2 }),
+					vertical: z
+						.object({
+							min: z.number().default(1.5),
+							max: z.number().default(2.2),
+						})
+						.default({ min: 1.5, max: 2.2 }),
+					rotation: z.number().default(0.03),
+					fadeSpeed: z.number().default(0.03),
+				})
+				.default({
+					horizontal: { min: -1.7, max: -1.2 },
+					vertical: { min: 1.5, max: 2.2 },
+					rotation: 0.03,
+					fadeSpeed: 0.03,
+				}),
 		})
-		.default({ enabled: false, density: 24 }),
+		.default({
+			enabled: false,
+			density: 24,
+			limitTimes: -1,
+			zIndex: 100,
+			size: { min: 0.5, max: 1.1 },
+			opacity: { min: 0.3, max: 0.9 },
+			speed: {
+				horizontal: { min: -1.7, max: -1.2 },
+				vertical: { min: 1.5, max: 2.2 },
+				rotation: 0.03,
+				fadeSpeed: 0.03,
+			},
+		}),
 	/**
 	 * 音乐播放器（§4.36）：local 模式，自研播放内核（audio + LRC 解析），
 	 * 根节点 transition:persist 跨页不断播。meting 在线模式预留后续扩展。
@@ -1110,7 +1339,7 @@ export const themeConfigSchema = z.object({
 						artist: z.string().default(""),
 						/** 音频地址（public 路径或外链） */
 						url: z.string(),
-						/** 封面图（可选，缺省渲染唱片图标） */
+						/** 封面图（三格式图源 §4.97，可选，缺省渲染唱片图标） */
 						cover: z.string().optional(),
 						/** 歌词：.lrc 文件路径或内联 LRC 文本（可选，缺省无歌词） */
 						lrc: z.string().optional(),

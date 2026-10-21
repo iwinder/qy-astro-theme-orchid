@@ -191,6 +191,35 @@ html.dark a:hover {
 	backdrop-filter: blur(14px);
 	border-bottom: 1px solid var(--border);
 }
+/* 壁纸导航栏透明形态（§4.98）：html[data-wallpaper-nav] = semi/semifull/full/solid，
+   solid 走上方基础规则无需覆盖；wp-scrolled 由 app.ts 滚动监听切换 */
+html[data-wallpaper-nav="semi"] .site-header {
+	background: color-mix(in srgb, var(--bg) 55%, transparent);
+	-webkit-backdrop-filter: blur(var(--wp-nav-blur, 5px));
+	backdrop-filter: blur(var(--wp-nav-blur, 5px));
+	border-bottom-color: transparent;
+}
+html[data-wallpaper-nav="semi"].wp-scrolled .site-header,
+html[data-wallpaper-nav="semifull"].wp-scrolled .site-header {
+	background: color-mix(in srgb, var(--bg) 78%, transparent);
+	-webkit-backdrop-filter: blur(14px);
+	backdrop-filter: blur(14px);
+	border-bottom-color: var(--border);
+}
+html[data-wallpaper-nav="semifull"] .site-header,
+html[data-wallpaper-nav="full"] .site-header {
+	background: transparent;
+	-webkit-backdrop-filter: none;
+	backdrop-filter: none;
+	border-bottom-color: transparent;
+}
+/* 移动端菜单展开时强制实底，保证导航可读性（特异性高于形态规则） */
+html[data-wallpaper-nav] .site-header:has(.site-nav.open) {
+	background: color-mix(in srgb, var(--bg) 92%, transparent);
+	-webkit-backdrop-filter: blur(14px);
+	backdrop-filter: blur(14px);
+	border-bottom-color: var(--border);
+}
 .header-inner {
 	display: flex;
 	align-items: center;
@@ -652,30 +681,215 @@ html.dark #modeToggle .i-sun {
 	text-align: center;
 }
 
-/* ---------- 3.5 背景壁纸（§4.35，banner 单模式） ---------- */
-/* Header 为 sticky 且背景半透明 + 毛玻璃：负 margin 让横幅上缘滑入 Header 底下 */
-.wallpaper-banner {
+/* ---------- 3.5 统一壁纸体系（§4.98）：单一 .wp-stage + html[data-wallpaper-mode] 四形态 ---------- */
+/* 形态语义：
+   banner     横幅——文档流内定高，负 margin 让上缘滑入 sticky Header 底下；
+   fullscreen 全屏首屏——文档流内 100vh，同样负 margin；
+   overlay    覆盖透明——fixed 垫底（z-index:-1），正文卡片按 --wp-card-opacity 半透明透出壁纸；
+   none       纯色——stage display:none，页面回退 body 画布底色 */
+.wp-stage {
 	position: relative;
-	height: var(--banner-h, 32vh);
-	margin-top: calc(-1 * var(--header-h));
 	overflow: hidden;
 }
-.wallpaper-banner img {
-	display: block;
+html[data-wallpaper-mode="banner"] .wp-stage {
+	height: var(--banner-h, 32vh);
+	margin-top: calc(-1 * var(--header-h));
+}
+html[data-wallpaper-mode="fullscreen"] .wp-stage {
+	height: 100vh;
+	margin-top: calc(-1 * var(--header-h));
+}
+/* overlay：fixed 垫底叠在 body 传播的画布底色之上、内容之下；整体 opacity 控制透出强度 */
+html[data-wallpaper-mode="overlay"] .wp-stage {
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+	opacity: var(--wp-overlay-opacity, 0.8);
+}
+/* none 模式与 homeOnly 非首页：banner/fullscreen 形态下不渲染（overlay 天然全站忽略隐藏） */
+html[data-wallpaper-mode="none"] .wp-stage,
+html[data-wallpaper-mode="banner"] .wp-stage[data-wallpaper-hidden],
+html[data-wallpaper-mode="fullscreen"] .wp-stage[data-wallpaper-hidden] {
+	display: none;
+}
+
+/* 图片层：desktop/mobile 分端渲染；<768px 优先 mobile 源，未配置 mobile 时 desktop 层全宽兜底 */
+.wp-images {
+	position: absolute;
+	inset: 0;
+}
+.wp-img {
 	width: 100%;
 	height: 100%;
 	object-fit: cover;
+	opacity: 0;
+	transition:
+		opacity 0.8s ease,
+		transform 0.8s ease;
+}
+.wp-img.active {
+	opacity: 1;
+}
+html[data-wallpaper-mode="banner"] .wp-img {
 	object-position: var(--banner-pos, center);
 }
-/* 黑蒙层：深浅模式同色（orchid-blog 口径），只保证压暗不改变色调 */
-.wallpaper-dim {
+html[data-wallpaper-mode="fullscreen"] .wp-img {
+	object-position: var(--fs-pos, center);
+}
+.wp-mobile {
+	display: none;
+}
+@media (max-width: 767px) {
+	.wp-mobile {
+		display: block;
+	}
+	/* :has 兜底"未配置 mobile 源"场景：desktop 层后方无 mobile 兄弟时保持显示 */
+	.wp-desktop:has(~ .wp-mobile) {
+		display: none;
+	}
+}
+/* overlay 形态的图片模糊/放大补偿（服务端算好 scale 防边缘露底），与 body 级旧口径一致 */
+html[data-wallpaper-mode="overlay"] .wp-img {
+	filter: blur(var(--wp-overlay-blur, 0px));
+	transform: scale(var(--wp-overlay-scale, 1));
+}
+
+/* 轮播过渡（§4.98 carousel）：opacity 交叉淡化为基础，其余效果经 data-effect 加成；
+   --wp-interval 由 JS 写入 stage，使 kenburns/zoom 动画时长与轮换间隔一致 */
+.wp-stage[data-effect="slide"] .wp-img {
+	transform: translateX(48px);
+}
+.wp-stage[data-effect="slide"] .wp-img.active {
+	transform: translateX(0);
+}
+.wp-stage[data-effect="zoom"] .wp-img.active {
+	animation: wpZoom var(--wp-interval, 5s) ease-out forwards;
+}
+.wp-stage[data-effect="kenburns"] .wp-img.active {
+	animation: wpKenburns var(--wp-interval, 5s) linear forwards;
+}
+@keyframes wpZoom {
+	from {
+		transform: scale(1.1);
+	}
+	to {
+		transform: scale(1);
+	}
+}
+@keyframes wpKenburns {
+	from {
+		transform: scale(1) translate(0, 0);
+	}
+	to {
+		transform: scale(1.12) translate(-1.5%, 1%);
+	}
+}
+
+/* 视频壁纸层：默认不加载不显示（preload=none、无 src），播放态淡入盖过图片层 */
+.wp-video {
 	position: absolute;
 	inset: 0;
-	background: rgba(0, 0, 0, var(--banner-dim, 0.2));
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	opacity: 0;
+	transition: opacity 0.6s ease;
+	pointer-events: none;
 }
-/* hero 叠加（§4.39）：首页 hero 启用时主句/副句居中压到 banner 上；
-   banner 上缘滑入 Header 底下（负 margin），文字区加 padding-top 补偿做视觉居中 */
-.wallpaper-hero {
+.wp-stage[data-video-playing] .wp-video {
+	opacity: 1;
+}
+.wp-stage[data-video-playing] .wp-images {
+	opacity: 0;
+	transition: opacity 0.6s ease;
+}
+/* 播放/暂停双图标显隐（is-playing 由 app.ts 依 video.play/pause 事件切换） */
+#wpPlayerToggle .i-pause {
+	display: none;
+}
+#wpPlayerToggle.is-playing .i-play {
+	display: none;
+}
+#wpPlayerToggle.is-playing .i-pause {
+	display: block;
+}
+
+/* 蒙层：浅/暗双档不透明度（--wp-dim / --wp-dim-dark），压暗壁纸保证前景可读 */
+.wp-dim {
+	position: absolute;
+	inset: 0;
+	background: rgb(0 0 0 / var(--wp-dim, 0.2));
+}
+html.dark .wp-dim {
+	background: rgb(0 0 0 / var(--wp-dim-dark, 0.65));
+}
+
+/* 底部渐变装饰：压暗底缘承托波浪与 hero，分端显隐与图片层同口径 */
+.wp-gradient {
+	position: absolute;
+	inset: auto 0 0 0;
+	height: var(--wp-grad-h, 10%);
+	background: linear-gradient(to top, rgb(0 0 0 / 0.35), transparent);
+	pointer-events: none;
+}
+.wp-gradient.is-mobile {
+	display: none;
+}
+@media (max-width: 767px) {
+	.wp-gradient.is-mobile {
+		display: block;
+	}
+	.wp-gradient.is-desktop {
+		display: none;
+	}
+}
+
+/* 底部波浪装饰：双层错相反向平移（200% 宽无缝循环） */
+.wp-waves {
+	position: absolute;
+	inset: auto 0 0 0;
+	height: 90px;
+	pointer-events: none;
+}
+.wp-waves .wave {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	width: 200%;
+	height: 100%;
+	fill: rgb(255 255 255 / 0.16);
+}
+.wp-waves .wave.w1 {
+	animation: wpWave 14s linear infinite;
+}
+.wp-waves .wave.w2 {
+	fill: rgb(255 255 255 / 0.1);
+	animation: wpWave 22s linear infinite reverse;
+}
+@keyframes wpWave {
+	from {
+		transform: translateX(0);
+	}
+	to {
+		transform: translateX(-50%);
+	}
+}
+.wp-waves.is-mobile {
+	display: none;
+}
+@media (max-width: 767px) {
+	.wp-waves.is-mobile {
+		display: block;
+	}
+	.wp-waves.is-desktop {
+		display: none;
+	}
+}
+
+/* hero 叠加（§4.98 homeText）：主句/副句居中压在壁纸可视区上；字号走 stage 级变量；
+   上缘滑入 Header 底下（负 margin），文字区加 padding-top 补偿做视觉居中 */
+.wp-hero {
 	position: absolute;
 	inset: 0;
 	z-index: 1;
@@ -686,45 +900,65 @@ html.dark #modeToggle .i-sun {
 	padding: var(--header-h) 24px 0;
 	text-align: center;
 }
-.wallpaper-hero .hero-quote {
+.wp-hero .hero-quote {
+	font-size: var(--wp-hero-title-size, 3.8rem);
 	color: #fff;
 	text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
 }
-/* banner 上强调色需提亮：accent-ink 在黑蒙层上偏暗，混入白色保证可读 */
-.wallpaper-hero .hero-quote em {
+/* 壁纸上强调色需提亮：accent-ink 在黑蒙层上偏暗，混入白色保证可读 */
+.wp-hero .hero-quote em {
 	color: color-mix(in srgb, var(--accent) 45%, #fff);
 }
-.wallpaper-hero .hero-sub {
+.wp-hero .hero-sub {
+	min-height: 1.75em;
+	margin-top: 14px;
+	font-size: var(--wp-hero-sub-size, 1.5rem);
 	color: rgba(255, 255, 255, 0.88);
 	text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
 }
+@media (max-width: 767px) {
+	.wp-hero .hero-quote {
+		font-size: clamp(1.8rem, 8vw, var(--wp-hero-title-size, 3.8rem));
+	}
+	.wp-hero .hero-sub {
+		font-size: clamp(1rem, 4.5vw, var(--wp-hero-sub-size, 1.5rem));
+	}
+}
 
-/* ---------- 3.5b 全站背景壁纸（§4.92）：fixed 视口背景，与顶部 banner（§4.42）独立 ---------- */
-/* body 背景传播为画布底色：负 z-index 定位子元素画在其上、内容之下——壁纸加载中仍有底色兜底，
-   body 自身的径向渐变装饰同样在画布层，被壁纸自然覆盖 */
-.site-wallpaper {
-	position: fixed;
-	inset: 0;
-	z-index: -1;
-	overflow: hidden;
-	pointer-events: none;
+/* 打字机光标（§4.98 typewriter）：span.typewriter 文本后闪烁竖线 */
+.typewriter::after {
+	content: "|";
+	margin-left: 2px;
+	color: rgba(255, 255, 255, 0.85);
+	animation: wpCursor 1s step-end infinite;
 }
-.site-wallpaper img {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-	filter: blur(var(--wp-blur, 0px));
-	/* 模糊边缘泛出透明底：按模糊量轻微放大补偿（服务端算好 --wp-scale） */
-	transform: scale(var(--wp-scale, 1));
+@keyframes wpCursor {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0;
+	}
 }
-/* 遮罩层：浅/暗双档不透明度（--wp-dim / --wp-dim-dark），保证任意壁纸下正文可读 */
-.site-wallpaper-dim {
-	position: absolute;
-	inset: 0;
-	background: rgb(0 0 0 / var(--wp-dim, 0.45));
+
+/* overlay 形态正文卡片半透明（§4.98 overlay.cardOpacity）：壁纸从页缝与卡片间隙透出；
+   --wp-card-opacity 由 SSR 输出为百分比字面量 */
+html[data-wallpaper-mode="overlay"] .card {
+	background: color-mix(
+		in srgb,
+		var(--surface) var(--wp-card-opacity, 50%),
+		transparent
+	);
 }
-html.dark .site-wallpaper-dim {
-	background: rgb(0 0 0 / var(--wp-dim-dark, 0.65));
+
+/* 动画减免偏好：波浪/推近类装饰动画静止（交叉淡化保留，不影响可读性） */
+@media (prefers-reduced-motion: reduce) {
+	.wp-waves .wave,
+	.wp-stage[data-effect="kenburns"] .wp-img.active,
+	.wp-stage[data-effect="zoom"] .wp-img.active {
+		animation: none;
+	}
 }
 
 /* ---------- 3.5c 番组追番页（§4.93） ---------- */

@@ -11,7 +11,7 @@ seriesGroup: 基础配置
 seriesOrder: 4
 ---
 
-本篇讲站点导航栏：菜单项、下拉子菜单与外链标记。首页横幅（banner）是另一个独立配置文件，见[首页横幅](/posts/banner/)。
+本篇讲站点导航栏：菜单项、下拉子菜单与外链标记。统一壁纸（横幅/全屏/覆盖透明/纯色）是另一个独立配置文件，见[壁纸](/posts/wallpaper/)。
 
 **配置文件**：`site/src/config/navBarConfig.ts`
 

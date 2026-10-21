@@ -8,15 +8,24 @@
  */
 
 import en from "./en.js";
+import ja from "./ja.js";
+import ko from "./ko.js";
+import ru from "./ru.js";
 import zhCN, { type UiKey } from "./zh-CN.js";
+import zhTW from "./zh-TW.js";
 
 type Pack = Partial<Record<UiKey, string>>;
 
-/** 已内置语言包（键为归一化 lang：小写、下划线转连字符） */
+/** 已内置语言包（键为归一化 lang：小写、下划线转连字符；ja-jp/ko-kr 等经基础语言回退命中） */
 const packs: Record<string, Pack> = {
 	en: en,
 	"en-us": en,
 	"en-gb": en,
+	"zh-tw": zhTW,
+	"zh-hant": zhTW,
+	ja: ja,
+	ko: ko,
+	ru: ru,
 };
 
 function norm(lang: string): string {

@@ -168,6 +168,16 @@ const en: Record<UiKey, string> = {
 	codeFoldCollapse: "Collapse code",
 	codeFoldExpanded: "Code block expanded",
 	codeFoldCollapsed: "Code block collapsed",
+	/* Wallpaper (§4.98): header control button aria-label/title */
+	wpPlay: "Play wallpaper video",
+	wpPause: "Pause wallpaper video",
+	wpPrev: "Previous video",
+	wpNext: "Next video",
+	wpMode: "Switch wallpaper mode",
+	/* Site info total words (§4.99): sidebar siteInfo card */
+	totalWords: "Total words",
+	/* Sidebar music widget (§4.100): title; play/prev/next reuse music* keys */
+	musicWidget: "Music",
 };
 
 export default en;

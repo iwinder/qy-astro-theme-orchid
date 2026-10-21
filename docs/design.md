@@ -1804,6 +1804,70 @@ v0.3.0 补打 tag 触发 Release 后 CI Test 全红（本地与干净 clone 均�
 
 **验证（§4.96）**：修复前 `TZ=UTC pnpm test` 本地复现 CI 同款 `actual: '2022-03-04T02:00:00'`；修复后 `TZ=UTC` 与本地 +08:00 双跑均 34/34 全绿。
 
+### 4.97 Firefly 差距审计收官：站点图片路径三格式解析（✅ 2026-10-22 完成）
+
+对照 Firefly 文档全站逐页审计功能差距（getting-started/wallpaper 等全部页面），识别出四类此前忽略或半成品的能力：壁纸体系不完整（§4.98）、图片路径只支持 public/外链两种（本节）、siteInfo 缺总字数（§4.99）、侧栏无音乐 widget（§4.100）、樱花特效参数固定不可调（§4.101）、多语言仅 en 且非全量（§4.102）。用户决策：视频背景做、侧栏音乐 widget 加、多语言全量补齐；banner 与 background 确认为同一「壁纸」功能。
+
+**图片三格式约定**（对齐参考站 ImageWrapper 能力，主题内所有站点图片入口统一遵循）：
+1. `/` 开头 → 站点 public 静态资源，原样输出（不经构建管线优化）；
+2. `http(s)://` / `//` / `data:` → 外链或内联，原样输出；
+3. 其余相对路径（如 `assets/images/avatar.png`）→ 相对**站点项目** src/ 目录构建期解析，返回带内容 hash 的产物 URL（唯一被优化的格式）。
+
+**解析机制**：`import.meta.glob("/src/assets/**/*.{png,...}")` 的 `/` 前缀相对 Vite 项目根，主题包组件运行在站点构建管线中因此命中站点 assets；非 eager 按需 await（仅实际用到的图片进产物）；未命中（文件不存在）console.warn 后原样返回，不 fail 构建。
+
+**改动**：utils/image.ts 新建（isLocalImagePath / toAssetKey / resolveSiteImage / resolveSiteImages 数组版）；全站接入：Sidebar（头像）、Header（logo）、friends、sponsor、MusicPlayer 与 MusicWidget（歌单封面）、BaseLayout（壁纸桌面/移动图源，视频源除外——视频文件不入构建管线，仅支持 public 路径与外链原样）。
+
+### 4.98 统一壁纸体系：wallpaper 四模式（breaking，✅ 2026-10-22 完成）
+
+原 banner（§4.42）+ background（§4.92）两段配置合并为**单段 `wallpaper`**，四种模式由 `html[data-wallpaper-mode]` 属性驱动（CSS 切形态，零 JS 分支）：
+- **banner** 横幅壁纸：高度 vh 可调、homeOnly 仅首页、object-position；
+- **fullscreen** 全屏壁纸：首屏满幅、object-position；
+- **overlay** 覆盖透明：fixed 垫底（zIndex/opacity/blur/cardOpacity 可调），正文卡片半透明透出壁纸；
+- **none** 纯色背景：不渲染 stage。
+
+**配置面**：`switchable` 访客在导航栏循环切换四模式（localStorage('qy-wallpaper') 持久化、优先于 SSR 配置；head 内联 boot 脚本首帧前应用防闪烁，VT swap 后由 app.ts 的 astro:after-swap 重应用）；视频壁纸 `playerEnable/playerUrl/playerMode(order|random)`（muted+loop+playsinline，preload=none，播放中自动暂停图片轮播）；`common.homeText` 首页文案（title 带 `<em>` 强调色 / subtitle 单条或多条打字机 typewriter{speed,deleteSpeed,pauseTime}，stage 可见时叠加其上，无壁纸时首页复用为独立 hero 区块）；`common.navbar` 透明形态（semi/semifull/full + blur，壁纸不可见时 SSR 直接实底）；`common.waves/gradient` 底部装饰（布尔或分端对象）；`common.carousel` 多图轮播（fade/zoom/slide/kenburns 四过渡，关闭时构建期随机取一张零 JS）；src 分 desktop/mobile 双端图源数组。`homeOnly` 的 banner/fullscreen 在非首页**渲染但标 data-wallpaper-hidden**（跨页切换模式可用，访客手动切换即解除隐藏）。
+
+**Zod 函数默认值技巧**：wallpaper 嵌套深达 4 层，外层改用 `.default(() => wallpaperSchema.parse({}))`——default 原样返回不二次 parse（工程备忘已沉淀），parse({}) 运行期递归补齐全部内层默认值，免维护两份字面量。
+
+**改动**：schema.ts（wallpaperSchema 模块级 const + 原 banner/background 两段删除，breaking）；BaseLayout.astro（单一 `#wp-stage` 容器：wp-images 桌面/移动双层 img + wp-video + wp-dim 蒙层 + 装饰层 + wp-hero；html 挂 data-wallpaper-mode/-nav/-switchable 与 --wp-* CSS 变量族；壁纸模式 boot 内联脚本）；Header 接透明形态；global.css 四模式规则与 stage 布局；app.ts（模式切换/轮播/视频播放器/打字机复用/initWallpaper/after-swap 重应用）；site 配置迁移（原 backgroundConfig.ts 删除并入 wallpaper 段）。
+
+### 4.99 siteInfo 总字数（✅ 2026-10-22 完成）
+
+站点信息卡新增「总字数」行：`countTotalWords(posts)` 对全站文章 frontmatter `words` 字段（reading-time 插件产物，§4.x 口径 CJK 字符 + 非 CJK 单词）求和；**0 时隐藏该行**（空站点不显示 0）；展示 `toLocaleString()` 千分位。i18n 新键 `totalWords`。
+
+**改动**：utils.ts（countTotalWords）、Sidebar.astro（runDays 行后插入）、i18n zh-CN/en 两键。
+
+### 4.100 侧栏音乐 widget（✅ 2026-10-22 完成）
+
+Firefly 有侧栏音乐 widget，经确认补齐：**播放内核仍在 MusicPlayer（transition:persist 跨页常驻），widget 纯遥控 + 状态展示**，与悬浮播放器共用 `config.music` 歌单，经 CustomEvent 双向联动：
+- 播放器 → widget：`orchid:music-state` `{idx, playing, mode}`，由 MusicPlayer 的 emitState() 在 syncModeUI / syncPlayUI / loadTrack 尾部广播；
+- widget → 播放器：`orchid:music-cmd` `{type: toggle|next|prev|playIndex|sync}`；playIndex 对当前曲且播放中 = 暂停；sync 请求补广播。
+
+**时序设计**：播放器 DOMContentLoaded 初始化（once），widget 在 astro:page-load 初始化（晚于播放器），初始化后主动发 `sync` 补拉当前状态——任意页首载均无竞态。VT 兼容：模块级 `docBound` 标志保证 document 级 state 监听只绑一次，按钮监听随 DOM 重建每次重绑（设计偏离：原计划的模块级 AbortController 弃用，docBound 更简且效果等价）。
+
+**渲染细节**：`sidebar.widgets` discriminatedUnion 新增 `{type:'music'}`（**不入**默认数组）；渲染门控 `w.type==='music' && music.enabled && playlist.length>0`（播放器未启用或歌单空不渲染）；`hideOnMobile` 透传。封面构建期整份歌单解析进 `data-playlist`，SSR 只渲染首曲（有封面 img / 无封面唱片 svg），切歌时动态 createElement('img') 替换；播放/暂停图标用 `playing` class + scoped CSS 切换（SVGAttributes 类型不收 `hidden` 属性，规避 ts2322）。
+
+**改动**：MusicWidget.astro 新建；MusicPlayer.astro（emitState + 命令监听）；schema.ts（music 联合成员 + 两处默认数组项 specificConfig 显式写全——**schema default 值不二次 parse**，数组项不写全运行时即缺字段，陷阱已沉淀工程备忘）；Sidebar.astro（music 分支）；i18n `musicWidget` 键。
+
+### 4.101 樱花特效八维参数（✅ 2026-10-22 完成）
+
+原实现花瓣数固定不可调，对齐 Firefly 樱花八维参数重建 SakuraEffect：
+- **density** 同屏花瓣数（默认 24）；**limitTimes** 飘落轮数（-1 无限 / >=1 配额制：quota = 轮数 × 花瓣数，重生消耗配额，耗尽标 dead 不再绘制，alive===0 停 raf）；
+- **zIndex** canvas 层级（内联 style 输出，默认 100）；**size** 花瓣尺寸倍数区间（基准 14px，默认 0.5-1.1）；**opacity** 透明度区间（默认 0.3-0.9）；
+- **speed**：horizontal 水平漂移 px/帧（默认 -1.7~-1.2，负值向左漂移，替代原正弦 sway）、vertical 下落（默认 1.5~2.2）、rotation 每帧自转弧度（0.03）、fadeSpeed 临终淡出速度（0.03，不应大于 opacity.min）。
+
+每瓣随机 life 480+random×720 帧，age 超过 life 后按 fadeSpeed 递减 alpha，归零或出界（y>h+30 / x 出界 40px）重生（受配额约束）。保留 prefers-reduced-motion 自动停用、visibilitychange 暂停、resize 自适应、VT astro:page-load 重初始化与 cleanup。
+
+**改动**：schema.ts（sakura 段扩 8 维 + 外层 `.default({...})` 全量展开嵌套值——default 不二次 parse，写 `.default({})` 深层字段运行时缺失）；SakuraEffect.astro 全文重写（Props 收 `cfg` 对象、canvas `data-cfg` JSON 序列化、客户端 parse 带 try/catch 全字段回退默认）；BaseLayout.astro 传 `cfg={config.sakura}`。
+
+### 4.102 全量多语言：zh-TW / ja / ko / ru（✅ 2026-10-22 完成）
+
+原仅 en 部分覆盖，经确认全量补齐四语言：**zh-CN.ts 为键源**（164 键，UiKey 类型由此推导，本批新增 totalWords / musicWidget 两键）；en.ts 全量对齐；zh-TW / ja / ko / ru 四包以 `Record<UiKey, string>` 类型标注——**新增键漏译直接编译报错**，杜绝部分覆盖回潮。resolve.ts packs 注册表：norm 归一化（小写、下划线转连字符）→ 精确命中（zh-tw、zh-hant 别名、en-us/en-gb）→ 基础语言回退（ja-jp→ja）→ 缺译回退 zh-CN 键源；`resolveLabel(lang, key, vars)` 支持 `{name}` 占位符。
+
+**改动**：i18n/zh-CN.ts、en.ts（新增两键）；zh-TW.ts / ja.ts / ko.ts / ru.ts 四个全量语言包新建；i18n/resolve.ts（注册表扩充）。
+
+**验证（§4.97-§4.102 汇总）**：biome check --write 通过（存量 any 类 warning 不阻塞门禁）；packages/theme `astro check` 181 error 全为存量模式（virtual:theme 解析失败 75 + 隐式 any / HTMLElement 窄化等，均不阻塞构建）——本批新代码 MusicWidget / SakuraEffect / schema / i18n 零新增错误（过程中 MusicWidget 2 处 svg hidden 类型与 tr 隐式 any、Sidebar 2 处 icon 联合收窄已修）；site build 权威验证通过（36 页 + pagefind 索引正常）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

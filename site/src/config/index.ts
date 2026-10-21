@@ -9,9 +9,7 @@ import { advertisementConfig } from "./advertisementConfig";
 import { analyticsConfig } from "./analyticsConfig";
 import { announcementConfig } from "./announcementConfig";
 import { archive } from "./archiveConfig";
-import { background } from "./backgroundConfig";
 import { bangumi } from "./bangumiConfig";
-import { banner } from "./bannerConfig";
 import { commentConfig } from "./commentConfig";
 import { emailProtection } from "./emailProtectionConfig";
 import { codeTheme } from "./expressiveCodeConfig";
@@ -37,6 +35,7 @@ import { sidebarConfig } from "./sidebarConfig";
 import { siteConfig } from "./siteConfig";
 import { sponsorConfig } from "./sponsorConfig";
 import { toc } from "./tocConfig";
+import { wallpaper } from "./wallpaperConfig";
 
 // 组装主题完整入参（键与 @windcoder/astro-theme-orchid 的 ThemeConfig 一一对应）
 export const themeConfig = {
@@ -72,8 +71,7 @@ export const themeConfig = {
 	diagram: { mermaid, plantuml },
 	emailProtection,
 	// 视觉特效与悬浮组件：各同名配置文件
-	banner,
-	background,
+	wallpaper,
 	sakura,
 	music,
 	live2d,
@@ -102,9 +100,7 @@ export {
 	analyticsConfig,
 	announcementConfig,
 	archive,
-	background,
 	bangumi,
-	banner,
 	codeTheme,
 	commentConfig,
 	emailProtection,
@@ -131,4 +127,5 @@ export {
 	siteConfig,
 	sponsorConfig,
 	toc,
+	wallpaper,
 };
