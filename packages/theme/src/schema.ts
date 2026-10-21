@@ -214,8 +214,14 @@ const wallpaperSchema = z.object({
 		.object({
 			/** 图片 object-position（center / center 30% 等） */
 			position: z.string().default("center"),
+			/**
+			 * 全屏布局（§4.103）：classic 经典 = 滚下后正文区纯色背景（默认，旧行为）；
+			 * hero = 滚下后正文区无标题文字，壁纸 fixed 铺满 + 模糊渐变过渡，
+			 * 卡片浮于模糊壁纸上（复用 overlay 的 blur/cardOpacity 参数）
+			 */
+			layout: z.enum(["classic", "hero"]).default("classic"),
 		})
-		.default({ position: "center" }),
+		.default({ position: "center", layout: "classic" }),
 	/** overlay 模式专属：fixed 垫底，正文卡片半透明透出壁纸 */
 	overlay: z
 		.object({
@@ -529,6 +535,63 @@ export const themeConfigSchema = z.object({
 			adaptExternalImages: z.boolean().default(false),
 		})
 		.default({ adaptExternalImages: false }),
+	/**
+	 * 显示设置面板（§4.103，对齐 Firefly）：导航栏齿轮入口的三 Tab 浮层
+	 * （外观/壁纸/特效），集中管理主题色、壁纸模式、全屏布局、壁纸设置、
+	 * 透明设置与樱花特效的访客级开关，选择持久化 localStorage。
+	 * enable=false（默认）不渲染齿轮与面板，维持 Header 独立调色板/壁纸切换按钮。
+	 * 各 switchable 控制面板内对应项是否对访客可见；无可见项的 Tab 自动隐藏。
+	 * 注意 default 必须写显式完整字面量：Zod v4 的 .default(x) 在输入缺失时
+	 * 直接取 x、不做二次 parse，内层字段默认值不会补齐。
+	 */
+	displaySettings: z
+		.object({
+			/** 总开关：false（默认）不渲染齿轮入口与面板，维持现有独立按钮 */
+			enable: z.boolean().default(false),
+			/** 外观 Tab：主题色（迁入现有 hue 调色板） */
+			themeColorSwitchable: z.boolean().default(true),
+			/** 壁纸 Tab：壁纸模式四选一 */
+			wallpaperModeSwitchable: z.boolean().default(true),
+			/** 壁纸 Tab：全屏布局（经典/Hero），仅 fullscreen 模式下显示 */
+			fullscreenLayoutSwitchable: z.boolean().default(true),
+			/** 壁纸 Tab：首页壁纸标题开关（需 homeText.enable 且有文案） */
+			bannerTitleSwitchable: z.boolean().default(true),
+			/** 壁纸 Tab：壁纸轮播开关（需 carousel.enable，访客只能关不能开） */
+			bannerCarouselSwitchable: z.boolean().default(true),
+			/** 壁纸 Tab：水波纹动画开关（需 waves 配置开启） */
+			wavesSwitchable: z.boolean().default(true),
+			/** 壁纸 Tab：渐变过渡开关（需 gradient 配置开启） */
+			gradientSwitchable: z.boolean().default(true),
+			/**
+			 * 壁纸 Tab：透明设置滑块组。布尔 = 总开关；对象分项控制。
+			 * opacity 滑块仅 overlay 模式显示；blur/cardOpacity 在 overlay
+			 * 与 fullscreen-hero 布局下都生效。
+			 */
+			overlaySwitchable: z
+				.union([
+					z.boolean(),
+					z.object({
+						opacity: z.boolean().default(true),
+						blur: z.boolean().default(true),
+						cardOpacity: z.boolean().default(true),
+					}),
+				])
+				.default({ opacity: true, blur: true, cardOpacity: true }),
+			/** 特效 Tab：樱花特效开关（需 sakura.enabled） */
+			sakuraSwitchable: z.boolean().default(true),
+		})
+		.default({
+			enable: false,
+			themeColorSwitchable: true,
+			wallpaperModeSwitchable: true,
+			fullscreenLayoutSwitchable: true,
+			bannerTitleSwitchable: true,
+			bannerCarouselSwitchable: true,
+			wavesSwitchable: true,
+			gradientSwitchable: true,
+			overlaySwitchable: { opacity: true, blur: true, cardOpacity: true },
+			sakuraSwitchable: true,
+		}),
 	/**
 	 * 代码高亮（§4.61）：Expressive Code（Astro 生态标准方案）接管代码块渲染，
 	 * 替代 §4.17 自研 shiki 管线与 §4.37 自研折叠。light/dark 为 EC 支持的 Shiki

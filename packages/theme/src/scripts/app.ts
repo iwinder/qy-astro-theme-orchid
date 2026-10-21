@@ -104,16 +104,15 @@ function applySavedHue() {
 applySavedHue();
 doc.addEventListener("astro:after-swap", applySavedHue);
 
-/* 同步面板 UI：滑杆 / 徽章 / swatch 激活态（差值 <1° 判定，含 0/360 环绕） */
+/* 同步面板 UI：滑杆 / 徽章 / swatch 激活态（差值 <1° 判定，含 0/360 环绕）。
+   swatch 可能在旧 palette-pop 或显示设置面板（§4.103 外观 Tab）内，全局查询 */
 function syncPaletteUI(h: number) {
-	const pop = doc.getElementById("palettePop");
-	if (!pop) return;
 	const rounded = Math.round(((h % 360) + 360) % 360) % 360;
 	const slider = doc.getElementById("hueSlider") as HTMLInputElement | null;
 	if (slider) slider.value = String(rounded);
 	const badge = doc.getElementById("hueBadge");
 	if (badge) badge.textContent = String(rounded);
-	pop.querySelectorAll<HTMLElement>(".swatch").forEach((sw) => {
+	doc.querySelectorAll<HTMLElement>(".swatch[data-hue]").forEach((sw) => {
 		const dh = Math.abs(parseFloat(sw.dataset.hue || "0") - rounded);
 		sw.classList.toggle("is-active", dh < 1 || dh > 359);
 	});
@@ -133,11 +132,11 @@ function closePalette() {
 	if (toggle) toggle.setAttribute("aria-expanded", "false");
 }
 
-/* 每次导航后同步面板状态并复位收起（面板 DOM 会随 swap 重建） */
+/* 每次导航后同步面板状态并复位收起（面板 DOM 会随 swap 重建）；
+   显示设置面板形态（§4.103）无 palettePop，仍需同步 hue 控件 */
 function initPalette() {
 	const pop = doc.getElementById("palettePop");
-	if (!pop) return;
-	closePalette();
+	if (pop) closePalette();
 	syncPaletteUI(currentHue());
 }
 
@@ -742,7 +741,7 @@ doc.addEventListener("click", (e) => {
 	const target = e.target as Element;
 	if (!target || typeof target.closest !== "function") return;
 
-	/* 点击调色面板/搜索浮层外部时先收起（不拦截后续点击行为） */
+	/* 点击调色面板/搜索浮层/显示设置面板外部时先收起（不拦截后续点击行为） */
 	if (!target.closest(".palette-wrap")) {
 		const pop = doc.getElementById("palettePop");
 		if (pop && !pop.hidden) closePalette();
@@ -750,6 +749,13 @@ doc.addEventListener("click", (e) => {
 	if (!target.closest(".search-wrap")) {
 		const pop = doc.getElementById("searchPop");
 		if (pop && !pop.hidden) closeSearch();
+	}
+	if (
+		!target.closest(".ds-panel") &&
+		!target.closest("#displaySettingsToggle")
+	) {
+		const panel = doc.getElementById("displaySettingsPanel");
+		if (panel && !panel.hidden) closeDsPanel();
 	}
 
 	/* 搜索浮层开关（§4.56 移动端 icon 按钮；桌面内联框输入即搜，无开关） */
@@ -788,8 +794,8 @@ doc.addEventListener("click", (e) => {
 		return;
 	}
 
-	/* 预设色板 */
-	const swatch = target.closest<HTMLElement>(".palette-pop .swatch");
+	/* 预设色板（旧 palette-pop 与显示设置面板外观 Tab 共用同组 swatch） */
+	const swatch = target.closest<HTMLElement>(".swatch[data-hue]");
 	if (swatch) {
 		const h = parseFloat(swatch.dataset.hue || "");
 		if (Number.isFinite(h)) applyHue(h);
@@ -815,27 +821,15 @@ doc.addEventListener("click", (e) => {
 		return;
 	}
 
-	/* 壁纸模式循环切换（§4.98）：banner→fullscreen→overlay→none，localStorage 持久化；
-	   banner/fullscreen 解除 homeOnly 隐藏，overlay/none 停视频并回实底导航 */
+	/* 壁纸模式循环切换（§4.98）：banner→fullscreen→overlay→none，localStorage 持久化 */
 	if (target.closest("#wallpaperModeToggle")) {
 		const cur = WP_MODES.indexOf(root.dataset.wallpaperMode || "banner");
-		const next = WP_MODES[(cur + 1) % WP_MODES.length];
-		root.dataset.wallpaperMode = next;
-		syncWallpaperNav(next);
-		const stage = doc.querySelector<HTMLElement>(".wp-stage");
-		if (stage) {
-			if (next === "banner" || next === "fullscreen")
-				delete stage.dataset.wallpaperHidden;
-			else stage.setAttribute("data-wallpaper-hidden", "");
-		}
-		if (next === "overlay" || next === "none") pauseWallpaperVideo();
-		try {
-			localStorage.setItem(WP_KEY, next);
-		} catch {
-			/* ignore */
-		}
+		setWallpaperMode(WP_MODES[(cur + 1) % WP_MODES.length]!);
 		return;
 	}
+
+	/* 显示设置面板（§4.103）：齿轮开合 / Tab 切换 / 模式与布局按钮 / 开关 / 组重置 */
+	if (handleDsPanelClick(target)) return;
 
 	/* 壁纸视频播放/暂停（§4.98） */
 	if (target.closest("#wpPlayerToggle")) {
@@ -952,7 +946,7 @@ doc.addEventListener(
 	true,
 );
 
-/* input 委托（VT 安全）：hue 滑杆 + 搜索输入 */
+/* input 委托（VT 安全）：hue 滑杆 + 搜索输入 + 显示设置面板透明滑块（§4.103） */
 doc.addEventListener("input", (e) => {
 	const el = e.target as Element | null;
 	if (el && el.id === "hueSlider") {
@@ -962,14 +956,22 @@ doc.addEventListener("input", (e) => {
 	if (el && (el.id === "searchInput" || el.id === "searchInputM")) {
 		runSearch((el as HTMLInputElement).value.trim());
 	}
+	if (el instanceof HTMLInputElement && el.dataset.dsSlider) {
+		handleDsSliderInput(el);
+	}
 });
 
 doc.addEventListener("keydown", (e) => {
-	/* 搜索浮层：Esc 关闭 */
+	/* 搜索浮层/显示设置面板：Esc 关闭 */
 	if (e.key === "Escape") {
 		const pop = doc.getElementById("searchPop");
 		if (pop && !pop.hidden) {
 			closeSearch();
+			return;
+		}
+		const panel = doc.getElementById("displaySettingsPanel");
+		if (panel && !panel.hidden) {
+			closeDsPanel();
 			return;
 		}
 	}
@@ -1089,20 +1091,29 @@ function syncWallpaperNav(mode: string) {
 			: "solid";
 }
 
-/* 恢复访客保存的壁纸模式（after-swap 与 initWallpaper 双入口，幂等）：
-   boot 脚本负责首帧，这里兜底 VT 换页；显式偏好解除 homeOnly 的非首页隐藏 */
-function applySavedWallpaper() {
-	if (root.dataset.wpSwitchable !== "true") return;
-	const m = savedWallpaperMode();
-	if (!m || m === root.dataset.wallpaperMode) return;
-	root.dataset.wallpaperMode = m;
-	syncWallpaperNav(m);
+/* 壁纸模式统一切换入口（§4.98 循环按钮与 §4.103 面板模式宫格共用）：
+   banner/fullscreen 解除 homeOnly 隐藏，overlay/none 停视频并回实底导航；
+   data-wp-stage-hidden 同步供 hero 布局取消首屏下推 */
+function setWallpaperMode(next: string) {
+	root.dataset.wallpaperMode = next;
+	syncWallpaperNav(next);
 	const stage = doc.querySelector<HTMLElement>(".wp-stage");
 	if (stage) {
-		if (m === "banner" || m === "fullscreen")
+		if (next === "banner" || next === "fullscreen") {
 			delete stage.dataset.wallpaperHidden;
-		else stage.setAttribute("data-wallpaper-hidden", "");
+			delete root.dataset.wpStageHidden;
+		} else {
+			stage.setAttribute("data-wallpaper-hidden", "");
+			root.dataset.wpStageHidden = "true";
+		}
 	}
+	if (next === "overlay" || next === "none") pauseWallpaperVideo();
+	try {
+		localStorage.setItem(WP_KEY, next);
+	} catch {
+		/* ignore */
+	}
+	syncDsPanelState();
 }
 
 function pauseWallpaperVideo() {
@@ -1110,10 +1121,36 @@ function pauseWallpaperVideo() {
 	if (video && !video.paused) video.pause();
 }
 
-/* 图片轮播：desktop/mobile 两组独立游标，--wp-interval 供 kenburns/zoom 动画时长对齐 */
+/* 恢复访客保存的壁纸模式（after-swap 与 initWallpaper 双入口，幂等）：
+   boot 脚本负责首帧，这里兜底 VT 换页；显式偏好解除 homeOnly 的非首页隐藏；
+   §4.103：面板开启时追加恢复布局/开关/透明三件套（html style 随 swap 重建需重应用） */
+function applySavedWallpaper() {
+	if (root.dataset.wpSwitchable === "true") {
+		const m = savedWallpaperMode();
+		if (m && m !== root.dataset.wallpaperMode) {
+			root.dataset.wallpaperMode = m;
+			syncWallpaperNav(m);
+			const stage = doc.querySelector<HTMLElement>(".wp-stage");
+			if (stage) {
+				if (m === "banner" || m === "fullscreen") {
+					delete stage.dataset.wallpaperHidden;
+					delete root.dataset.wpStageHidden;
+				} else {
+					stage.setAttribute("data-wallpaper-hidden", "");
+					root.dataset.wpStageHidden = "true";
+				}
+			}
+		}
+	}
+	if (root.dataset.dsEnable === "true") applyDsPrefs();
+}
+
+/* 图片轮播：desktop/mobile 两组独立游标，--wp-interval 供 kenburns/zoom 动画时长对齐；
+   §4.103：访客经面板关闭轮播（html[data-wp-carousel="off"]）时不建定时器 */
 function initWallpaperCarousel() {
 	const stage = doc.querySelector<HTMLElement>(".wp-stage");
 	if (!stage || stage.dataset.carousel !== "true") return;
+	if (root.dataset.wpCarousel === "off") return;
 	const groups = Array.from(stage.querySelectorAll<HTMLElement>(".wp-images"));
 	if (groups.length === 0) return;
 	const interval =
@@ -1266,6 +1303,294 @@ function initWallpaper() {
 /* VT swap 替换 <html> 属性后立即恢复偏好模式（不等 page-load，防默认形态闪帧） */
 doc.addEventListener("astro:after-swap", applySavedWallpaper);
 
+/* ---------- 显示设置面板（§4.103，对齐 Firefly） ----------
+   齿轮入口三 Tab 浮层（外观/壁纸/特效）；localStorage 键表见 design.md §4.103。
+   应用机制：html data 属性（显隐类）+ html style CSS 变量（透明三件套），
+   boot 内联脚本（BaseLayout）首帧应用，applyDsPrefs 为 after-swap/初始化双入口 */
+const DS_KEY = {
+	fsLayout: "qy-wp-fs-layout",
+	homeText: "qy-wp-home-text",
+	carousel: "qy-wp-carousel",
+	waves: "qy-wp-waves",
+	gradient: "qy-wp-gradient",
+	opacity: "qy-wp-opacity",
+	blur: "qy-wp-blur",
+	cardOpacity: "qy-wp-card-opacity",
+	sakura: "qy-sakura",
+} as const;
+/* 开关键 ↔ html data 属性 ↔ localStorage 键 映射（on/off 语义） */
+const DS_SWITCH_MAP = {
+	"home-text": { ls: DS_KEY.homeText, attr: "wpHomeText" },
+	carousel: { ls: DS_KEY.carousel, attr: "wpCarousel" },
+	waves: { ls: DS_KEY.waves, attr: "wpWaves" },
+	gradient: { ls: DS_KEY.gradient, attr: "wpGradient" },
+	sakura: { ls: DS_KEY.sakura, attr: "wpSakura" },
+} as const;
+type DsSwitchId = keyof typeof DS_SWITCH_MAP;
+
+function lsGet(key: string): string | null {
+	try {
+		return localStorage.getItem(key);
+	} catch {
+		return null;
+	}
+}
+function lsSet(key: string, val: string | null) {
+	try {
+		if (val === null) localStorage.removeItem(key);
+		else localStorage.setItem(key, val);
+	} catch {
+		/* ignore */
+	}
+}
+
+/* 透明三件套应用到 html style（boot 同款逻辑；null 表示清除覆写回落配置默认） */
+function applyOverlayOpacity(v: number | null) {
+	if (v === null) root.style.removeProperty("--wp-overlay-opacity");
+	else root.style.setProperty("--wp-overlay-opacity", String(v));
+}
+function applyOverlayBlur(v: number | null) {
+	if (v === null) {
+		root.style.removeProperty("--wp-overlay-blur");
+		root.style.removeProperty("--wp-overlay-scale");
+	} else {
+		root.style.setProperty("--wp-overlay-blur", `${v}px`);
+		root.style.setProperty("--wp-overlay-scale", (1 + v / 100).toFixed(3));
+	}
+}
+function applyCardOpacity(v: number | null) {
+	if (v === null) root.style.removeProperty("--wp-card-opacity");
+	else root.style.setProperty("--wp-card-opacity", `${Math.round(v * 100)}%`);
+}
+
+/* 开关应用：html data 属性 + 副作用（轮播定时器清/建、樱花停/启） */
+function applyDsSwitch(id: DsSwitchId, on: boolean) {
+	const { ls, attr } = DS_SWITCH_MAP[id];
+	root.dataset[attr] = on ? "on" : "off";
+	lsSet(ls, on ? "1" : "0");
+	if (id === "carousel") {
+		if (wpCarouselTimer !== undefined) {
+			window.clearInterval(wpCarouselTimer);
+			wpCarouselTimer = undefined;
+		}
+		if (on) initWallpaperCarousel();
+	}
+	if (id === "sakura") {
+		doc.dispatchEvent(
+			new CustomEvent("orchid:sakura-toggle", { detail: on ? "on" : "off" }),
+		);
+	}
+}
+
+/* 恢复面板全部访客偏好（boot 负责首帧，这里兜底 VT swap 与初始化） */
+function applyDsPrefs() {
+	const l = lsGet(DS_KEY.fsLayout);
+	if (l === "classic" || l === "hero") root.dataset.wpFsLayout = l;
+	for (const id of Object.keys(DS_SWITCH_MAP) as DsSwitchId[]) {
+		const v = lsGet(DS_SWITCH_MAP[id].ls);
+		if (v === "0" || v === "1")
+			root.dataset[DS_SWITCH_MAP[id].attr] = v === "1" ? "on" : "off";
+	}
+	const op = parseFloat(lsGet(DS_KEY.opacity) || "");
+	if (Number.isFinite(op)) applyOverlayOpacity(op);
+	const bl = parseFloat(lsGet(DS_KEY.blur) || "");
+	if (Number.isFinite(bl)) applyOverlayBlur(bl);
+	const co = parseFloat(lsGet(DS_KEY.cardOpacity) || "");
+	if (Number.isFinite(co)) applyCardOpacity(co);
+}
+
+/* 面板根节点配置默认值（DisplaySettings.astro 输出的 data-def-*） */
+function dsPanel(): HTMLElement | null {
+	return doc.getElementById("displaySettingsPanel");
+}
+function dsDef(key: string, fallback: number): number {
+	const v = parseFloat(dsPanel()?.dataset[key] || "");
+	return Number.isFinite(v) ? v : fallback;
+}
+
+/* 同步面板控件态：模式/布局按钮激活、组显隐（data-modes）、开关、滑块与徽章。
+   模式或布局切换、面板打开、组重置、VT 换页后调用 */
+function syncDsPanelState() {
+	const panel = dsPanel();
+	if (!panel) return;
+	const mode = root.dataset.wallpaperMode || "none";
+	const layout = root.dataset.wpFsLayout || "classic";
+	/* 当前生效的模式 token：fullscreen+hero 组合单独成一个虚拟模式 */
+	const tokens = [mode];
+	if (mode === "fullscreen" && layout === "hero")
+		tokens.push("fullscreen-hero");
+	panel.querySelectorAll<HTMLElement>("[data-modes]").forEach((el) => {
+		const modes = (el.dataset.modes || "").split(/\s+/).filter(Boolean);
+		const visible = tokens.some((tok) => modes.includes(tok));
+		if (el.classList.contains("ds-group"))
+			el.classList.toggle("is-hidden", !visible);
+		else el.classList.toggle("ds-row-hidden", !visible);
+	});
+	panel
+		.querySelectorAll<HTMLElement>(".ds-mode-btn[data-mode]")
+		.forEach((b) => {
+			b.classList.toggle("is-active", b.dataset.mode === mode);
+		});
+	panel
+		.querySelectorAll<HTMLElement>(".ds-mode-btn[data-fs-layout]")
+		.forEach((b) => {
+			b.classList.toggle("is-active", b.dataset.fsLayout === layout);
+		});
+	/* 开关态：html data 属性为当前生效值（boot/applyDsPrefs 已写入，默认 on） */
+	for (const id of Object.keys(DS_SWITCH_MAP) as DsSwitchId[]) {
+		const sw = panel.querySelector<HTMLElement>(`[data-ds-switch="${id}"]`);
+		if (sw)
+			sw.setAttribute(
+				"aria-checked",
+				root.dataset[DS_SWITCH_MAP[id].attr] === "off" ? "false" : "true",
+			);
+	}
+	/* 滑块与徽章：localStorage 覆写优先，否则面板 data-def-*（配置默认） */
+	const opSaved = parseFloat(lsGet(DS_KEY.opacity) || "");
+	const op = Number.isFinite(opSaved) ? opSaved : dsDef("defOpacity", 0.8);
+	const blSaved = parseFloat(lsGet(DS_KEY.blur) || "");
+	const bl = Number.isFinite(blSaved) ? blSaved : dsDef("defBlur", 0);
+	const coSaved = parseFloat(lsGet(DS_KEY.cardOpacity) || "");
+	const co = Number.isFinite(coSaved) ? coSaved : dsDef("defCardOpacity", 0.5);
+	const setSlider = (id: string, val: number, text: string) => {
+		const s = panel.querySelector<HTMLInputElement>(`[data-ds-slider="${id}"]`);
+		if (s) s.value = String(val);
+		const badge = panel.querySelector<HTMLElement>(`[data-ds-badge="${id}"]`);
+		if (badge) badge.textContent = text;
+	};
+	setSlider("opacity", Math.round(op * 100), `${Math.round(op * 100)}%`);
+	setSlider("blur", bl, `${bl}px`);
+	setSlider("card-opacity", Math.round(co * 100), `${Math.round(co * 100)}%`);
+}
+
+function closeDsPanel() {
+	const panel = dsPanel();
+	if (panel) panel.hidden = true;
+	doc
+		.getElementById("displaySettingsToggle")
+		?.setAttribute("aria-expanded", "false");
+}
+
+/* 面板 click 委托（document 级）：命中面板内控件返回 true 拦截后续处理 */
+function handleDsPanelClick(target: Element): boolean {
+	/* 齿轮开合 */
+	if (target.closest("#displaySettingsToggle")) {
+		const panel = dsPanel();
+		if (panel) {
+			const open = panel.hidden;
+			panel.hidden = !open;
+			target
+				.closest("#displaySettingsToggle")
+				?.setAttribute("aria-expanded", open ? "true" : "false");
+			if (open) syncDsPanelState();
+		}
+		return true;
+	}
+	/* Tab 切换 */
+	const tab = target.closest<HTMLElement>(".ds-tab[data-tab]");
+	if (tab) {
+		const panel = dsPanel();
+		if (panel) {
+			panel.querySelectorAll(".ds-tab").forEach((b) => {
+				b.classList.toggle("is-active", b === tab);
+				b.setAttribute("aria-selected", b === tab ? "true" : "false");
+			});
+			panel.querySelectorAll<HTMLElement>(".ds-page").forEach((p) => {
+				p.classList.toggle("is-active", p.dataset.page === tab.dataset.tab);
+			});
+		}
+		return true;
+	}
+	/* 壁纸模式四选一（复用统一切换入口） */
+	const modeBtn = target.closest<HTMLElement>("[data-mode]");
+	if (modeBtn && dsPanel()?.contains(modeBtn)) {
+		const m = modeBtn.dataset.mode || "";
+		if (WP_MODES.includes(m)) setWallpaperMode(m);
+		return true;
+	}
+	/* 全屏布局切换 */
+	const layoutBtn = target.closest<HTMLElement>("[data-fs-layout]");
+	if (layoutBtn) {
+		const l = layoutBtn.dataset.fsLayout || "";
+		if (l === "classic" || l === "hero") {
+			root.dataset.wpFsLayout = l;
+			lsSet(DS_KEY.fsLayout, l);
+			syncDsPanelState();
+		}
+		return true;
+	}
+	/* 开关行 */
+	const sw = target.closest<HTMLElement>("[data-ds-switch]");
+	if (sw) {
+		const id = sw.dataset.dsSwitch as DsSwitchId;
+		if (id in DS_SWITCH_MAP) {
+			const on = sw.getAttribute("aria-checked") !== "true";
+			applyDsSwitch(id, on);
+			sw.setAttribute("aria-checked", on ? "true" : "false");
+		}
+		return true;
+	}
+	/* 组重置（↺）：清本组 localStorage，回落配置默认并重应用 */
+	const resetBtn = target.closest<HTMLElement>("[data-reset-group]");
+	if (resetBtn) {
+		if (resetBtn.dataset.resetGroup === "wallpaper") {
+			lsSet(DS_KEY.homeText, null);
+			lsSet(DS_KEY.carousel, null);
+			lsSet(DS_KEY.waves, null);
+			lsSet(DS_KEY.gradient, null);
+			delete root.dataset.wpHomeText;
+			delete root.dataset.wpCarousel;
+			delete root.dataset.wpWaves;
+			delete root.dataset.wpGradient;
+			/* 轮播回到配置默认（开）：先清后建 */
+			if (wpCarouselTimer !== undefined) {
+				window.clearInterval(wpCarouselTimer);
+				wpCarouselTimer = undefined;
+			}
+			initWallpaperCarousel();
+		}
+		if (resetBtn.dataset.resetGroup === "overlay") {
+			lsSet(DS_KEY.opacity, null);
+			lsSet(DS_KEY.blur, null);
+			lsSet(DS_KEY.cardOpacity, null);
+			applyOverlayOpacity(null);
+			applyOverlayBlur(null);
+			applyCardOpacity(null);
+		}
+		syncDsPanelState();
+		return true;
+	}
+	return false;
+}
+
+/* 滑块 input（input 委托调用）：实时应用 + 持久化 + 徽章 */
+function handleDsSliderInput(el: HTMLInputElement) {
+	const id = el.dataset.dsSlider;
+	const v = parseFloat(el.value);
+	if (!Number.isFinite(v)) return;
+	if (id === "opacity") {
+		applyOverlayOpacity(v / 100);
+		lsSet(DS_KEY.opacity, String(v / 100));
+	} else if (id === "blur") {
+		applyOverlayBlur(v);
+		lsSet(DS_KEY.blur, String(v));
+	} else if (id === "card-opacity") {
+		applyCardOpacity(v / 100);
+		lsSet(DS_KEY.cardOpacity, String(v / 100));
+	} else return;
+	const panel = dsPanel();
+	const badge = panel?.querySelector<HTMLElement>(`[data-ds-badge="${id}"]`);
+	if (badge) badge.textContent = id === "blur" ? `${v}px` : `${Math.round(v)}%`;
+}
+
+/* 每次导航后重绑面板（DOM 随 swap 重建）：复位收起 + 控件态同步 */
+function initDisplaySettings() {
+	const panel = dsPanel();
+	if (!panel) return;
+	closeDsPanel();
+	syncDsPanelState();
+}
+
 /* ---------- 生命周期 ---------- */
 function initPage() {
 	initLightbox();
@@ -1282,6 +1607,7 @@ function initPage() {
 	initPostListLayout();
 	initSeriesNav();
 	initWallpaper();
+	initDisplaySettings();
 }
 initPage();
 doc.addEventListener("astro:page-load", initPage);

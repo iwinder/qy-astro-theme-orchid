@@ -58,6 +58,8 @@ const cfg = Astro.props.cfg;
 		) as HTMLCanvasElement | null;
 		if (!canvas) return;
 		if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+		/* §4.103：显示设置面板关闭樱花（html[data-wp-sakura="off"]）时不启动 */
+		if (document.documentElement.dataset.wpSakura === "off") return;
 
 		const ctx = canvas.getContext("2d");
 		if (!ctx) return;
@@ -230,4 +232,19 @@ const cfg = Astro.props.cfg;
 
 	// ClientRouter 下 astro:page-load 首载与每次导航都会触发
 	document.addEventListener("astro:page-load", startSakura);
+
+	/* §4.103：显示设置面板樱花开关（app.ts applyDsSwitch 派发）；
+	   off 立即停动画并清画布，on 重启（startSakura 内部先清理旧实例） */
+	document.addEventListener("orchid:sakura-toggle", (e) => {
+		const on = (e as CustomEvent).detail !== "off";
+		if (on) {
+			startSakura();
+		} else {
+			cleanup?.();
+			const canvas = document.getElementById(
+				"sakura-canvas",
+			) as HTMLCanvasElement | null;
+			canvas?.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
+		}
+	});
 </script>

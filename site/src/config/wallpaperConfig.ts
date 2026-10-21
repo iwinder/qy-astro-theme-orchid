@@ -8,6 +8,7 @@ import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 // src.playerUrl：视频壁纸源（仅 public 绝对路径或外链，不做构建期解析）；playerEnable 开启自动播放
 // common.homeText：首页标题/副标题，subtitle 传数组并开 typewriter 即多行打字机轮播
 // common.navbar：壁纸可见时导航栏透明档（semi 半透明 / semifull 滚动前全透明 / full 始终全透明）
+// fullscreen.layout：classic 经典 = 滚下后纯色背景（默认）；hero = 滚下后壁纸 fixed 铺满 + 模糊渐变，卡片浮于其上
 // banner.height：横幅高度（vh）；homeOnly 仅首页显示；overlay.cardOpacity 内容卡片不透明度
 export const wallpaper: ThemeConfig["wallpaper"] = {
 	mode: "banner",
@@ -41,6 +42,6 @@ export const wallpaper: ThemeConfig["wallpaper"] = {
 		carousel: { enable: false, interval: 5000, transitionEffect: "fade" },
 	},
 	banner: { height: 32, homeOnly: true, position: "center" },
-	fullscreen: { position: "center" },
+	fullscreen: { position: "center", layout: "hero" },
 	overlay: { zIndex: -1, opacity: 0.8, blur: 0, cardOpacity: 0.5 },
 };

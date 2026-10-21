@@ -1868,6 +1868,34 @@ Firefly 有侧栏音乐 widget，经确认补齐：**播放内核仍在 MusicPla
 
 **验证（§4.97-§4.102 汇总）**：biome check --write 通过（存量 any 类 warning 不阻塞门禁）；packages/theme `astro check` 181 error 全为存量模式（virtual:theme 解析失败 75 + 隐式 any / HTMLElement 窄化等，均不阻塞构建）——本批新代码 MusicWidget / SakuraEffect / schema / i18n 零新增错误（过程中 MusicWidget 2 处 svg hidden 类型与 tr 隐式 any、Sidebar 2 处 icon 联合收窄已修）；site build 权威验证通过（36 页 + pagefind 索引正常）。
 
+### 4.103 显示设置面板 + fullscreen hero 布局（✅ 2026-10-22 完成）
+
+对齐 Firefly 显示设置面板：导航栏齿轮入口的三 Tab 浮层（外观/壁纸/特效），集中管理主题色、壁纸模式、全屏布局、壁纸设置、透明设置与樱花特效的访客级开关。新增顶层配置段 `displaySettings`（`enable` 默认 false，向后兼容——false 时维持 Header 独立调色板/壁纸循环切换按钮；true 时两旧按钮并入面板不再渲染，hue 控件 DOM id 原样迁入外观 Tab，app.ts palette 逻辑仅将 swatch 查询从 `.palette-pop .swatch` 放宽为全局 `.swatch[data-hue]`）。Tab 可见性按组判定：无可见项的 Tab 不渲染，单 Tab 时 Tab 栏隐藏。
+
+**fullscreen 新增 `layout`**（`classic` 默认旧行为：滚下后正文纯色背景 / `hero`：滚下后正文区无标题文字，壁纸 `position:fixed` 铺满 + 滚动过 40px（`html.wp-scrolled`）后 `.wp-img` 加 `blur(var(--wp-overlay-blur))` + scale 放大补偿，`.card` 按 `--wp-card-opacity` 半透明浮于模糊壁纸上——复用 overlay 的 blur/cardOpacity 参数）。hero 布局 CSS：`stage fixed inset:0 z-index:-1` + `.site-main margin-top:100vh` 让首屏；`html[data-wp-stage-hidden]`（SSR 按 homeOnly 输出、JS 模式切换同步）排除隐藏态的下推，避免非首页顶部整屏空白。
+
+**面板结构**：壁纸模式四宫格（data-mode 四选一）、全屏布局组（data-fs-layout 经典/Hero，仅 fullscreen 模式显示）、壁纸设置组（首页壁纸标题/壁纸轮播/水波纹/渐变过渡四个 switch，组右上 ↺ 重置）、透明设置组（壁纸透明度 0-100% / 背景模糊度 0-20px / 卡片透明度 0-100% 三滑块+badge，组右上 ↺ 重置；透明度行仅 overlay 模式显示，模糊/卡片透明度在 overlay 与 fullscreen-hero 下显示）、特效 Tab（樱花 switch）。模式相关组带 `data-modes` 属性（空格分隔，`fullscreen-hero` 为虚拟组合 token），JS 在模式/布局切换时刷新显隐。轮播开关仅在 `carousel.enable=true` 时显示（配置关时 DOM 只渲染一张图，访客只能关不能开，与 Firefly 口径一致）。
+
+**localStorage 键表**（boot 内联脚本首帧应用防闪烁，app.ts `applyDsPrefs` 为 after-swap/init 双入口，幂等）：
+
+| 键 | 值 | 作用 |
+|---|---|---|
+| `qy-wallpaper`（已有） | banner/fullscreen/overlay/none | 壁纸模式 |
+| `qy-wp-fs-layout` | classic/hero | 全屏布局（html[data-wp-fs-layout]） |
+| `qy-wp-home-text` | 0/1 | 首页壁纸标题（html[data-wp-home-text] → .wp-hero 显隐） |
+| `qy-wp-carousel` | 0/1 | 轮播启停（html[data-wp-carousel]，off 不建定时器） |
+| `qy-wp-waves` / `qy-wp-gradient` | 0/1 | 波浪/渐变显隐 |
+| `qy-wp-opacity` | 0-1 | `--wp-overlay-opacity` |
+| `qy-wp-blur` | 0-20 | `--wp-overlay-blur` + 重算 `--wp-overlay-scale` = 1+blur/100 |
+| `qy-wp-card-opacity` | 0-1 | `--wp-card-opacity`（html 变量存百分比字面量） |
+| `qy-sakura` | 0/1 | 樱花显隐 + 停/启 raf（`orchid:sakura-toggle` 自定义事件通知 SakuraEffect） |
+
+**关键实现决策**：① overlay 三变量（opacity/blur/scale）从 `.wp-stage` 内联 style 上移到 `<html>` style——boot 脚本先于 body 解析执行，stage 尚不存在，只有 html 级变量可被首帧覆写（CSS 沿 DOM 继承到 stage，选择器不变）；② 壁纸模式切换逻辑提取 `setWallpaperMode()` 供旧循环按钮与面板宫格共用，同步 `data-wp-stage-hidden`；③ `displaySettings.enable=true` 时 `data-wp-switchable` 按 `wp.switchable || (dsEnable && wallpaperModeSwitchable)` 并集输出，面板开启即允许访客切换模式；④ 樱花开关经 `orchid:sakura-toggle` 事件停/启 raf，boot 期 `data-wp-sakura="off"` 时组件初始化直接不启动；⑤ 面板 JS 常驻 app.ts（enable=false 时 `dsPanel()` 为 null 全段短路，体积可忽略，不做按需加载）。
+
+**改动**：schema.ts（fullscreen.layout + displaySettings 顶层段，外层 default 全量展开）；DisplaySettings.astro 新建；Header.astro（齿轮按钮 + 旧按钮 `!dsEnable` 门控）；BaseLayout.astro（面板渲染 + html data-wp-fs-layout/data-wp-stage-hidden/data-ds-enable + overlay 三变量上移 + boot 脚本扩展）；global.css（3.5b hero 布局 + 3.5c 开关显隐 + 3.5d 面板样式）；app.ts（setWallpaperMode 提取 + applySavedWallpaper 扩展 + applyDsPrefs/syncDsPanelState/handleDsPanelClick/handleDsSliderInput/initDisplaySettings + 轮播门控 + Esc/外点关闭）；SakuraEffect.astro（启动门控 + toggle 事件）；i18n 六文件 22 新键；site 新增 displaySettingsConfig.ts（demo 开启面板）+ wallpaperConfig 设 `layout:"hero"` + sakuraConfig 开启。
+
+**验证**：biome 通过；theme astro check 新增错误仅 2 条 virtual:theme 解析（存量模式）；site build 75 页全绿；browser_use 实测 9 步全过（齿轮入口与旧按钮门控 / 三 Tab / 模式四宫格与组显隐联动 / hero 滚动模糊+卡片半透明 / 经典模式纯色背景 / 樱花停启 / 刷新记忆 / Esc 关闭）。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

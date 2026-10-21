@@ -4,6 +4,7 @@
 import { Font } from "astro:assets";
 import { ClientRouter } from "astro:transitions";
 import Analytics from "virtual:theme/components/Analytics.astro";
+import DisplaySettings from "virtual:theme/components/DisplaySettings.astro";
 import Footer from "virtual:theme/components/Footer.astro";
 import Header from "virtual:theme/components/Header.astro";
 import Live2DWidget from "virtual:theme/components/Live2DWidget.astro";
@@ -99,6 +100,12 @@ const wpGradient =
 const wpVideos = wp.playerEnable ? wp.src.playerUrl : [];
 /* 导航栏透明形态（§4.98 navbar）：壁纸不可见（none/无图/隐藏）时 SSR 直接实底 */
 const wpNavMode = stageVisible ? wp.common.navbar.transparentMode : "solid";
+/* 显示设置面板（§4.103）：enable 时渲染齿轮与浮层；面板开启且壁纸模式组可见
+   即视为允许访客切换模式（与 wallpaper.switchable 取并集，data-wp-switchable
+   驱动 boot/app.ts 的模式覆写判定） */
+const dsEnable = config.displaySettings.enable;
+const wpSwitchAllowed =
+	wp.switchable || (dsEnable && config.displaySettings.wallpaperModeSwitchable);
 /* 字体角色映射（§4.66）：配置了 role 的字体生成 html:root 规则，把主题三角色
    变量重定向为 var(字体变量), 原角色回退栈（取自 global.css :root 默认值，
    字体未覆盖的字形如中文自然回落）。html:root Specificity (0,1,1) 高于
@@ -121,13 +128,16 @@ const fontRoleCss = config.fonts
 <!doctype html>
 <html
   lang={config.lang}
-  style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%;--page-width:${config.pageWidth}px${config.darkMode.adaptExternalImages ? ";--img-adapt-b:.85" : ""};--wp-dim:${wp.common.dimOpacity};--wp-dim-dark:${wp.common.darkDimOpacity};--wp-card-opacity:${Math.round(wp.overlay.cardOpacity * 100)}%;--wp-nav-blur:${wp.common.navbar.enableBlur ? wp.common.navbar.blur : 0}px;--banner-h:${wp.banner.height}vh;--banner-pos:${wp.banner.position};--fs-pos:${wp.fullscreen.position};--wp-grad-h:${wpGradient.height}`}
+  style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%;--page-width:${config.pageWidth}px${config.darkMode.adaptExternalImages ? ";--img-adapt-b:.85" : ""};--wp-dim:${wp.common.dimOpacity};--wp-dim-dark:${wp.common.darkDimOpacity};--wp-card-opacity:${Math.round(wp.overlay.cardOpacity * 100)}%;--wp-nav-blur:${wp.common.navbar.enableBlur ? wp.common.navbar.blur : 0}px;--banner-h:${wp.banner.height}vh;--banner-pos:${wp.banner.position};--fs-pos:${wp.fullscreen.position};--wp-grad-h:${wpGradient.height};--wp-overlay-opacity:${wp.overlay.opacity};--wp-overlay-blur:${wp.overlay.blur}px;--wp-overlay-scale:${(1 + wp.overlay.blur / 100).toFixed(3)}`}
   data-accent-h={h}
   data-color-mode={config.colorMode}
   data-wallpaper-mode={stageMode ?? "none"}
   data-wallpaper-nav={wpNavMode}
   data-wp-nav-config={wp.common.navbar.transparentMode}
-  data-wp-switchable={wp.switchable ? "true" : "false"}
+  data-wp-switchable={wpSwitchAllowed ? "true" : "false"}
+  data-wp-fs-layout={wp.fullscreen.layout}
+  data-wp-stage-hidden={stageHidden ? "true" : undefined}
+  data-ds-enable={dsEnable ? "true" : "false"}
 >
   <head>
     <meta charset="utf-8" />
@@ -184,9 +194,11 @@ const fontRoleCss = config.fonts
     </script>
     <!-- 壁纸模式 boot（§4.98）：switchable 开启时首帧前应用访客偏好（localStorage 优先于
          SSR 配置），none 等形态即时生效防闪烁；VT swap 后 html 属性随新页重建，由 app.ts
-         的 astro:after-swap 监听重应用。stage hidden 属性清理交给 initWallpaper -->
+         的 astro:after-swap 监听重应用。stage hidden 属性清理交给 initWallpaper。
+         §4.103 扩展：显示设置面板开启（data-ds-enable）时追加恢复全屏布局/壁纸设置显隐/
+         透明三件套/樱花开关（overlay 三变量在 html style 上，boot 直接覆写即时生效） -->
     <script is:inline>
-      (function(){try{var d=document.documentElement;if(d.dataset.wpSwitchable!=='true')return;var m=localStorage.getItem('qy-wallpaper');if(!m||['banner','fullscreen','overlay','none'].indexOf(m)<0||m===d.dataset.wallpaperMode)return;d.dataset.wallpaperMode=m;}catch(e){}})();
+      (function(){try{var d=document.documentElement;var ls=localStorage;if(d.dataset.wpSwitchable==='true'){var m=ls.getItem('qy-wallpaper');if(m&&['banner','fullscreen','overlay','none'].indexOf(m)>=0&&m!==d.dataset.wallpaperMode)d.dataset.wallpaperMode=m;}if(d.dataset.dsEnable==='true'){var l=ls.getItem('qy-wp-fs-layout');if(l==='classic'||l==='hero')d.dataset.wpFsLayout=l;var P=[['qy-wp-home-text','wpHomeText'],['qy-wp-carousel','wpCarousel'],['qy-wp-waves','wpWaves'],['qy-wp-gradient','wpGradient'],['qy-sakura','wpSakura']];for(var i=0;i<P.length;i++){var v=ls.getItem(P[i][0]);if(v==='0'||v==='1')d.dataset[P[i][1]]=v==='1'?'on':'off';}var op=parseFloat(ls.getItem('qy-wp-opacity')||'');if(!isNaN(op))d.style.setProperty('--wp-overlay-opacity',String(op));var bl=parseFloat(ls.getItem('qy-wp-blur')||'');if(!isNaN(bl)){d.style.setProperty('--wp-overlay-blur',bl+'px');d.style.setProperty('--wp-overlay-scale',(1+bl/100).toFixed(3));}var co=parseFloat(ls.getItem('qy-wp-card-opacity')||'');if(!isNaN(co))d.style.setProperty('--wp-card-opacity',Math.round(co*100)+'%');}}catch(e){}})();
     </script>
     {/* PWA（§4.95）：SW 注册。load 后注册不抢占首屏；is:inline + define:vars 在
         ClientRouter VT swap 时不重复执行，全站仅注册一次；注册失败静默（离线兜底
@@ -211,7 +223,7 @@ const fontRoleCss = config.fonts
       stageMode && (
         <div
           class="wp-stage"
-          style={`--wp-overlay-opacity:${wp.overlay.opacity};--wp-overlay-blur:${wp.overlay.blur}px;--wp-overlay-scale:${(1 + wp.overlay.blur / 100).toFixed(3)};--wp-hero-title-size:${homeText.titleSize};--wp-hero-sub-size:${homeText.subtitleSize}`}
+          style={`--wp-hero-title-size:${homeText.titleSize};--wp-hero-sub-size:${homeText.subtitleSize}`}
           data-carousel={wpCarouselOn ? "true" : "false"}
           data-carousel-interval={wp.common.carousel.interval}
           data-effect={wp.common.carousel.transitionEffect}
@@ -322,6 +334,8 @@ const fontRoleCss = config.fonts
     )}
     <!-- Live2D 看板娘（§4.38）：live2d.enabled 且配置了 model 才渲染 -->
     {config.live2d.enabled && config.live2d.model && <Live2DWidget live2d={config.live2d} />}
+    <!-- 显示设置面板（§4.103）：齿轮入口的三 Tab 浮层，enable 才渲染 -->
+    {dsEnable && <DisplaySettings />}
     <button class="back-top" id="backTop" type="button" aria-label={t('backToTop')} hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 15-6-6-6 6"/></svg>
     </button>

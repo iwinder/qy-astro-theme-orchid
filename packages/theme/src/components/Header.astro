@@ -34,6 +34,9 @@ const wp = config.wallpaper;
 const wpSwitchable = wp.switchable && wp.src.desktop.length > 0;
 const wpPlayer = wp.playerEnable && wp.src.playerUrl.length > 0;
 const wpPlayerMulti = wpPlayer && wp.src.playerUrl.length > 1;
+/* 显示设置面板（§4.103）：enable 时渲染齿轮入口，调色板/壁纸模式切换并入面板，
+   Header 不再渲染对应独立按钮（功能由面板内的同 id 控件接管） */
+const dsEnable = config.displaySettings.enable;
 const presetHues = [0, 30, 60, 100, 140, 170, 210, 250, 290, 330];
 ---
 
@@ -124,7 +127,8 @@ const presetHues = [0, 30, 60, 100, 140, 170, 210, 250, 290, 330];
         </button>
       )}
       {
-        hueEnabled && (
+        /* §4.103：显示设置面板开启时，独立调色板并入面板外观 Tab，不再渲染入口 */
+        hueEnabled && !dsEnable && (
           <div class="palette-wrap">
             <button class="icon-btn" id="paletteToggle" type="button" aria-label={t('palette')} aria-expanded="false">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg>
@@ -153,11 +157,20 @@ const presetHues = [0, 30, 60, 100, 140, 170, 210, 250, 290, 330];
       }
       {
         /* 壁纸模式切换（§4.98）：switchable 开启且有图源时渲染，点击循环
-           banner→fullscreen→overlay→none 并持久化 localStorage('qy-wallpaper') */
+           banner→fullscreen→overlay→none 并持久化 localStorage('qy-wallpaper')；
+           §4.103：显示设置面板开启时并入面板壁纸 Tab，不再渲染入口 */
       }
-      {wpSwitchable && (
+      {wpSwitchable && !dsEnable && (
         <button class="icon-btn" id="wallpaperModeToggle" type="button" aria-label={t('wpMode')} title={t('wpMode')}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        </button>
+      )}
+      {
+        /* 显示设置面板入口（§4.103）：齿轮按钮，开关 BaseLayout 尾部的三 Tab 浮层 */
+      }
+      {dsEnable && (
+        <button class="icon-btn" id="displaySettingsToggle" type="button" aria-label={t('displaySettings')} aria-expanded="false" title={t('displaySettings')}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1-1.51H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
       )}
       {

@@ -11,6 +11,7 @@ import { announcementConfig } from "./announcementConfig";
 import { archive } from "./archiveConfig";
 import { bangumi } from "./bangumiConfig";
 import { commentConfig } from "./commentConfig";
+import { displaySettings } from "./displaySettingsConfig";
 import { emailProtection } from "./emailProtectionConfig";
 import { codeTheme } from "./expressiveCodeConfig";
 import { fonts } from "./fontConfig";
@@ -55,6 +56,7 @@ export const themeConfig = {
 	huePanel: siteConfig.huePanel,
 	colorMode: siteConfig.colorMode,
 	darkMode: siteConfig.darkMode,
+	displaySettings,
 	pageWidth: siteConfig.pageWidth,
 	footer: siteConfig.footer,
 	noReferrer: siteConfig.noReferrer,
@@ -103,6 +105,7 @@ export {
 	bangumi,
 	codeTheme,
 	commentConfig,
+	displaySettings,
 	emailProtection,
 	fonts,
 	friendsConfig,
