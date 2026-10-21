@@ -82,6 +82,19 @@ test("normalizeDate：hexo 斜杠格式转 ISO（含/不含时间）", () => {
 	assert.equal(normalizeDate("2023/07/01 12:34:56"), "2023-07-01T12:34:56");
 });
 
+test("normalizeDate：带显式时区偏移的 ISO 串直接取墙钟（避免本地化漂移）", () => {
+	assert.equal(
+		normalizeDate("2022-03-04T10:00:00+08:00"),
+		"2022-03-04T10:00:00",
+	);
+	assert.equal(normalizeDate("2022-03-04T10:00:00Z"), "2022-03-04T10:00:00");
+	assert.equal(normalizeDate("2022-03-04 10:00+0800"), "2022-03-04T10:00:00");
+	assert.equal(
+		normalizeDate("2022-03-04T10:00:00.123+08:00"),
+		"2022-03-04T10:00:00",
+	);
+});
+
 test("normalizeDate：Date 对象与自然语言串走本地格式化", () => {
 	assert.equal(normalizeDate(new Date(2023, 6, 1)), "2023-07-01");
 	assert.equal(

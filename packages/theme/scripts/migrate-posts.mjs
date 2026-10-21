@@ -77,7 +77,8 @@ export function parseFrontmatter(raw) {
 }
 
 /** 日期值归一化为 YAML 友好字符串；非法返回 null。
- *  date-only 原样保留（避免时区漂移），hexo 斜杠格式转 ISO，其余 new Date 兜底。 */
+ *  date-only 原样保留（避免时区漂移），hexo 斜杠格式转 ISO，
+ *  带显式时区偏移的 ISO 串直接取墙钟（同理，避免经 Date 本地化漂移），其余 new Date 兜底。 */
 export function normalizeDate(value) {
 	if (value instanceof Date) {
 		return Number.isNaN(value.getTime()) ? null : formatDate(value);
@@ -93,6 +94,11 @@ export function normalizeDate(value) {
 			? `${date}T${pad2(slash[4])}:${slash[5]}:${slash[6] ?? "00"}`
 			: date;
 	}
+	const offseted =
+		/^(\d{4}-\d{2}-\d{2})[Tt ](\d{2}:\d{2})(?::(\d{2}))?(?:\.\d+)?(?:[Zz]|[+-]\d{2}:?\d{2})$/.exec(
+			s,
+		);
+	if (offseted) return `${offseted[1]}T${offseted[2]}:${offseted[3] ?? "00"}`;
 	const d = new Date(s);
 	return Number.isNaN(d.getTime()) ? null : formatDate(d);
 }

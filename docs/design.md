@@ -1794,6 +1794,16 @@ C 批收官件：`pwa.enabled` 开启后构建期产出 `/manifest.webmanifest` 
 
 **验证（§4.95）**：新文件 2 处行长 format error 由 biome --write 自动修后，全量 biome 0 error（189 warnings 存量基线）；`pnpm test` 33/33；默认关 `CI=true build` exit 0——dist 无 manifest.webmanifest/sw.js、index.html 无 manifest link 与 serviceWorker 字样（零痕迹）；临时开（icons 192/512 any+maskable）重建 exit 0——manifest name/short_name 正确回落站点 title「清言集」、description 回落站点描述、双 icons purpose 映射无误，sw.js 含构建号缓存名（orchid-pwa-mvgvc3fc）/BASE/SCOPE_MAX 60 与三策略全文，index.html 注入 `<link rel="manifest" href="/manifest.webmanifest">` 与 `serviceWorker.register(swUrl)`；还原 demo 关闭态。
 
+### 4.96 v0.3.0 发版排障：migrate-posts 带时区偏移日期 UTC 漂移修复（✅ 2026-10-21 完成）
+
+v0.3.0 补打 tag 触发 Release 后 CI Test 全红（本地与干净 clone 均绿）。经 f24d728 临时注解步骤（9428641 惯例：`::error::` 注解匿名可读，绕开完整日志 403）定位：§4.94 新增的 hugo 用例 `date: "2022-03-04T10:00:00+08:00"` 断言失败，UTC runner 实际得 `2022-03-04T02:00:00`——`normalizeDate` 兜底分支 `new Date(带偏移串)` 转绝对时刻后经 `formatDate` 本地 getter 格式化，runner 时区即输出时区。
+
+**修复**：`normalizeDate` 在 `new Date` 兜底前新增分支——带显式时区偏移的 ISO 串（`Z`/`±HH:MM`/`±HHMM`，兼容空格分隔与毫秒）正则直接摘墙钟部分拼串返回，不经过 Date 本地化；与既有「date-only 原样保留」「斜杠格式纯字符串转 ISO」同策略：**源串写了什么墙钟就存什么墙钟**，主题侧 js-yaml 按站点本地时区再解析。无偏移 ISO 串仍走 `new Date`（ES 规范按本地时区解析，任意单一环境内往返自洽）；mtime 兜底（本地构造本地格式化）与 hexo 斜杠用例（纯字符串）本就不漂，不动。
+
+**改动**：scripts/migrate-posts.mjs（normalizeDate 新分支 + 注释补策略说明）、scripts/migrate-posts.test.mjs（新增「带显式时区偏移取墙钟」用例，4 断言覆盖 `+08:00`/`Z`/`+0800`/毫秒）、ci.yml 与 release.yml（移除 f24d728 排障注解步骤，Test 恢复裸 `pnpm test`；release.yml Stage publish 步骤的失败注解为设计内长期机制，保留）。
+
+**验证（§4.96）**：修复前 `TZ=UTC pnpm test` 本地复现 CI 同款 `actual: '2022-03-04T02:00:00'`；修复后 `TZ=UTC` 与本地 +08:00 双跑均 34/34 全绿。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |
