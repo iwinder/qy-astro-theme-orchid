@@ -201,14 +201,14 @@ const wallpaperSchema = z.object({
 	/** banner 模式专属（横幅形态） */
 	banner: z
 		.object({
-			/** 横幅高度（vh） */
-			height: z.number().int().min(10).max(90).default(32),
+			/** 横幅高度（vh），默认 60：壁纸从导航栏顶铺满至分类导航条处渐隐，非窄条 */
+			height: z.number().int().min(10).max(90).default(60),
 			/** true 仅首页显示；false 全站显示（overlay 天然全站，忽略此项） */
 			homeOnly: z.boolean().default(true),
 			/** 图片 object-position（center / center 30% 等） */
 			position: z.string().default("center"),
 		})
-		.default({ height: 32, homeOnly: true, position: "center" }),
+		.default({ height: 60, homeOnly: true, position: "center" }),
 	/** fullscreen 模式专属 */
 	fullscreen: z
 		.object({

@@ -7,6 +7,8 @@ import path from "node:path";
  */
 
 const IMAGE_RE = /\.(jpe?g|png|webp|avif|gif)$/i;
+/* §4.106：.thumb.webp 是 generate-lqips.mjs 的缩略图产物，不是照片本体 */
+const THUMB_RE = /\.thumb\.webp$/i;
 const COVER_RE = /^cover\./i;
 
 export interface GalleryAlbumMeta {
@@ -31,7 +33,7 @@ export function scanAlbumPhotos(albumId: string): string[] {
 
 	const files = fs
 		.readdirSync(dir)
-		.filter((f) => IMAGE_RE.test(f))
+		.filter((f) => IMAGE_RE.test(f) && !THUMB_RE.test(f))
 		.sort();
 	const coverIdx = files.findIndex((f) => COVER_RE.test(f));
 	if (coverIdx > 0) {

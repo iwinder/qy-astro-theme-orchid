@@ -5,6 +5,7 @@ import type { UiKey } from "./zh-CN.js";
 
 const zhTW: Record<UiKey, string> = {
 	skipToContent: "跳至主要內容",
+	scrollDown: "向下捲動",
 	backToTop: "回到頂端",
 	mainNav: "主導覽",
 	toggleMode: "切換深淺模式",
@@ -96,6 +97,8 @@ const zhTW: Record<UiKey, string> = {
 	searchNoResults: "沒有找到相關結果",
 	searchUnavailable: "搜尋索引需建置後可用",
 	searchTypeSomething: "輸入關鍵字開始搜尋",
+	searchMore: "查看全部 {n} 筆結果",
+	searchResultsTotal: "共 {n} 筆結果",
 	galleryPhotos: "{n} 張照片",
 	backToAlbums: "返回相簿",
 	searchAlbums: "搜尋相簿…",

@@ -1,0 +1,57 @@
+{
+  "public:gallery/demo-secret/cover.png": {
+    "thumb": "gallery/demo-secret/cover.thumb.webp",
+    "width": 960,
+    "height": 640
+  },
+  "public:gallery/demo-secret/photo-01.png": {
+    "thumb": "gallery/demo-secret/photo-01.thumb.webp",
+    "width": 960,
+    "height": 640
+  },
+  "public:gallery/demo-secret/photo-02.png": {
+    "thumb": "gallery/demo-secret/photo-02.thumb.webp",
+    "width": 960,
+    "height": 640
+  },
+  "public:gallery/demo-spring/cover.png": {
+    "thumb": "gallery/demo-spring/cover.thumb.webp",
+    "width": 960,
+    "height": 640
+  },
+  "public:gallery/demo-spring/photo-01.png": {
+    "thumb": "gallery/demo-spring/photo-01.thumb.webp",
+    "width": 960,
+    "height": 640
+  },
+  "public:gallery/demo-spring/photo-02.png": {
+    "thumb": "gallery/demo-spring/photo-02.thumb.webp",
+    "width": 640,
+    "height": 860
+  },
+  "public:gallery/demo-spring/photo-03.png": {
+    "thumb": "gallery/demo-spring/photo-03.thumb.webp",
+    "width": 960,
+    "height": 640
+  },
+  "public:gallery/demo-spring/photo-04.png": {
+    "thumb": "gallery/demo-spring/photo-04.thumb.webp",
+    "width": 640,
+    "height": 860
+  },
+  "public:gallery/demo-spring/photo-05.png": {
+    "thumb": "gallery/demo-spring/photo-05.thumb.webp",
+    "width": 960,
+    "height": 640
+  },
+  "public:music/cover-a.jpg": {
+    "thumb": "music/cover-a.thumb.webp",
+    "width": 1832,
+    "height": 1832
+  },
+  "public:wallpaper/banner-01.jpg": {
+    "thumb": "wallpaper/banner-01.thumb.webp",
+    "width": 1832,
+    "height": 1832
+  }
+}

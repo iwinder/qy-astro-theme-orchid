@@ -1820,12 +1820,14 @@ v0.3.0 补打 tag 触发 Release 后 CI Test 全红（本地与干净 clone 均�
 ### 4.98 统一壁纸体系：wallpaper 四模式（breaking，✅ 2026-10-22 完成）
 
 原 banner（§4.42）+ background（§4.92）两段配置合并为**单段 `wallpaper`**，四种模式由 `html[data-wallpaper-mode]` 属性驱动（CSS 切形态，零 JS 分支）：
-- **banner** 横幅壁纸：高度 vh 可调、homeOnly 仅首页、object-position；
-- **fullscreen** 全屏壁纸：首屏满幅、object-position；
-- **overlay** 覆盖透明：fixed 垫底（zIndex/opacity/blur/cardOpacity 可调），正文卡片半透明透出壁纸；
-- **none** 纯色背景：不渲染 stage。
+- **banner** 横幅壁纸：高度 vh 可调（默认 60，对齐 Firefly 首屏大气背景，旧值 32 为窄条已弃）、object-position；banner 模式全站可见（非首页也渲染 stage 并显示页面标题横幅，homeOnly 不再隐藏整个 stage）；hero 文字区 `padding` 上下双向补偿（上 `--header-h` 避 Header 遮挡、下 `--wp-overlap` 避压分类导航条），字号 `clamp(1.8rem, 6vw+1rem, var(--wp-hero-title-size))` 流体缩放（配置值为上限、窄屏按 vw 平滑收缩）；
+- **fullscreen** 全屏壁纸：首屏满幅、object-position；首屏底部靠上（`bottom:9vh`）居中渲染 `.wp-scroll-hint` 圆形半透明向下箭头（上下浮动 `wpScrollHint` 动画，点击 `scrollIntoView` 平滑滚过首屏）；SSR 始终渲染、CSS `html[data-wallpaper-mode="fullscreen"][data-wp-is-home]` 门控显隐（banner/overlay/none 与非首页保持 `display:none`），hero 布局滚动后随 `.wp-hero` 一起 `opacity` 淡出；**非首页降级**（`data-wp-is-home` 仅 `/` 为 true，`/page/2/` 等内页为 false）：`classic`→banner（60vh 横幅，跨页可见，显示页面标题）、`hero`→overlay（fixed 垫底 + 半透明卡片，无顶部全屏区、无滚动箭头、无 hero 文字）；
+- 横幅的**底部衔接**（对齐 Firefly 首屏，banner 与非首页 fullscreen-classic 适用）：内容区 `.site-main` 上拉 `--wp-overlap`(64px) 覆盖 stage 底缘（分类导航条半压壁纸），stage 底部 `::after` 渐隐（透明 → `var(--bg)`，高 overlap+56px）自然过渡到正文纯色背景；**fullscreen 首页独占一屏不上拉**（100vh stage 底缘即首屏边界，分类导航在视口外）；hero 布局与 overlay 不适用，stage 隐藏（`data-wp-stage-hidden`）时取消上拉防止正文被 sticky Header 裁切；
+- **overlay** 覆盖透明：fixed 垫底（zIndex/opacity/blur/cardOpacity 可调），正文卡片半透明透出壁纸；stage 为 fixed 垫底，hero 文案无处承载，CSS 隐藏 `.wp-hero`，内容区不渲染独立 hero 区块（fullscreen-hero 非首页降级为 overlay 后由 `html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"]:not([data-wp-is-home])` 同一规则隐藏）；
+- **none** 纯色背景：不渲染 stage，无 hero 文案。
+- **hero 文案仅 stage 内渲染**（§4.98 硬规则，多次确认不得回退）：**壁纸文字只允许出现在两类位置——① banner 形态的横幅区（Header 菜单导航与分类导航条之间，含非首页 fullscreen-classic 降级）；② fullscreen 首页首屏（hero 布局居中文案）**。其余形态一律不展示：overlay 形态（含 fullscreen-hero 非首页降级）stage 为 fixed 垫底，文字会浮在半透明内容区背后，CSS `display:none` 隐藏 `.wp-hero`，页面标题交还内容区展示；内容区不再渲染独立 `.hero` 区块——所有模式下壁纸配置的文字都不出现在下方内容页中。**首页**用 `homeText` 配置（标题+副标题/打字机），**非首页**用页面传入的 `title`（归档→"归档"、文章→文章标题等）；hero 横幅可见时通过 `data-wp-hero="visible"` + CSS 隐藏内容区重复标题（`.page-title`/`.page-sub`/`.post-title-lg`/`.archive-head`，仅 banner 与 fullscreen-classic 生效），避免同名标题出现两次。
 
-**配置面**：`switchable` 访客在导航栏循环切换四模式（localStorage('qy-wallpaper') 持久化、优先于 SSR 配置；head 内联 boot 脚本首帧前应用防闪烁，VT swap 后由 app.ts 的 astro:after-swap 重应用）；视频壁纸 `playerEnable/playerUrl/playerMode(order|random)`（muted+loop+playsinline，preload=none，播放中自动暂停图片轮播）；`common.homeText` 首页文案（title 带 `<em>` 强调色 / subtitle 单条或多条打字机 typewriter{speed,deleteSpeed,pauseTime}，stage 可见时叠加其上，无壁纸时首页复用为独立 hero 区块）；`common.navbar` 透明形态（semi/semifull/full + blur，壁纸不可见时 SSR 直接实底）；`common.waves/gradient` 底部装饰（布尔或分端对象）；`common.carousel` 多图轮播（fade/zoom/slide/kenburns 四过渡，关闭时构建期随机取一张零 JS）；src 分 desktop/mobile 双端图源数组。`homeOnly` 的 banner/fullscreen 在非首页**渲染但标 data-wallpaper-hidden**（跨页切换模式可用，访客手动切换即解除隐藏）。
+**配置面**：`switchable` 访客在导航栏循环切换四模式（localStorage('qy-wallpaper') 持久化、优先于 SSR 配置；head 内联 boot 脚本首帧前应用防闪烁，VT swap 后由 app.ts 的 astro:after-swap 重应用）；视频壁纸 `playerEnable/playerUrl/playerMode(order|random)`（muted+loop+playsinline，preload=none，播放中自动暂停图片轮播）；`common.homeText` 首页文案（title 带 `<em>` 强调色 / subtitle 单条或多条打字机 typewriter{speed,deleteSpeed,pauseTime}，仅 stage 可见（banner/fullscreen 首页）时叠加其上，overlay/none 模式不显示）；`common.navbar` 透明形态（semi/semifull/full + blur，壁纸不可见时 SSR 直接实底）；`common.waves/gradient` 底部装饰（布尔或分端对象）；`common.carousel` 多图轮播（fade/zoom/slide/kenburns 四过渡，关闭时构建期随机取一张零 JS）；src 分 desktop/mobile 双端图源数组。`homeOnly` 配置保留但不再隐藏非首页 stage（banner/fullscreen 非首页始终渲染，显示页面标题横幅）。
 
 **Zod 函数默认值技巧**：wallpaper 嵌套深达 4 层，外层改用 `.default(() => wallpaperSchema.parse({}))`——default 原样返回不二次 parse（工程备忘已沉淀），parse({}) 运行期递归补齐全部内层默认值，免维护两份字面量。
 
@@ -1872,7 +1874,7 @@ Firefly 有侧栏音乐 widget，经确认补齐：**播放内核仍在 MusicPla
 
 对齐 Firefly 显示设置面板：导航栏齿轮入口的三 Tab 浮层（外观/壁纸/特效），集中管理主题色、壁纸模式、全屏布局、壁纸设置、透明设置与樱花特效的访客级开关。新增顶层配置段 `displaySettings`（`enable` 默认 false，向后兼容——false 时维持 Header 独立调色板/壁纸循环切换按钮；true 时两旧按钮并入面板不再渲染，hue 控件 DOM id 原样迁入外观 Tab，app.ts palette 逻辑仅将 swatch 查询从 `.palette-pop .swatch` 放宽为全局 `.swatch[data-hue]`）。Tab 可见性按组判定：无可见项的 Tab 不渲染，单 Tab 时 Tab 栏隐藏。
 
-**fullscreen 新增 `layout`**（`classic` 默认旧行为：滚下后正文纯色背景 / `hero`：滚下后正文区无标题文字，壁纸 `position:fixed` 铺满 + 滚动过 40px（`html.wp-scrolled`）后 `.wp-img` 加 `blur(var(--wp-overlay-blur))` + scale 放大补偿，`.card` 按 `--wp-card-opacity` 半透明浮于模糊壁纸上——复用 overlay 的 blur/cardOpacity 参数）。hero 布局 CSS：`stage fixed inset:0 z-index:-1` + `.site-main margin-top:100vh` 让首屏；`html[data-wp-stage-hidden]`（SSR 按 homeOnly 输出、JS 模式切换同步）排除隐藏态的下推，避免非首页顶部整屏空白。
+**fullscreen 新增 `layout`**（`classic` 默认旧行为：滚下后正文纯色背景 / `hero`：滚下后正文区无标题文字，壁纸 `position:fixed` 铺满 + 滚动过 40px（`html.wp-scrolled`）后：`.wp-hero` 文字 opacity 渐隐（不盖在正文区模糊壁纸上）、`.wp-img` 加 `blur(var(--wp-overlay-blur))` + scale 放大补偿、stage 底部 `::after` 40vh 渐隐蒙层加深（保证 blur=0 时渐变也可感知）、`.card`/`.post-card`/`.page-item` 按 `--wp-card-opacity` 半透明浮于模糊壁纸上——复用 overlay 的 blur/cardOpacity 参数；`.post-card`/`.page-item` 不走 `.card` 类需一并覆盖）。hero 布局 CSS：`stage fixed inset:0 z-index:-1` + `.site-main margin-top:100vh` 让首屏；`html[data-wp-stage-hidden]`（SSR 按 homeOnly 输出、JS 模式切换同步）排除隐藏态的下推，避免非首页顶部整屏空白。
 
 **面板结构**：壁纸模式四宫格（data-mode 四选一）、全屏布局组（data-fs-layout 经典/Hero，仅 fullscreen 模式显示）、壁纸设置组（首页壁纸标题/壁纸轮播/水波纹/渐变过渡四个 switch，组右上 ↺ 重置）、透明设置组（壁纸透明度 0-100% / 背景模糊度 0-20px / 卡片透明度 0-100% 三滑块+badge，组右上 ↺ 重置；透明度行仅 overlay 模式显示，模糊/卡片透明度在 overlay 与 fullscreen-hero 下显示）、特效 Tab（樱花 switch）。模式相关组带 `data-modes` 属性（空格分隔，`fullscreen-hero` 为虚拟组合 token），JS 在模式/布局切换时刷新显隐。轮播开关仅在 `carousel.enable=true` 时显示（配置关时 DOM 只渲染一张图，访客只能关不能开，与 Firefly 口径一致）。
 
@@ -1895,6 +1897,66 @@ Firefly 有侧栏音乐 widget，经确认补齐：**播放内核仍在 MusicPla
 **改动**：schema.ts（fullscreen.layout + displaySettings 顶层段，外层 default 全量展开）；DisplaySettings.astro 新建；Header.astro（齿轮按钮 + 旧按钮 `!dsEnable` 门控）；BaseLayout.astro（面板渲染 + html data-wp-fs-layout/data-wp-stage-hidden/data-ds-enable + overlay 三变量上移 + boot 脚本扩展）；global.css（3.5b hero 布局 + 3.5c 开关显隐 + 3.5d 面板样式）；app.ts（setWallpaperMode 提取 + applySavedWallpaper 扩展 + applyDsPrefs/syncDsPanelState/handleDsPanelClick/handleDsSliderInput/initDisplaySettings + 轮播门控 + Esc/外点关闭）；SakuraEffect.astro（启动门控 + toggle 事件）；i18n 六文件 22 新键；site 新增 displaySettingsConfig.ts（demo 开启面板）+ wallpaperConfig 设 `layout:"hero"` + sakuraConfig 开启。
 
 **验证**：biome 通过；theme astro check 新增错误仅 2 条 virtual:theme 解析（存量模式）；site build 75 页全绿；browser_use 实测 9 步全过（齿轮入口与旧按钮门控 / 三 Tab / 模式四宫格与组显隐联动 / hero 滚动模糊+卡片半透明 / 经典模式纯色背景 / 樱花停启 / 刷新记忆 / Esc 关闭）。
+
+### 4.104 搜索重做：标准 Pagefind 接入 + 浮层「查看全部」+ 独立搜索页分页（✅ 2026-10-22 完成）
+
+搜索修复 + 能力补齐（用户口径：搜索失效后按官方标准推荐实现；浮层结果超阈值提供「查看全部」入口进独立搜索页，搜索页支持分页）：
+
+**① 标准 Pagefind 接入（去 HEAD hack）**：app.ts `loadPagefind()` 改为运行时动态 `import(/* @vite-ignore */ "/pagefind/pagefind.js")`（变量形式 + try/catch 降级），不再预探测 HEAD；`res.results.length` 即命中总数（Pagefind 惰性 API，详情按需 `r.data()`）。构建链不变：`astro build && subset-fonts && pagefind --site dist`。
+
+**② 浮层「查看全部」**：`SEARCH_POP_MAX = 8`（对齐 §4.56 视口内条数），超限只加载前 8 条详情，尾部追加 `.search-more` 链接 → `/search/?q=<kw>`，文案 `searchMore` i18n 键 `{n}` 占位（六语言）。点击委托对 `.search-item, .search-more` 统一 `closeSearch()` 后放行默认导航（VT 接管）。
+
+**③ 独立搜索页 `/search/`**：routes 静态注册 `["/search", "search.astro"]`（主题路由非文件系统扫描，漏注册不产出）；静态外壳 `#searchPageInput/#searchPageMeta/#searchPageResults/#searchPagePager`，渲染全在客户端 `renderSearchPage()`（initPage 末尾调用，VT `astro:page-load` 天然重初始化）。`SEARCH_PAGE_SIZE = 10`，`?q=<kw>&page=N`，URL 经 `history.replaceState` 同步；`searchPageSeq` 序号守卫防乱序。分页复用 Pagination.astro 口径：`.pg-nums` 页码窗口（恒含首末页与当前页 ±2、间隙省略号，`pagerNums` Set 去重排序）+ `.pg-adj`（上一页 / 第 x / y 页 / 下一页，边界 disabled）；翻页走真实链接经 VT 换页由 astro:page-load 重渲染。`searchResultsTotal/prevPage/nextPage/pageOf` 为新增 i18n 键。
+
+**④ dev 搜索可用（关键弯路）**：曾试把 dist/pagefind 同步进 `public/`——被 Vite 拒绝（public 内 JS 禁止以模块 import 引用，报 "should not be imported from source code"），方案作废（sync 脚本已删、gitignore 条目已撤）。终案与社区 astro-pagefind 同款：vite.ts `pagefindDevPlugin()`——`configureServer` 前置中间件把 `dist/pagefind` 静态服务给 dev（MIME 表覆盖 js/css/json/wasm；`enforce:"pre"` + 直接 `server.middlewares.use` 注册在 Vite 内部中间件之前）。⚠️ 踩坑：URL 已含 `/pagefind/` 前缀，拼接时须 `url.slice("/pagefind/".length)` 剥前缀再 resolve，直接 `url.slice(1)` 会拼成 `dist/pagefind/pagefind/pagefind.js` 静默 404；`resolve` + `startsWith(distPagefind + path.sep)` 防目录穿越；索引不存在（未 build）时 readFile 失败放行走 404，前端 catch 降级。仅 dev 生效；build/preview 索引由 pagefind 原地产出。theme 集成 index.ts 的 vite.plugins 追加注册（`configureServer`/index.ts 变更不热更，需重启 dev）。
+
+**改动**：app.ts（loadPagefind 标准接入 + renderSearchResults 重写含 more 链接 + 独立搜索页段落 renderSearchPage/pagerNums/renderSearchPager + 点击/输入委托 + initPage 调用）；vite.ts（pagefindDevPlugin）；index.ts（routes 注册 + vite.plugins 注册）；routes/search.astro 新建；global.css（.search-more + .search-page 系列）；i18n 六文件 5 新键（searchMore/searchResultsTotal/prevPage/nextPage/pageOf）；BaseLayout.astro（pagefindIgnore prop + labels JSON）。
+
+**验证**：astro check 0 errors；site build 全链路成功（75 页、36 页入索引）；browser_use 实测全过（浮层输入即搜 8 条 + 「查看全部 34 条结果」链接 → /search/?q=配置 渲染 10 条 + 共 34 条 meta + 分页 1-4 → ?page=2/3 翻页正确切换结果集与当前页高亮 → 输入「壁纸」replaceState 即时刷新 → 清词回「输入关键词开始搜索」初始态；curl 直测 pagefind.js/pagefind-entry.json 200）。
+
+### 4.105 页面头居中排版：居中标题 + 渐变短线（✅ 2026-10-22 完成）
+
+**背景**：PC 宽屏下「搜索/归档」等页面标题贴容器左缘，而下方内容列（timeline/search-page 等 760px 居中）与标题错位数百像素，视觉突兀（用户截图圈选确认，影响全部 `.archive-head` 页面）。居中方案确定后先实现了装饰性英文 kicker 小字，用户反馈英文小字不好看，四方案（菱形装饰符/纯居中/渐变短线/英文 kicker 对照）对比后选定**纯居中 + 标题下渐变短线**。
+
+**实现**：① global.css `.archive-head` 改 `margin: 0 auto 32px; text-align: center`（760px 块居中）；② `.archive-head .page-title::after` 伪元素绘制渐变短线——56px × 3px 圆角条，`linear-gradient(90deg, var(--accent), transparent)`，`margin: 14px auto 0` 水平居中，accent 变量随暗色模式/hue 调色自动适配。纯 CSS 装饰，页面无额外标记。404 页本就 inline 居中，不动；gallery/[album] 自有卡片头不受影响。
+
+**影响面辨析**：内容容器分两组——窄居中（archive timeline / search-page / series-list 760px auto）与全宽（tag-cloud/page-card/bangumi-grid/gallery-grid 随 shell）；居中头部对两组都成立（居中头 + 全宽身亦为常见版式）。banner 壁纸模式 hero 显示标题时 `.archive-head` 整体隐藏（§4.103 规则），渐变线随之隐藏不重复。
+
+**改动**：global.css（.archive-head 居中 + .page-title::after 渐变短线）；15 个 routes/*.astro 曾插入的 `<p class="page-kicker">` 行已全部移除（回归无装饰标记）。
+
+**验证**：astro check 0 errors/0 warnings；browser 实测 /archive/ /search/ /tags/ 三页 headCenter == 视口中点 == 内容列中点（同轴 383），`.page-title::after` 渲染 56×3px accent→透明渐变线，page-kicker 全站 0 残留。
+
+### 4.106 图片优化管线：sharp 重编码 + public 缩略图 + 正文图懒加载 + demo 资源瘦身（✅ 2026-10-22 完成）
+
+**背景**：用户问「src/assets 的图片会被优化吗？还有哪些可优化？」——盘点后确认：相对路径图（`src/assets/**`）此前只经 import.meta.glob 解析出 hash URL，**无构建期重编码**；public 大图在列表页原样加载（相册瀑布流一张 960 宽 PNG 直出）；正文图片无 lazy；demo 资源（音乐 mp3 ≈75s 全曲、封面/壁纸 jpg）体积虚高。用户选定全部四项实施。
+
+**① src/assets 位图接 sharp 管线**：image.ts `resolveSiteImage` 在 glob 解析出 `ImageMetadata` 后，svg/gif 直接 passthrough（矢量/动画转码会破坏），位图走 `getImage()`（astro:assets image service，构建期 sharp 重编码 webp+压缩，同图同参有编码缓存）；失败 `console.warn` 降级返回原图 URL。返回签名 `Promise<string>` 不变，全部调用组件（sponsor/friends/MusicWidget/Header/Sidebar/MusicPlayer/BaseLayout）零改动。
+
+**② public 缩略图管线（LQIP 脚本扩展双产物）**：generate-lqips.mjs 在扫 public 图片生成 lqips.json 之外顺带产出 `<名>.thumb.webp`（480 宽 q75，`withoutEnlargement` 不放大）+ `thumbs.json`（键 `public:<rel>` → `{thumb, width, height}`，width/height 为原图尺寸）。vite.ts themeLqipsPlugin 扩展双虚拟模块（`virtual:theme/lqips` + `virtual:theme/thumbs`，站点根缺文件时导出空对象降级）；index.ts injectTypes 补 thumbs 声明。新 utils/thumb.ts `getThumbInfo(src)` 查表返回 `{full, src, width?, height?}`（未命中时 src === full）。三个列表组件接入：PhotoCard/AlbumCard/PostCard 的 img src 换缩略图。**灯箱原图通道**：app.ts itemData filter 升级——列表 img 经 `data-full-src/data-full-width/data-full-height` 携带原图信息，灯箱优先打开原图（携带原始尺寸避免打开时布局跳动），无数据时回退 img 自身 src + natural 尺寸。⚠️ 踩坑：scanAlbumPhotos 用 readdirSync 扫 `public/gallery/<id>/`，`.thumb.webp` 产物会被当照片扫入相册（build 实测详情页混入无尺寸的 thumb data-full-src）——gallery.ts 加 `THUMB_RE = /\.thumb\.webp$/i` 排除；缩略图本身不生成 LQIP/不嵌套缩略图（collectImages 过滤，防套娃）。PostCard 缩略图沿用 data-api-retries 重试链无冲突。
+
+**③ 正文图片增强（rehypeImageEnhance）**：plugins/rehype.ts 新插件，挂在 noReferrer 之后。对正文所有 img：`loading ??= "lazy"`、`decoding ??= "async"`（`??=` 保留显式 eager）；public 图（`/` 开头）查 lqips.json 命中则把 LQIP 三色渐变**直接内联 img style background**——图片加载后位图自然盖住渐变，零 wrapper 零 JS（initLqip 的 data-lqip wrapper 方案只适用列表卡片；正文图走内联）。⚠️ rehype transformer 是纯 Node 环境，不能 import 虚拟模块——`file.cwd` + fs 直读站点根 lqips.json，模块级变量缓存（每进程读一次）。18 位 compact hex 校验后才注入（`/^[0-9a-f]{18}$/i`）。
+
+**④ demo 资源瘦身**（一次性脚本，sharp 在 packages/theme 目录下 node -e 运行）：music/{a,b,c}.mp3 为 192kbps CBR 44100Hz 无 ID3——无 ffmpeg 环境，纯 Node 解析 MP3 帧头（1152 采样/帧 → 帧长 626B）按帧对齐 slice 前 1148 帧 ≈30s（afinfo 验证解码正常），1758K→702K/支；music/cover-a.jpg 与 wallpaper/banner-01.jpg（1832×1832）mozjpeg q78 重压 172K→36K（-79%）。
+
+**改动**：utils/image.ts（getImage 管线）；scripts/generate-lqips.mjs（双产物）；vite.ts（thumbs 虚拟模块）；index.ts（injectTypes + rehypeImageEnhance 挂载）；utils/thumb.ts 新建；PhotoCard/AlbumCard/PostCard.astro（getThumbInfo 接入）；scripts/app.ts（itemData filter data-full-* 通道）；plugins/rehype.ts（rehypeImageEnhance + fs/path import）；utils/gallery.ts（THUMB_RE 排除）；site/public 音乐/壁纸产物替换。
+
+**验证**：astro check 0 errors；site build 76 页成功（pagefind 36 页索引正常）；dist grep——gallery/index.html 两相册封面 src 均为 `.thumb.webp`，demo-spring 详情页 6 张照片 `data-full-src` 全部正确指向原图（cover.png + photo-01~05.png，无 thumb 污染）；临时在 writing.md 加 public 图 build 实证 rehype 输出 `<img src="/gallery/demo-spring/photo-01.png" loading="lazy" decoding="async" style="background:linear-gradient(135deg, #a9c1cb 0%, #ced8d3 50%, #bac4c0 100%)">` 后还原；浏览器终验——列表封面 thumb 加载成功（naturalWidth > 0）、详情页瀑布流 6 图全 thumb + 尺寸数据正确（960×640 / 640×860）、点击照片灯箱打开原图 `photo-0X.png`（pswp__img naturalWidth 960，非缩略图）、Esc 正常关闭、控制台无新错误。体积收益：music 5.3M→2.1M（-60%）、jpg -79%、11 张 thumb 合计 44K（原图 PNG 合计约 500K）。
+
+### 4.107 外链封面 LQIP：构建期抓取采样 + 兜底 accent 渐变（✅ 2026-10-23 完成）
+
+**背景**：用户问「封面图可以不要用灰色占位吗？」——排查确认根因：列表卡片的 LQIP 渐变来自 `getLqipStyle()` 查表，而 lqips.json 只有 `public:` 本地图键，外链封面（api 随机图 / frontmatter image 外链 / 相册 urls.txt）查不到时兜底返回 `var(--muted)` 灰色纯色。用户选定「外链也生成 LQIP」方案：构建脚本抓取外链图采样真实主色 + 兜底从灰色改为主题色柔和渐变。
+
+**① 构建期外链收集（generate-lqips.mjs 扩展）**：`collectRemoteUrls` 四来源——frontmatter image（http(s) 直收；`"api"` 走 randomCoverUrl 复刻：seedHash 为 Java String.hashCode 同款实现，`{slug}` 替换 + `?v=<hash>` 追加，apis 模板从 site/src/config/*.ts 正则 `apis:\s*\[([^\]]*)\]` 提取）；正文首图（extractFirstImage 手写围栏状态机跳过 ```/~~~ 代码块，仅取第一张）；gallery/*/urls.txt 非 `#` 注释行。**外键一致性铁律**：`url:` 键的 URL 必须与渲染期逐字符一致（frontmatter image / 正文首图 / urls.txt 原样、api 复刻同参数），否则查表落空。
+
+**② fetch 采样管线**：`FETCH_CONCURRENCY=5` 并发 + `FETCH_TIMEOUT_MS=15s` 超时，失败跳过不阻断 build（重跑补抓）；UA `orchid-theme-lqip/1.0`；下载后 sharp 采样生成 18 位 compact hex，与本地 `public:` 键同构写入 lqips.json。**缓存即产物**：已有 `url:` 键不重复抓取，`--refresh` 强制重抓。⚠️ 踩坑：缓存命中条目必须原样合并回输出数组——首版 `cached` 只用于算 pending 差集，写回时把命中键覆盖丢失（第二次运行 url: 键全部消失），修复为 `Object.entries(cached)` 全量 push。取舍：外链**不做缩略图**（版权/CORS/构建期网络依赖，只做占位渐变）。
+
+**③ 消费端双键支持 + 兜底换肤**：utils/lqip.ts `getLqipStyle` 键逻辑升级为双分支——`/` 开头取 `public:<posix 路径>`，其余取 `url:<src 原样>`；查不到时兜底从 `var(--muted)` 灰色纯色改为 `linear-gradient(135deg, color-mix(in srgb, var(--accent) 20%, var(--surface)) 0%, …9%… 100%)` 主题色柔和渐变（color-mix 自动跟随明暗主题，global.css 已有先例）。plugins/rehype.ts `rehypeImageEnhance` 同步加 `lqipKey` 双分支（`https?://` 归 `url:` 键，data URL 等返回 null 跳过）；`loadLqipTable` 依次尝试 `file.cwd` 与 `process.cwd()` 双路径读 lqips.json（实测 content layer 的 file.cwd 就是站点根，兜底无害）。PostCard/AlbumCard/PhotoCard 渐变挂在独立 `.qy-lqip` div、正文图走内联 img style——两个消费端零改动自动获得 url 键支持。
+
+**④ ⚠️ Astro 内容层渲染缓存（本轮最大坑，波及 §4.106 潜伏 bug）**：build 后 81 个正文 img 全无内联渐变，排查链从「插件没跑」逐步收窄——lazy/decoding 已注入说明插件在跑、console 诊断显示 lqip 表 18 条正常，但逐图日志 0 命中 → 根因：**content layer 对 .md 有渲染缓存，内容不变则不重新渲染**，§4.106 首次渲染时 lqips.json 还没有对应键、注入失败的旧 HTML 被固化。修复：改 rehype 插件逻辑后必须 `rm -rf site/node_modules/.astro site/.astro` 清缓存再 build。⚠️ 连带 grep 坑：18 位 compact hex 在输出渐变里被拆成三段 6 字符（`#b6baa1 0%, #b9baa0 50%, …`），验证 grep 须用 6 位前缀而非完整 18 位。
+
+**改动**：scripts/generate-lqips.mjs（外链收集 + fetch 采样 + 缓存合并）；utils/lqip.ts（url 键 + accent 渐变兜底）；plugins/rehype.ts（lqipKey 双分支 + loadLqipTable 双路径）。site/lqips.json 产物新增 7 条 `url:` 键（hello-world api 封面、features-demo 正文首图 grid1、demo-remote 相册 5 张）。组件零改动。
+
+**验证**：lqips.json 18 条键（11 public + 7 url，外链全部抓取成功）；build 侧 5 项 grep PASS——首页 api 封面卡 `#b6baa1`、列表页 features-demo 卡 `#ad694a`、demo-remote 相册卡与照片 `#959595` 等、正文外链首图 `#ad694a`、本地图回归 `#a9c1cb`；浏览器终验 4 页全过（首页 / /gallery/ / /gallery/demo-remote/ / /posts/features-demo/）——DOM 实测渐变均为真实采样色、`--muted` 灰色出现次数为 0（anyMuted:false）、正文外链图渐变 + lazy 保留；连续两次跑脚本产物稳定（缓存复用不丢键）。
 
 ## 5. 里程碑路线
 

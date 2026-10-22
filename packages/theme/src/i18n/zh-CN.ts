@@ -6,6 +6,7 @@
 const zhCN = {
 	/* 全局框架（BaseLayout） */
 	skipToContent: "跳到主要内容",
+	scrollDown: "向下滚动",
 	backToTop: "回到顶部",
 	/* Header */
 	mainNav: "主导航",
@@ -111,6 +112,9 @@ const zhCN = {
 	searchNoResults: "没有找到相关结果",
 	searchUnavailable: "搜索索引需构建后可用",
 	searchTypeSomething: "输入关键词开始搜索",
+	/* 独立搜索页（§4.104）：浮层「查看全部」入口 + 结果页计数；分页文案复用 pagination 键 */
+	searchMore: "查看全部 {n} 条结果",
+	searchResultsTotal: "共 {n} 条结果",
 	/* 画廊（M3b-b8）：title/description 走主题配置，这里只放 UI 通用文案 */
 	galleryPhotos: "{n} 张照片",
 	backToAlbums: "返回相册",

@@ -1,13 +1,17 @@
 /**
  * rehype 插件集（M3a，全部零依赖手写 hast 遍历）
  *
- * 挂载顺序（index.ts）：externalLinks → callouts → figure → firstImage → anchor
+ * 挂载顺序（index.ts）：externalLinks → noReferrer → imageEnhance → callouts
+ *   → figure → firstImage → anchor
  * 代码块渲染自 §4.61 起由 Expressive Code 接管（index.ts 直连 rehype 内核），
  * 本文件不再包含代码块插件。
  * 注意：hast 节点类名有两种形态——shiki/EC 产出用 HTML 属性名直接写 properties
  * （class 为字符串而非 className 数组）；remark-rehype 原始节点则是 className
  * 数组。读取类名务必走 getClassList 兼容两种形态。
  */
+import fs from "node:fs";
+import path from "node:path";
+
 type Transformer = (tree: any, file: any) => void;
 
 /** 浅遍历辅助：对 node.children 逐个调用 fn，fn 可通过返回 'skip' 跳过子树 */
@@ -233,7 +237,67 @@ export function rehypeCallouts(): Transformer {
 	};
 }
 
-/* ---------------------------------------------------------------- figure */
+/* -------------------------------------------------------- 正文图片增强 */
+
+/**
+ * 正文图片增强（§4.106；§4.107 扩展外链）：
+ * 1. 注入 loading="lazy" + decoding="async"（已有值不覆盖——作者显式声明优先）；
+ * 2. 图片注入 LQIP 渐变背景：直接内联在 img style 上，图片加载后位图自然
+ *    盖住渐变，无需 wrapper 结构与客户端 JS。本地 public 图（src 以 / 开头）
+ *    查 `public:` 键，外链图（http(s) 绝对 URL）查 `url:` 键——键规则与
+ *    scripts/generate-lqips.mjs 一致，外链 URL 须与渲染期逐字符一致。
+ * lqips.json 读站点根（file.cwd）并模块级缓存——rehype transformer 运行于
+ * 纯 Node，拿不到 vite 虚拟模块；缓存按构建进程生命周期，dev 下改 lqips.json
+ * 需重启 dev server（与 vite 插件 configResolved 的读取时机一致）。
+ */
+let lqipTable: Record<string, string> | null = null;
+
+function loadLqipTable(cwd: string): Record<string, string> {
+	if (lqipTable) return lqipTable;
+	// content layer 的 VFile cwd 不一定是站点根，依次尝试 file.cwd 与 process.cwd()
+	for (const dir of [cwd, process.cwd()]) {
+		try {
+			lqipTable = JSON.parse(
+				fs.readFileSync(path.join(dir, "lqips.json"), "utf8"),
+			);
+			break;
+		} catch {
+			/* 目录不对，尝试下一个 */
+		}
+	}
+	lqipTable ??= {};
+	return lqipTable;
+}
+
+/** src → lqips.json 键（本地 public: 前缀 / 外链 url: 前缀），非两者返回 null */
+function lqipKey(src: string): string | null {
+	if (src.startsWith("/")) return `public:${src.replace(/^\//, "")}`;
+	if (/^https?:\/\//i.test(src)) return `url:${src}`;
+	return null;
+}
+
+export function rehypeImageEnhance(): Transformer {
+	return (tree, file) => {
+		const lqips = loadLqipTable(String(file.cwd ?? ""));
+		visit(tree, (node) => {
+			if (node.type !== "element" || node.tagName !== "img") return;
+			node.properties.loading ??= "lazy";
+			node.properties.decoding ??= "async";
+			const src = String(node.properties.src ?? "");
+			const key = lqipKey(src);
+			if (!key) return;
+			const hex = lqips[key];
+			if (!hex || !/^[0-9a-f]{18}$/i.test(hex)) return;
+			const grad = `linear-gradient(135deg, #${hex.slice(0, 6)} 0%, #${hex.slice(6, 12)} 50%, #${hex.slice(12, 18)} 100%)`;
+			const style = String(node.properties.style ?? "");
+			node.properties.style = style
+				? `${style};background:${grad}`
+				: `background:${grad}`;
+		});
+	};
+}
+
+/* -------------------------------------------------------------- figure */
 
 /**
  * 独立段落中的单图 → <figure>；img 的 title 属性 → <figcaption>。

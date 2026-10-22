@@ -5,6 +5,7 @@ import type { UiKey } from "./zh-CN.js";
 
 const ru: Record<UiKey, string> = {
 	skipToContent: "Перейти к основному содержанию",
+	scrollDown: "Прокрутить вниз",
 	backToTop: "Наверх",
 	mainNav: "Главная навигация",
 	toggleMode: "Переключить тёмную тему",
@@ -97,6 +98,8 @@ const ru: Record<UiKey, string> = {
 	searchNoResults: "Ничего не найдено",
 	searchUnavailable: "Поисковый индекс доступен после сборки",
 	searchTypeSomething: "Введите ключевые слова",
+	searchMore: "Показать все результаты ({n})",
+	searchResultsTotal: "Результатов: {n}",
 	galleryPhotos: "{n} фото",
 	backToAlbums: "К альбомам",
 	searchAlbums: "Поиск альбомов…",

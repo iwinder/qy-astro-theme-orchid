@@ -41,6 +41,7 @@ import {
 	rehypeExternalLinks,
 	rehypeFigure,
 	rehypeFirstImage,
+	rehypeImageEnhance,
 	rehypeNoReferrer,
 } from "./plugins/rehype.js";
 import {
@@ -59,6 +60,7 @@ import { remarkReadingTime } from "./plugins/remark-reading-time.js";
 import { type ThemeConfig, themeConfigSchema } from "./schema.js";
 import {
 	overridesPlugin,
+	pagefindDevPlugin,
 	themeConfigPlugin,
 	themeLqipsPlugin,
 } from "./vite.js";
@@ -128,6 +130,8 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 					rehypeExternalLinks,
 					// 图片防盗链（§4.87）：命中域名外链图加 no-referrer（domains 空时插件空转）
 					[rehypeNoReferrer, { domains: config.noReferrer.domains }],
+					// 正文图片增强（§4.106）：lazy/decoding 注入 + public 图 LQIP 渐变背景
+					rehypeImageEnhance,
 					rehypeCallouts,
 					rehypeFigure,
 					rehypeFirstImage,
@@ -310,6 +314,8 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 					["/", "index.astro"],
 					["/page/[page]", "page/[page].astro"],
 					["/archive", "archive.astro"],
+					// 独立搜索页（§4.104）：浮层「查看全部」入口的目标页，客户端查询分页
+					["/search", "search.astro"],
 					["/tags", "tags/index.astro"],
 					// §4.87 分类/标签分页：第一页 /tags/<tag>/（page 段省略），后续 /2/ 起
 					["/tags/[tag]/[...page]", "tags/[tag]/[...page].astro"],
@@ -378,6 +384,9 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 							themeConfigPlugin(config),
 							themeLqipsPlugin(),
 							overridesPlugin(),
+							// dev 下把 dist/pagefind 经前置中间件直接服务（astro-pagefind
+							// 同款方案），开发期无需构建即可搜索；索引缺失时放行走 404
+							pagefindDevPlugin(),
 						],
 					},
 				});
@@ -394,6 +403,10 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 						`declare module 'virtual:theme/lqips' {`,
 						`  const lqips: Record<string, string>;`,
 						`  export default lqips;`,
+						`}`,
+						`declare module 'virtual:theme/thumbs' {`,
+						`  const thumbs: Record<string, { thumb: string; width: number; height: number }>;`,
+						`  export default thumbs;`,
 						`}`,
 						`declare module 'virtual:theme/*' {`,
 						`  const Component: any;`,

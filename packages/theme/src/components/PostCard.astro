@@ -2,6 +2,7 @@
 import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
 import { getLqipStyle } from "../utils/lqip.js";
+import { getThumbInfo } from "../utils/thumb.js";
 import { formatDate, type PostLike, resolveCover } from "../utils.js";
 
 interface Props {
@@ -25,6 +26,8 @@ const { cover: rawCover, retries } = resolveCover(
 	post.id,
 );
 const cover = config.postList.showCover ? rawCover : null;
+/* §4.106：列表封面用缩略图（外链/未命中自动回退原图；点击进文章页看正文原图） */
+const thumb = cover ? getThumbInfo(cover) : null;
 const classes = [
 	"post-card",
 	featured ? "featured" : "",
@@ -47,7 +50,7 @@ const excerpt = d.excerpt || d.description;
         {/* LQIP 占位渐变（b9.5）：绝对定位盖在 img 上，加载完成后由 app.ts 淡出 */}
         <div class="qy-lqip" style={getLqipStyle(cover)} aria-hidden="true"></div>
         <img
-          src={cover}
+          src={thumb ? thumb.src : cover}
           alt={d.title}
           loading="lazy"
           data-lqip

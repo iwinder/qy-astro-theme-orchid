@@ -41,7 +41,7 @@ export const wallpaper: ThemeConfig["wallpaper"] = {
 		gradient: false,
 		carousel: { enable: false, interval: 5000, transitionEffect: "fade" },
 	},
-	banner: { height: 32, homeOnly: true, position: "center" },
+	banner: { height: 60, homeOnly: true, position: "center" },
 	fullscreen: { position: "center", layout: "hero" },
-	overlay: { zIndex: -1, opacity: 0.8, blur: 0, cardOpacity: 0.5 },
+	overlay: { zIndex: -1, opacity: 0.8, blur: 6, cardOpacity: 0.5 },
 };

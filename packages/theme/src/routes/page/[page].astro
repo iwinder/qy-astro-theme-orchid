@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import CategoryBar from "virtual:theme/components/CategoryBar.astro";
 import Pagination from "virtual:theme/components/Pagination.astro";
 import PostCard from "virtual:theme/components/PostCard.astro";
 import Sidebar from "virtual:theme/components/Sidebar.astro";
@@ -45,6 +46,8 @@ const pagePosts = await hydratePosts(
       data-default-layout={config.postList.defaultLayout}
       data-grid-col={config.postList.gridColumnWidth}
     >
+      {/* 分类导航栏：与首页一致，分页页保留入口 */}
+      <CategoryBar />
       {pagePosts.map((post) => <PostCard post={post} featured={post.data.pinned} />)}
       <Pagination page={page} total={total} basePath="/" />
     </div>

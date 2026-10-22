@@ -5,6 +5,7 @@ import type { UiKey } from "./zh-CN.js";
 
 const en: Record<UiKey, string> = {
 	skipToContent: "Skip to content",
+	scrollDown: "Scroll down",
 	backToTop: "Back to top",
 	mainNav: "Main navigation",
 	toggleMode: "Toggle dark mode",
@@ -97,6 +98,8 @@ const en: Record<UiKey, string> = {
 	searchNoResults: "No results found",
 	searchUnavailable: "Search index available after build",
 	searchTypeSomething: "Type to search",
+	searchMore: "View all {n} results",
+	searchResultsTotal: "{n} results",
 	galleryPhotos: "{n} photos",
 	backToAlbums: "Back to albums",
 	searchAlbums: "Search albums…",

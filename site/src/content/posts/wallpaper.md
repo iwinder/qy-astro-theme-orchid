@@ -112,7 +112,7 @@ homeText: {
 
 | 键 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `banner.height` | `number` | `32` | 横幅高度，占视口高度百分比（vh） |
+| `banner.height` | `number` | `60` | 横幅高度，占视口高度百分比（vh） |
 | `banner.homeOnly` | `boolean` | `true` | 仅对 `banner`/`fullscreen` 生效：`true` 只在首页显示，其它页面不渲染 |
 | `banner.position` / `fullscreen.position` | `string` | `"center"` | 背景图定位（`object-position` 取值：`center` / `top` / `bottom` 等） |
 
@@ -129,7 +129,7 @@ homeText: {
 
 ## 使用效果
 
-- `banner`：首页顶部一张 32vh 高的暗化壁纸，标题大字（`<em>` 强调色）居中，滚过即正文
+- `banner`：首页顶部一张 60vh 高的暗化壁纸，标题大字（`<em>` 强调色）居中，滚过即正文
 - `fullscreen`：壁纸铺满整个首屏，滚动后正文滑入
 - `overlay`：全站固定壁纸垫底，卡片半透明，页面处处透出壁纸
 - `switchable: true` 时访客随时点导航栏按钮切模式，偏好全站记忆

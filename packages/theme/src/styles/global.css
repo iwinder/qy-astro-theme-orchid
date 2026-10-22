@@ -680,6 +680,89 @@ html.dark #modeToggle .i-sun {
 	color: var(--muted);
 	text-align: center;
 }
+/* §4.104 浮层超出上限时的「查看全部 N 条结果」入口 */
+.search-more {
+	display: block;
+	padding: 11px 14px;
+	border-top: 1px solid var(--border);
+	background: var(--bg-soft);
+	text-align: center;
+	font-size: 13px;
+	color: var(--accent-ink);
+	transition: background-color 0.15s;
+}
+.search-more:hover {
+	background: var(--accent-soft);
+}
+
+/* ---------- 独立搜索页（§4.104，/search/）：静态外壳 + 客户端查询分页 ---------- */
+.search-page {
+	max-width: 760px;
+	margin: 0 auto;
+}
+.search-page-bar {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	height: 46px;
+	padding: 0 16px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--surface);
+	color: var(--muted);
+	transition: border-color 0.15s, color 0.15s;
+}
+.search-page-bar:focus-within {
+	border-color: var(--accent-ink);
+	color: var(--ink-2);
+}
+.search-page-bar svg {
+	width: 18px;
+	height: 18px;
+	flex: none;
+}
+.search-page-bar input {
+	flex: 1;
+	min-width: 0;
+	border: none;
+	outline: none;
+	background: transparent;
+	font: inherit;
+	font-size: 16px;
+	color: var(--ink);
+}
+.search-page-bar input::placeholder {
+	color: var(--muted);
+}
+.search-page-bar input::-webkit-search-cancel-button {
+	-webkit-appearance: none;
+}
+.search-page-meta {
+	margin-top: 14px;
+	font-size: 13px;
+	color: var(--muted);
+}
+.search-page-results {
+	margin-top: 4px;
+}
+.search-page-results .search-item {
+	padding: 14px 4px;
+}
+.search-page-results .search-item:hover {
+	background: transparent;
+}
+.search-page-results .search-item:hover .search-item-title {
+	color: var(--accent-ink);
+}
+.search-page-results .search-item-title {
+	font-size: 15.5px;
+	font-weight: 600;
+}
+.search-page-results .search-item-excerpt {
+	margin-top: 4px;
+	font-size: 13px;
+	-webkit-line-clamp: 3;
+}
 
 /* ---------- 3.5 统一壁纸体系（§4.98）：单一 .wp-stage + html[data-wallpaper-mode] 四形态 ---------- */
 /* 形态语义：
@@ -692,12 +775,30 @@ html.dark #modeToggle .i-sun {
 	overflow: hidden;
 }
 html[data-wallpaper-mode="banner"] .wp-stage {
-	height: var(--banner-h, 32vh);
+	height: var(--banner-h, 60vh);
 	margin-top: calc(-1 * var(--header-h));
 }
-html[data-wallpaper-mode="fullscreen"] .wp-stage {
+/* fullscreen 首页独占一屏；非首页降级（§4.98）：classic→banner 高度，hero→overlay fixed 垫底 */
+html[data-wallpaper-mode="fullscreen"][data-wp-is-home] .wp-stage {
 	height: 100vh;
 	margin-top: calc(-1 * var(--header-h));
+}
+html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home]):not(
+		[data-wp-fs-layout="hero"]
+	)
+	.wp-stage {
+	height: var(--banner-h, 60vh);
+	margin-top: calc(-1 * var(--header-h));
+}
+html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home])[data-wp-fs-layout="hero"]
+	.wp-stage {
+	position: fixed;
+	inset: 0;
+	height: auto;
+	margin-top: 0;
+	z-index: -1;
+	pointer-events: none;
+	opacity: var(--wp-overlay-opacity, 0.8);
 }
 /* overlay：fixed 垫底叠在 body 传播的画布底色之上、内容之下；整体 opacity 控制透出强度 */
 html[data-wallpaper-mode="overlay"] .wp-stage {
@@ -712,6 +813,35 @@ html[data-wallpaper-mode="none"] .wp-stage,
 html[data-wallpaper-mode="banner"] .wp-stage[data-wallpaper-hidden],
 html[data-wallpaper-mode="fullscreen"] .wp-stage[data-wallpaper-hidden] {
 	display: none;
+}
+
+/* 底部衔接（§4.98 banner / fullscreen-classic，对齐 Firefly 首屏布局）：
+   内容区上拉 --wp-overlap 覆盖 stage 底缘，分类导航条半压壁纸；
+   stage 底部 ::after 渐隐（透明 → var(--bg)），壁纸自然过渡到正文纯色背景。
+   hero 布局（fixed 整屏 + 100vh 下推）与 overlay（fixed 全站垫底）不适用；
+   stage 隐藏（homeOnly 非首页 / JS 切走）时取消上拉，避免正文被 sticky Header 裁切 */
+/* 仅 banner 与非首页 fullscreen-classic 上拉；fullscreen 首页独占一屏不上拉 */
+html[data-wallpaper-mode="banner"]:not([data-wp-stage-hidden]) .site-main,
+html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home]):not(
+		[data-wp-fs-layout="hero"]
+	):not([data-wp-stage-hidden])
+	.site-main {
+	/* 上拉后与 stage 产生重叠：stage 是 positioned（z-auto），card 多为 static 会被其盖住；
+	   给 main 补 position 使其按 DOM 序（stage 前 main 后）压回壁纸之上 */
+	position: relative;
+	margin-top: calc(-1 * var(--wp-overlap, 64px));
+}
+html[data-wallpaper-mode="banner"] .wp-stage::after,
+html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home]):not(
+		[data-wp-fs-layout="hero"]
+	)
+	.wp-stage::after {
+	content: "";
+	position: absolute;
+	inset: auto 0 0 0;
+	height: calc(var(--wp-overlap, 64px) + 56px);
+	background: linear-gradient(to bottom, transparent, var(--bg));
+	pointer-events: none;
 }
 
 /* 图片层：desktop/mobile 分端渲染；<768px 优先 mobile 源，未配置 mobile 时 desktop 层全宽兜底 */
@@ -731,10 +861,14 @@ html[data-wallpaper-mode="fullscreen"] .wp-stage[data-wallpaper-hidden] {
 .wp-img.active {
 	opacity: 1;
 }
-html[data-wallpaper-mode="banner"] .wp-img {
+html[data-wallpaper-mode="banner"] .wp-img,
+html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home]):not(
+		[data-wp-fs-layout="hero"]
+	)
+	.wp-img {
 	object-position: var(--banner-pos, center);
 }
-html[data-wallpaper-mode="fullscreen"] .wp-img {
+html[data-wallpaper-mode="fullscreen"][data-wp-is-home] .wp-img {
 	object-position: var(--fs-pos, center);
 }
 .wp-mobile {
@@ -749,8 +883,11 @@ html[data-wallpaper-mode="fullscreen"] .wp-img {
 		display: none;
 	}
 }
-/* overlay 形态的图片模糊/放大补偿（服务端算好 scale 防边缘露底），与 body 级旧口径一致 */
-html[data-wallpaper-mode="overlay"] .wp-img {
+/* overlay 形态的图片模糊/放大补偿（服务端算好 scale 防边缘露底），与 body 级旧口径一致；
+   非首页 fullscreen-hero 降级为 overlay，复用同一套模糊参数 */
+html[data-wallpaper-mode="overlay"] .wp-img,
+html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home])[data-wp-fs-layout="hero"]
+	.wp-img {
 	filter: blur(var(--wp-overlay-blur, 0px));
 	transform: scale(var(--wp-overlay-scale, 1));
 }
@@ -888,7 +1025,8 @@ html.dark .wp-dim {
 }
 
 /* hero 叠加（§4.98 homeText）：主句/副句居中压在壁纸可视区上；字号走 stage 级变量；
-   上缘滑入 Header 底下（负 margin），文字区加 padding-top 补偿做视觉居中 */
+   上缘滑入 Header 底下（负 margin）且底缘被内容上拉覆盖（--wp-overlap），文字区
+   padding-top/bottom 双向补偿，保证视觉居中不被导航遮挡、不压分类导航条 */
 .wp-hero {
 	position: absolute;
 	inset: 0;
@@ -900,8 +1038,18 @@ html.dark .wp-dim {
 	padding: var(--header-h) 24px 0;
 	text-align: center;
 }
+/* banner 底缘被内容上拉覆盖（--wp-overlap），文字区底部同步补偿保持视觉居中、
+   不压分类导航条；非首页 fullscreen-classic 降级为 banner 同样适用 */
+html[data-wallpaper-mode="banner"] .wp-hero,
+html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home]):not(
+		[data-wp-fs-layout="hero"]
+	)
+	.wp-hero {
+	padding-bottom: var(--wp-overlap, 64px);
+}
+/* 字号随窗口流体缩放：配置值为上限（宽屏保持大气），窄屏按 vw 平滑收缩，无需断点 */
 .wp-hero .hero-quote {
-	font-size: var(--wp-hero-title-size, 3.8rem);
+	font-size: clamp(1.8rem, 6vw + 1rem, var(--wp-hero-title-size, 3.8rem));
 	color: #fff;
 	text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
 }
@@ -912,17 +1060,72 @@ html.dark .wp-dim {
 .wp-hero .hero-sub {
 	min-height: 1.75em;
 	margin-top: 14px;
-	font-size: var(--wp-hero-sub-size, 1.5rem);
+	font-size: clamp(1rem, 2.5vw + 0.5rem, var(--wp-hero-sub-size, 1.5rem));
 	color: rgba(255, 255, 255, 0.88);
 	text-shadow: 0 1px 10px rgba(0, 0, 0, 0.4);
 }
-@media (max-width: 767px) {
-	.wp-hero .hero-quote {
-		font-size: clamp(1.8rem, 8vw, var(--wp-hero-title-size, 3.8rem));
+
+/* 全屏首屏滚动提示（§4.98 fullscreen）：底部靠上居中悬浮，上下浮动引导；
+   点击平滑滚过首屏（onclick scrollIntoView）。SSR 始终渲染、CSS 按模式门控显隐，
+   访客切到 fullscreen 即可用；hero 布局滚动后随 hero 一起淡出 */
+.wp-scroll-hint {
+	display: none;
+	position: absolute;
+	left: 50%;
+	bottom: 9vh;
+	transform: translateX(-50%);
+	z-index: 1;
+	align-items: center;
+	justify-content: center;
+	width: 44px;
+	height: 44px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: rgb(255 255 255 / 0.16);
+	-webkit-backdrop-filter: blur(6px);
+	backdrop-filter: blur(6px);
+	color: #fff;
+	cursor: pointer;
+	animation: wpScrollHint 2.2s ease-in-out infinite;
+	transition:
+		background 0.2s,
+		opacity 0.5s ease;
+}
+/* 仅 fullscreen 首页可见（banner/overlay/none 与非首页降级保持 display:none） */
+html[data-wallpaper-mode="fullscreen"][data-wp-is-home] .wp-scroll-hint {
+	display: flex;
+}
+.wp-scroll-hint:hover {
+	background: rgb(255 255 255 / 0.28);
+}
+.wp-scroll-hint svg {
+	width: 22px;
+	height: 22px;
+}
+@keyframes wpScrollHint {
+	0%,
+	100% {
+		transform: translateX(-50%) translateY(0);
 	}
-	.wp-hero .hero-sub {
-		font-size: clamp(1rem, 4.5vw, var(--wp-hero-sub-size, 1.5rem));
+	50% {
+		transform: translateX(-50%) translateY(10px);
 	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.wp-scroll-hint {
+		animation: none;
+	}
+}
+/* hero 布局：stage fixed 且 pointer-events:none，箭头需单独恢复可点击；
+   滚动后随 .wp-hero 同步淡出 */
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"] .wp-scroll-hint {
+	pointer-events: auto;
+}
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"].wp-scrolled
+	.wp-scroll-hint {
+	opacity: 0;
+	pointer-events: none;
 }
 
 /* 打字机光标（§4.98 typewriter）：span.typewriter 文本后闪烁竖线 */
@@ -965,7 +1168,8 @@ html[data-wallpaper-mode="overlay"] .card {
    与 classic 的差异：滚下后壁纸 fixed 铺满 + 模糊渐变过渡，卡片浮于模糊壁纸上；
    classic 滚下后正文区纯色背景（旧行为，无需额外规则）。
    首屏两种布局一致：壁纸占满一屏 + 中央 hero 文案。 */
-html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"] .wp-stage {
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
+	.wp-stage {
 	position: fixed;
 	inset: 0;
 	height: auto;
@@ -975,27 +1179,66 @@ html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"] .wp-stage {
 }
 /* 首屏让给 hero：正文流向下推一屏，滚上后覆盖 fixed 壁纸；
    stage 隐藏（homeOnly 非首页 / JS 切走）时取消下推，避免顶部整屏空白 */
-html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"]:not(
-	[data-wp-stage-hidden]
-) .site-main {
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]:not(
+		[data-wp-stage-hidden]
+	)
+	.site-main {
 	margin-top: 100vh;
 }
 /* hero 交互：fixed 后 pointer-events 被关，hero 文案纯展示无需点击（打字机亦然） */
+/* hero 文字滚动淡出：滚离首屏后标题/副标题渐隐，不盖在正文区模糊壁纸上 */
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
+	.wp-hero {
+	transition: opacity 0.5s ease;
+}
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home].wp-scrolled
+	.wp-hero {
+	opacity: 0;
+}
 /* 滚动模糊过渡：滚过 40px（html.wp-scrolled，app.ts updateWallpaperScroll）后
-   壁纸加模糊 + 放大补偿，模拟 Firefly 的渐变模糊；transition 平滑进入/退出 */
-html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"] .wp-img {
+   壁纸加模糊 + 放大补偿 + 底部渐隐蒙层加深，保证模糊渐变在 blur=0 时也可见 */
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
+	.wp-img {
 	transition:
 		opacity 0.8s ease,
 		transform 0.8s ease,
 		filter 0.5s ease;
 }
-html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"].wp-scrolled
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home].wp-scrolled
 	.wp-img {
 	filter: blur(var(--wp-overlay-blur, 0px));
 	transform: scale(var(--wp-overlay-scale, 1));
 }
-/* hero 布局正文卡片半透明：复用 overlay 的 --wp-card-opacity（壁纸从卡片间隙透出） */
-html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"] .card {
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
+	.wp-stage::after {
+	content: "";
+	position: absolute;
+	inset: auto 0 0 0;
+	height: 40vh;
+	background: linear-gradient(to bottom, transparent, var(--bg));
+	opacity: 0;
+	transition: opacity 0.5s ease;
+	pointer-events: none;
+}
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home].wp-scrolled
+	.wp-stage::after {
+	opacity: 1;
+}
+/* hero 布局正文卡片半透明：复用 overlay 的 --wp-card-opacity（壁纸从卡片间隙透出）。
+   文章列表 .post-card 与分页 .page-item 不走 .card 类，需一并覆盖；
+   非首页 fullscreen-hero 降级为 overlay，同样需要半透明卡片 */
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
+	.card,
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
+	.post-card,
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
+	.page-item,
+html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home])[data-wp-fs-layout="hero"]
+	.card,
+html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home])[data-wp-fs-layout="hero"]
+	.post-card,
+html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home])[data-wp-fs-layout="hero"]
+	.page-item {
 	background: color-mix(
 		in srgb,
 		var(--surface) var(--wp-card-opacity, 50%),
@@ -1006,7 +1249,33 @@ html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"] .card {
 /* ---------- 3.5c 壁纸访客开关显隐（§4.103）：html data 属性驱动 ----------
    boot 脚本（BaseLayout）与 app.ts applySavedWallpaper 双入口写入，
    面板开关切换时同步更新 */
+/* hero 文案显隐总规则（§4.98 硬规则，用户多次确认、后续改动不得回退）：
+   壁纸文字只允许出现在两类位置——① banner 形态的横幅区（Header 菜单导航与
+   分类导航条之间，含非首页 fullscreen-classic 降级）；② fullscreen 首页首屏
+   （hero 布局居中文案）。其余形态一律不展示文字：overlay 形态 stage 为 fixed
+   垫底，.wp-hero 会浮在半透明内容区背后；fullscreen-hero 非首页降级为 overlay
+   同样适用（data-wallpaper-mode 仍是 "fullscreen"，需按 layout+非首页匹配）。
+   文字职责交还内容区标题（.page-title/.post-title-lg 等，见下方规则） */
+html[data-wallpaper-mode="overlay"] .wp-hero,
+html[data-wallpaper-mode="none"] .wp-hero,
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"]:not([data-wp-is-home])
+	.wp-hero {
+	display: none;
+}
 html[data-wp-home-text="off"] .wp-hero {
+	display: none;
+}
+/* hero 横幅显示页面标题时，隐藏内容区重复标题（避免归档/文章等页面出现两个同名标题）。
+   仅 banner 与 fullscreen-classic 生效：fullscreen-hero 非首页降级为 overlay，
+   .wp-hero 被上方规则隐藏，此时内容区标题应保留可见 */
+html[data-wp-hero="visible"][data-wallpaper-mode="banner"] .page-title,
+html[data-wp-hero="visible"][data-wallpaper-mode="banner"] .page-sub,
+html[data-wp-hero="visible"][data-wallpaper-mode="banner"] .post-title-lg,
+html[data-wp-hero="visible"][data-wallpaper-mode="banner"] .archive-head,
+html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not([data-wp-fs-layout="hero"]) .page-title,
+html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not([data-wp-fs-layout="hero"]) .page-sub,
+html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not([data-wp-fs-layout="hero"]) .post-title-lg,
+html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not([data-wp-fs-layout="hero"]) .archive-head {
 	display: none;
 }
 html[data-wp-waves="off"] .wp-waves {
@@ -3192,14 +3461,27 @@ html.dark .form-grid .input-error {
 }
 
 /* ---------- 7. 归档 ---------- */
+/* §4.105：页面头居中排版——居中标题 + 标题下渐变短线 + 副标题，
+   PC 宽屏下标题与内容列同轴居中，不再贴容器左缘 */
 .archive-head {
 	max-width: 760px;
-	margin-bottom: 32px;
+	margin: 0 auto 32px;
+	text-align: center;
 }
 .archive-head .page-title {
 	font-family: var(--font-display);
 	font-size: 30px;
 	font-weight: 700;
+}
+/* 标题下渐变短线（accent → 透明），随暗色模式 accent 变量自动适配 */
+.archive-head .page-title::after {
+	content: "";
+	display: block;
+	width: 56px;
+	height: 3px;
+	margin: 14px auto 0;
+	border-radius: 2px;
+	background: linear-gradient(90deg, var(--accent), transparent);
 }
 .archive-head .page-sub {
 	margin-top: 6px;

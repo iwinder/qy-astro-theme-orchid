@@ -1,0 +1,24 @@
+---
+// 独立搜索页（§4.104）：静态外壳，查询与分页全部在客户端完成（app.ts「独立搜索页」段）。
+// 结果来自 Pagefind 构建期索引；URL 携带 ?q= 关键词与 ?page= 页码，可直接到达与分享。
+// 整页 pagefindIgnore：搜索页自身不进索引，避免搜出无内容空壳页。
+import BaseLayout from "virtual:theme/components/BaseLayout.astro";
+import { t } from "../i18n/index.js";
+---
+
+<BaseLayout title={t('search')} page="search" pagefindIgnore>
+  <header class="archive-head reveal">
+    <h1 class="page-title">{t('search')}</h1>
+  </header>
+  <div class="search-page reveal">
+    <div class="search-page-bar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="searchPageInput" type="search" placeholder={t('search')} autocomplete="off" enterkeyhint="search" aria-label={t('search')} />
+    </div>
+    {/* 初始文案由 SSR 输出，客户端按查询状态改写（加载中/结果数/无结果/索引不可用） */}
+    <p class="search-page-meta" id="searchPageMeta">{t('searchTypeSomething')}</p>
+    <div class="search-page-results" id="searchPageResults"></div>
+    {/* 分页条复用列表页 .pagination 样式，内容由客户端按结果总数渲染 */}
+    <nav class="pagination" id="searchPagePager" aria-label={t('pagination')} hidden></nav>
+  </div>
+</BaseLayout>

@@ -192,7 +192,15 @@ async function initLightbox() {
 		const img = el instanceof HTMLImageElement ? el : el?.querySelector("img");
 		if (!img) return itemData;
 		if (!itemData.src) itemData.src = img.currentSrc || img.src;
-		if (img.naturalWidth > 0) {
+		/* §4.106：列表 img 可能是缩略图（data-full-* 携带原图 URL 与尺寸）——
+		   优先打开原图；无数据时沿用 img 自身 src 与 natural 尺寸 */
+		if (img.dataset.fullSrc) {
+			itemData.src = img.dataset.fullSrc;
+			if (Number(img.dataset.fullWidth) > 0 && Number(img.dataset.fullHeight) > 0) {
+				itemData.width = Number(img.dataset.fullWidth);
+				itemData.height = Number(img.dataset.fullHeight);
+			}
+		} else if (img.naturalWidth > 0) {
 			itemData.width = img.naturalWidth;
 			itemData.height = img.naturalHeight;
 		}
@@ -489,7 +497,9 @@ window.addEventListener(
 );
 window.addEventListener("resize", updateReadProgress, { passive: true });
 
-/* ---------- 搜索浮层（M3b-b6）：Pagefind 构建期索引，运行时惰性加载 ---------- */
+/* ---------- 搜索（M3b-b6 → §4.104）：Pagefind 构建期索引，标准动态 import 接入。
+   导航浮层：输入即搜，最多 8 条，超出时尾部「查看全部」链接进独立搜索页；
+   独立搜索页（/search/）：URL ?q= 关键词 + ?page= 页码，客户端分页渲染 ---------- */
 type PagefindResultData = {
 	url: string;
 	excerpt: string;
@@ -504,15 +514,14 @@ type Pagefind = {
 
 /* undefined=未加载 null=不可用（dev 无索引/加载失败）；模块级缓存，VT 换页不重复加载 */
 let pagefind: Pagefind | null | undefined;
-let searchSeq = 0;
 
 async function loadPagefind(): Promise<Pagefind | null> {
 	if (pagefind !== undefined) return pagefind;
 	try {
 		const src = "/pagefind/pagefind.js";
-		const res = await fetch(src, { method: "HEAD" });
-		if (!res.ok) throw new Error("no index");
-		// 变量形式 + @vite-ignore：构建产物不存在时（dev/无索引）不做静态解析，运行时才加载
+		// 标准 Pagefind 接入（官方推荐）：运行时直接动态 import 构建期索引入口。
+		// 变量形式 + @vite-ignore：索引是 build 后才存在的产物，构建期不做静态解析，
+		// dev 无索引时 import 失败走 catch 降级提示
 		const pf = (await import(/* @vite-ignore */ src)) as unknown as Pagefind;
 		if (pf.options) await pf.options({ excerptLength: 20 });
 		pagefind = pf;
@@ -520,6 +529,25 @@ async function loadPagefind(): Promise<Pagefind | null> {
 		pagefind = null;
 	}
 	return pagefind;
+}
+
+/* 浮层最多展示 8 条（§4.56 视口内条数），超出引导进独立搜索页（§4.104） */
+const SEARCH_POP_MAX = 8;
+
+/* 结果项（浮层与搜索页共用）：标题 + pagefind 受限高亮摘要 */
+function searchItemEl(item: PagefindResultData): HTMLAnchorElement {
+	const a = doc.createElement("a");
+	a.className = "search-item";
+	a.href = item.url;
+	const title = doc.createElement("div");
+	title.className = "search-item-title";
+	title.textContent = item.meta?.title || item.url;
+	const excerpt = doc.createElement("div");
+	excerpt.className = "search-item-excerpt";
+	/* pagefind 产出的受限高亮片段（<mark>/<strong>），非用户输入 */
+	excerpt.innerHTML = item.excerpt;
+	a.append(title, excerpt);
+	return a;
 }
 
 function setSearchHint(text: string) {
@@ -533,23 +561,24 @@ function setSearchHint(text: string) {
 	box.hidden = false;
 }
 
-function renderSearchResults(items: PagefindResultData[]) {
+/* 请求序号：只接受最后一次输入的响应，防乱序覆盖 */
+let searchSeq = 0;
+
+function renderSearchResults(
+	items: PagefindResultData[],
+	more?: { keyword: string; total: number },
+) {
 	const box = doc.getElementById("searchResults");
 	if (!box) return;
 	box.replaceChildren();
-	for (const item of items) {
-		const a = doc.createElement("a");
-		a.className = "search-item";
-		a.href = item.url;
-		const title = doc.createElement("div");
-		title.className = "search-item-title";
-		title.textContent = item.meta?.title || item.url;
-		const excerpt = doc.createElement("div");
-		excerpt.className = "search-item-excerpt";
-		/* pagefind 产出的受限高亮片段（<mark>/<strong>），非用户输入 */
-		excerpt.innerHTML = item.excerpt;
-		a.append(title, excerpt);
-		box.appendChild(a);
+	for (const item of items) box.appendChild(searchItemEl(item));
+	if (more) {
+		/* §4.104 超出浮层上限：尾部「查看全部 N 条结果」链接进独立搜索页 */
+		const link = doc.createElement("a");
+		link.className = "search-more";
+		link.href = "/search/?q=" + encodeURIComponent(more.keyword);
+		link.textContent = ui("searchMore").replace("{n}", String(more.total));
+		box.appendChild(link);
 	}
 	box.hidden = false;
 }
@@ -611,16 +640,166 @@ function runSearch(keyword: string) {
 		}
 		try {
 			const res = await pf.search(keyword);
+			/* res.results.length 即命中总数（惰性 API）；浮层只取前 SEARCH_POP_MAX 条加载详情 */
+			const total = res.results.length;
 			const items = await Promise.all(
-				res.results.slice(0, 8).map((r) => r.data()),
+				res.results.slice(0, SEARCH_POP_MAX).map((r) => r.data()),
 			);
 			if (seq !== searchSeq) return;
-			if (items.length) renderSearchResults(items);
-			else setSearchHint(ui("searchNoResults"));
+			if (total > SEARCH_POP_MAX) {
+				renderSearchResults(items, { keyword, total });
+			} else if (items.length) {
+				renderSearchResults(items);
+			} else {
+				setSearchHint(ui("searchNoResults"));
+			}
 		} catch {
 			if (seq === searchSeq) setSearchHint(ui("searchNoResults"));
 		}
 	}, 300);
+}
+
+/* ---------- 独立搜索页（§4.104，/search/）：URL ?q= 关键词 + ?page= 页码。
+   静态外壳 + 客户端查询分页；输入即时刷新（replaceState 不经换页），
+   翻页走真实链接经 VT 换页后由 astro:page-load 重新渲染 ---------- */
+const SEARCH_PAGE_SIZE = 10;
+let searchPageSeq = 0;
+let searchPageTimer = 0;
+
+/* 页码窗口：恒含首末页与当前页±2，间隙以省略号占位（与 Pagination.astro 同规则） */
+function pagerNums(page: number, total: number): Array<number | "ellipsis"> {
+	const set = new Set<number>([1, total]);
+	for (let p = page - 2; p <= page + 2; p++) {
+		if (p >= 1 && p <= total) set.add(p);
+	}
+	const nums = [...set].sort((a, b) => a - b);
+	const out: Array<number | "ellipsis"> = [];
+	let prev = 0;
+	for (const n of nums) {
+		if (prev && n - prev > 1) out.push("ellipsis");
+		out.push(n);
+		prev = n;
+	}
+	return out;
+}
+
+function searchPageHref(q: string, page: number): string {
+	return (
+		"/search/?q=" +
+		encodeURIComponent(q) +
+		(page > 1 ? "&page=" + page : "")
+	);
+}
+
+function renderSearchPager(pager: HTMLElement, q: string, cur: number, pages: number) {
+	if (pages <= 1) {
+		pager.hidden = true;
+		return;
+	}
+	pager.hidden = false;
+	const nums = doc.createElement("div");
+	nums.className = "pg-nums";
+	const mk = (href: string, label: string, cls: string) => {
+		const a = doc.createElement("a");
+		a.className = cls;
+		a.href = href;
+		a.textContent = label;
+		return a;
+	};
+	const span = (label: string) => {
+		const s = doc.createElement("span");
+		s.className = "page-item disabled";
+		s.textContent = label;
+		return s;
+	};
+	if (cur > 1) nums.appendChild(mk(searchPageHref(q, cur - 1), "‹", "page-item"));
+	else nums.appendChild(span("‹"));
+	for (const n of pagerNums(cur, pages)) {
+		if (n === "ellipsis") {
+			const gap = doc.createElement("span");
+			gap.className = "pg-gap";
+			gap.textContent = "…";
+			nums.appendChild(gap);
+		} else if (n === cur) {
+			const s = doc.createElement("span");
+			s.className = "page-item current";
+			s.setAttribute("aria-current", "page");
+			s.textContent = String(n);
+			nums.appendChild(s);
+		} else {
+			nums.appendChild(mk(searchPageHref(q, n), String(n), "page-item"));
+		}
+	}
+	if (cur < pages) nums.appendChild(mk(searchPageHref(q, cur + 1), "›", "page-item"));
+	else nums.appendChild(span("›"));
+
+	const adj = doc.createElement("div");
+	adj.className = "pg-adj";
+	if (cur > 1) adj.appendChild(mk(searchPageHref(q, cur - 1), ui("prevPage"), "pg-prev"));
+	else adj.appendChild(span(ui("prevPage")));
+	const mid = doc.createElement("span");
+	mid.textContent = ui("pageOf")
+		.replace("{current}", String(cur))
+		.replace("{total}", String(pages));
+	adj.appendChild(mid);
+	if (cur < pages) adj.appendChild(mk(searchPageHref(q, cur + 1), ui("nextPage"), "pg-next"));
+	else adj.appendChild(span(ui("nextPage")));
+
+	pager.replaceChildren(nums, adj);
+}
+
+async function renderSearchPage() {
+	const seq = ++searchPageSeq;
+	const input = doc.getElementById("searchPageInput") as HTMLInputElement | null;
+	const meta = doc.getElementById("searchPageMeta");
+	const box = doc.getElementById("searchPageResults");
+	const pager = doc.getElementById("searchPagePager");
+	if (!input || !meta || !box || !pager) return;
+
+	const params = new URLSearchParams(location.search);
+	const q = (params.get("q") || "").trim();
+	const page = Math.max(1, parseInt(params.get("page") || "1", 10) || 1);
+	input.value = q;
+	pager.hidden = true;
+
+	if (!q) {
+		box.replaceChildren();
+		meta.textContent = ui("searchTypeSomething");
+		return;
+	}
+	meta.textContent = ui("searchLoading");
+
+	const pf = await loadPagefind();
+	if (seq !== searchPageSeq) return;
+	if (!pf) {
+		meta.textContent = ui("searchUnavailable");
+		box.replaceChildren();
+		return;
+	}
+	try {
+		const res = await pf.search(q);
+		const total = res.results.length;
+		if (seq !== searchPageSeq) return;
+		if (!total) {
+			box.replaceChildren();
+			meta.textContent = ui("searchNoResults");
+			return;
+		}
+		const pages = Math.ceil(total / SEARCH_PAGE_SIZE);
+		const cur = Math.min(page, pages);
+		const items = await Promise.all(
+			res.results
+				.slice((cur - 1) * SEARCH_PAGE_SIZE, cur * SEARCH_PAGE_SIZE)
+				.map((r) => r.data()),
+		);
+		if (seq !== searchPageSeq) return;
+		box.replaceChildren();
+		for (const item of items) box.appendChild(searchItemEl(item));
+		meta.textContent = ui("searchResultsTotal").replace("{n}", String(total));
+		renderSearchPager(pager, q, cur, pages);
+	} catch {
+		if (seq === searchPageSeq) meta.textContent = ui("searchNoResults");
+	}
 }
 
 /* ---------- 加密文章（M3b-b7）：Web Crypto 解密（与 utils/crypto.ts 构建期参数对齐） ---------- */
@@ -775,8 +954,8 @@ doc.addEventListener("click", (e) => {
 		return;
 	}
 
-	/* 搜索结果点击：收起浮层后放行默认导航（VT 接管换页） */
-	if (target.closest(".search-item")) {
+	/* 搜索结果/查看全部点击：浮层收起后放行默认导航（VT 接管换页；search-more 进独立搜索页） */
+	if (target.closest(".search-item, .search-more")) {
 		closeSearch();
 	}
 
@@ -956,6 +1135,19 @@ doc.addEventListener("input", (e) => {
 	if (el && (el.id === "searchInput" || el.id === "searchInputM")) {
 		runSearch((el as HTMLInputElement).value.trim());
 	}
+	/* 独立搜索页输入（§4.104）：300ms 防抖 + replaceState 同步 URL，客户端即时刷新不经换页 */
+	if (el && el.id === "searchPageInput") {
+		const q = (el as HTMLInputElement).value.trim();
+		window.clearTimeout(searchPageTimer);
+		searchPageTimer = window.setTimeout(() => {
+			const url = new URL(location.href);
+			if (q) url.searchParams.set("q", q);
+			else url.searchParams.delete("q");
+			url.searchParams.delete("page");
+			history.replaceState(null, "", url);
+			renderSearchPage();
+		}, 300);
+	}
 	if (el instanceof HTMLInputElement && el.dataset.dsSlider) {
 		handleDsSliderInput(el);
 	}
@@ -1123,23 +1315,26 @@ function pauseWallpaperVideo() {
 
 /* 恢复访客保存的壁纸模式（after-swap 与 initWallpaper 双入口，幂等）：
    boot 脚本负责首帧，这里兜底 VT 换页；显式偏好解除 homeOnly 的非首页隐藏；
-   §4.103：面板开启时追加恢复布局/开关/透明三件套（html style 随 swap 重建需重应用） */
+   §4.103：面板开启时追加恢复布局/开关/透明三件套（html style 随 swap 重建需重应用）。
+   注意：即使保存模式与 SSR 模式相同，也必须同步 data-wallpaper-hidden，否则
+   非首页刷新时 SSR 渲染的隐藏标记不会被清除（banner/fullscreen 应始终可见） */
 function applySavedWallpaper() {
-	if (root.dataset.wpSwitchable === "true") {
-		const m = savedWallpaperMode();
-		if (m && m !== root.dataset.wallpaperMode) {
-			root.dataset.wallpaperMode = m;
-			syncWallpaperNav(m);
-			const stage = doc.querySelector<HTMLElement>(".wp-stage");
-			if (stage) {
-				if (m === "banner" || m === "fullscreen") {
-					delete stage.dataset.wallpaperHidden;
-					delete root.dataset.wpStageHidden;
-				} else {
-					stage.setAttribute("data-wallpaper-hidden", "");
-					root.dataset.wpStageHidden = "true";
-				}
-			}
+	const m =
+		root.dataset.wpSwitchable === "true"
+			? savedWallpaperMode() || root.dataset.wallpaperMode
+			: root.dataset.wallpaperMode;
+	if (m && m !== root.dataset.wallpaperMode) {
+		root.dataset.wallpaperMode = m;
+		syncWallpaperNav(m);
+	}
+	const stage = doc.querySelector<HTMLElement>(".wp-stage");
+	if (stage) {
+		if (m === "banner" || m === "fullscreen") {
+			delete stage.dataset.wallpaperHidden;
+			delete root.dataset.wpStageHidden;
+		} else {
+			stage.setAttribute("data-wallpaper-hidden", "");
+			root.dataset.wpStageHidden = "true";
 		}
 	}
 	if (root.dataset.dsEnable === "true") applyDsPrefs();
@@ -1608,6 +1803,7 @@ function initPage() {
 	initSeriesNav();
 	initWallpaper();
 	initDisplaySettings();
+	renderSearchPage();
 }
 initPage();
 doc.addEventListener("astro:page-load", initPage);

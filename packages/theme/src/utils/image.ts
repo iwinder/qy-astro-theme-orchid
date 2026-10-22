@@ -3,18 +3,20 @@
  * 1. `/` 开头 → 站点 public 静态资源，原样输出（不经构建管线优化）；
  * 2. `http(s)://` / `//` / `data:` → 外链或内联，原样输出；
  * 3. 其余相对路径（如 "assets/images/avatar.png"）→ 相对站点项目 src/ 目录
- *    构建期解析，返回带内容 hash 的构建产物 URL（唯一被优化的格式）。
+ *    构建期解析，且经 sharp image service 重编码（默认 webp + 压缩，
+ *    §4.106 升级），返回优化产物 URL（唯一被优化的格式）。
  *
  * 解析机制：import.meta.glob("/src/assets/...") 的 `/` 前缀相对 Vite 项目根，
  * 主题包组件运行在站点构建管线中，因此命中站点项目的 src/assets；
  * 非 eager 按需 await，仅实际用到的图片进入构建产物。
+ * svg（矢量）与 gif（动图）不做 sharp 编码——转码会破坏矢量/动画，原样输出。
  * ico 不参与 glob（favicon 走 public / 远程，无优化需求）。
  */
 
-/** glob 命中的资源元数据（astro:assets 的 ImageMetadata 形状，此处仅用 src） */
-interface AssetMeta {
-	src: string;
-}
+import { getImage, type ImageMetadata } from "astro:assets";
+
+/** glob 命中的资源元数据 */
+type AssetMeta = ImageMetadata;
 
 /** 三格式判定：true = 相对 src/ 的本地资源（需构建期解析） */
 export function isLocalImagePath(src: string): boolean {
@@ -40,6 +42,10 @@ type AssetModules = Record<string, () => Promise<AssetMeta>>;
  * public / 外链原样返回；相对路径查 glob 表，命中则 await 产物元数据；
  * 未命中（文件不存在）时 console.warn 并原样返回，页面不断构建。
  *
+ * §4.106：位图（png/jpg/webp/avif）额外经 getImage() 走 sharp image service
+ * 构建期重编码（默认转 webp + 质量压缩，Astro 同图同参有编码缓存）；
+ * svg/gif 保持原始产物 URL 不转码。失败时降级原样返回，页面不断构建。
+ *
  * 注意：import.meta.glob 第一参数必须是字符串字面量（vite 编译期静态分析，
  * 变量/常量在 dev 下直接报 Invalid glob import syntax），模式不能提取为常量。
  */
@@ -57,7 +63,14 @@ export async function resolveSiteImage(src: string): Promise<string> {
 		return src;
 	}
 	const meta = await loader();
-	return meta.src;
+	if (meta.format === "svg" || meta.format === "gif") return meta.src;
+	try {
+		const encoded = await getImage({ src: meta });
+		return encoded.src;
+	} catch (err) {
+		console.warn(`[orchid-theme] 图片优化失败，回退原图: ${toAssetKey(src)}`, err);
+		return meta.src;
+	}
 }
 
 /** 数组批量解析（banner/壁纸多图、歌单封面等），顺序保持 */

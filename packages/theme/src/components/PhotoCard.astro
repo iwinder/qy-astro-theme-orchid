@@ -6,6 +6,7 @@
  * showDecrypted → initLightbox 重预置生效）。
  */
 import { getLqipStyle } from "../utils/lqip.js";
+import { getThumbInfo } from "../utils/thumb.js";
 
 interface Props {
 	src: string;
@@ -13,10 +14,21 @@ interface Props {
 }
 
 const { src, alt = "" } = Astro.props;
+/* §4.106：列表瀑布流用 480 宽缩略图，data-full-* 供灯箱打开原图（原图宽高） */
+const thumb = getThumbInfo(src);
 ---
 
 <figure class="gallery-photo" data-lightbox-item>
   {/* LQIP 占位渐变（b9.5）：src 支持外链，getLqipStyle 查不到时降级纯色 */}
   <div class="qy-lqip" style={getLqipStyle(src)} aria-hidden="true"></div>
-  <img src={src} alt={alt} loading="lazy" decoding="async" data-lqip />
+  <img
+    src={thumb.src}
+    alt={alt}
+    loading="lazy"
+    decoding="async"
+    data-lqip
+    data-full-src={thumb.full}
+    data-full-width={thumb.width}
+    data-full-height={thumb.height}
+  />
 </figure>

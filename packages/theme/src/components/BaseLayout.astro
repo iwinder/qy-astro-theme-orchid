@@ -27,6 +27,8 @@ interface Props {
 	page?: string;
 	/** OG 分享图路径（b9.4，文章页传 /og/<slug>.png）；绝对链接依赖站点 site 配置 */
 	ogImage?: string;
+	/** 整页排除 Pagefind 索引（§4.104 搜索页自身不进索引，防自指噪声） */
+	pagefindIgnore?: boolean;
 }
 
 const {
@@ -35,6 +37,7 @@ const {
 	keywords = config.keywords,
 	page,
 	ogImage,
+	pagefindIgnore,
 } = Astro.props;
 const pageTitle = title ? `${title} · ${config.title}` : config.title;
 const { h, s, l } = hexToHsl(config.accentColor);
@@ -58,19 +61,27 @@ const stageMobile = wpCarouselOn
 	: wpMobileAll.length
 		? [wpPick(wpMobileAll)]
 		: [];
-/* stage 渲染门槛：有图且模式非 none；banner/fullscreen 的 homeOnly 非首页时
-   渲染但标 data-wallpaper-hidden（跨页模式切换可用，访客手动切换即解除隐藏） */
+/* 实际首页判定：仅根路径 / 为 true（分页 /page/2/ 虽 page=home 但非首页）。
+   非首页 fullscreen 降级（§4.98）：classic→banner（横幅高度，跨页可见）、
+   hero→overlay（透明背景，无顶部全屏区），保持首页大气全屏、内页轻量的层次 */
+const isActualHome = page === "home" && Astro.url.pathname === "/";
+const fsLayout = wp.fullscreen.layout;
+const visualMode =
+	wp.mode === "fullscreen" && !isActualHome
+		? fsLayout === "hero"
+			? "overlay"
+			: "banner"
+		: wp.mode;
+/* stage 渲染门槛：有图且模式非 none。非首页也渲染 stage（banner 模式展示页面标题
+   横幅，fullscreen 降级为 banner/overlay），homeOnly 仅控制壁纸图是否在非首页
+   显示，不再隐藏整个 stage——保证非首页有页面标题横幅且刷新不丢失样式 */
 const stageMode =
-	wp.mode === "none" || stageDesktop.length === 0 ? null : wp.mode;
-const stageHidden = Boolean(
-	stageMode &&
-		(stageMode === "banner" || stageMode === "fullscreen") &&
-		wp.banner.homeOnly &&
-		page !== "home",
-);
-const stageVisible = Boolean(stageMode) && !stageHidden;
-/* hero 首页文案（§4.98 homeText）：stage 可见时叠加其上；无壁纸（none/无图）时
-   首页独立 hero 区块复用同一份文案配置 */
+	visualMode === "none" || stageDesktop.length === 0 ? null : visualMode;
+const stageHidden = false;
+const stageVisible = Boolean(stageMode);
+/* hero 文案（§4.98）：首页用 homeText 配置（标题+副标题/打字机），非首页用页面
+   传入的 title（归档→"归档"、文章→文章标题等）。仅 stage 可见时渲染，叠加在
+   壁纸之上；overlay/none 模式 stage 为 fixed 垫底或不存在，CSS 隐藏 .wp-hero */
 const homeText = wp.common.homeText;
 const wpSubs = Array.isArray(homeText.subtitle)
 	? homeText.subtitle
@@ -81,8 +92,12 @@ const hasHeroText =
 	homeText.enable && (Boolean(homeText.title) || wpSubs.length > 0);
 const typerOn = homeText.typewriter.enable && wpSubs.length > 0;
 const staticSub = typerOn ? "" : wpSubs.length ? wpPick(wpSubs) : "";
-const heroInStage = stageVisible && hasHeroText;
-const heroStandalone = page === "home" && hasHeroText && !heroInStage;
+/* hero 渲染条件：首页需 homeText 有内容；非首页需有 title。两种情况都要求
+   stage 存在（banner/fullscreen 模式） */
+const heroTitle = isActualHome ? homeText.title : title;
+const heroSub = isActualHome ? staticSub : "";
+const heroTyperOn = isActualHome && typerOn;
+const heroInStage = Boolean(stageMode) && (isActualHome ? hasHeroText : Boolean(title));
 /* 底部装饰分端归一化：布尔简写展开为两端同值 */
 const wpWaves =
 	typeof wp.common.waves === "boolean"
@@ -131,12 +146,14 @@ const fontRoleCss = config.fonts
   style={`--accent-h:${h};--accent-s:${s}%;--accent-l:${l}%;--page-width:${config.pageWidth}px${config.darkMode.adaptExternalImages ? ";--img-adapt-b:.85" : ""};--wp-dim:${wp.common.dimOpacity};--wp-dim-dark:${wp.common.darkDimOpacity};--wp-card-opacity:${Math.round(wp.overlay.cardOpacity * 100)}%;--wp-nav-blur:${wp.common.navbar.enableBlur ? wp.common.navbar.blur : 0}px;--banner-h:${wp.banner.height}vh;--banner-pos:${wp.banner.position};--fs-pos:${wp.fullscreen.position};--wp-grad-h:${wpGradient.height};--wp-overlay-opacity:${wp.overlay.opacity};--wp-overlay-blur:${wp.overlay.blur}px;--wp-overlay-scale:${(1 + wp.overlay.blur / 100).toFixed(3)}`}
   data-accent-h={h}
   data-color-mode={config.colorMode}
-  data-wallpaper-mode={stageMode ?? "none"}
+  data-wallpaper-mode={wp.mode ?? "none"}
   data-wallpaper-nav={wpNavMode}
   data-wp-nav-config={wp.common.navbar.transparentMode}
   data-wp-switchable={wpSwitchAllowed ? "true" : "false"}
   data-wp-fs-layout={wp.fullscreen.layout}
+  data-wp-is-home={isActualHome ? "true" : undefined}
   data-wp-stage-hidden={stageHidden ? "true" : undefined}
+  data-wp-hero={heroInStage ? "visible" : undefined}
   data-ds-enable={dsEnable ? "true" : "false"}
 >
   <head>
@@ -214,11 +231,15 @@ const fontRoleCss = config.fonts
     )}
   </head>
   <!-- 客户端动态文案载体（i18n，M3b-b5）：app.ts 读取，VT swap 后随新 body 重建 -->
-  <script type="application/json" id="qy-ui-labels" set:html={JSON.stringify({ close: t('close'), prevImage: t('prevImage'), nextImage: t('nextImage'), copied: t('copied'), fullscreen: t('fullscreen'), slideshow: t('slideshow'), thumbs: t('thumbs'), sharePoster: t('sharePoster'), generatingPoster: t('generatingPoster'), copyLink: t('copyLink'), savePoster: t('savePoster'), scanToRead: t('scanToRead'), author: t('author'), searchLoading: t('searchLoading'), searchNoResults: t('searchNoResults'), searchUnavailable: t('searchUnavailable'), searchTypeSomething: t('searchTypeSomething'), wpPlay: t('wpPlay'), wpPause: t('wpPause'), wpPrev: t('wpPrev'), wpNext: t('wpNext'), wpMode: t('wpMode') })} />
-  <body data-page={page}>
+  <script type="application/json" id="qy-ui-labels" set:html={JSON.stringify({ close: t('close'), prevImage: t('prevImage'), nextImage: t('nextImage'), copied: t('copied'), fullscreen: t('fullscreen'), slideshow: t('slideshow'), thumbs: t('thumbs'), sharePoster: t('sharePoster'), generatingPoster: t('generatingPoster'), copyLink: t('copyLink'), savePoster: t('savePoster'), scanToRead: t('scanToRead'), author: t('author'), searchLoading: t('searchLoading'), searchNoResults: t('searchNoResults'), searchUnavailable: t('searchUnavailable'), searchTypeSomething: t('searchTypeSomething'), searchMore: t('searchMore'), searchResultsTotal: t('searchResultsTotal'), prevPage: t('prevPage'), nextPage: t('nextPage'), pageOf: t('pageOf'), wpPlay: t('wpPlay'), wpPause: t('wpPause'), wpPrev: t('wpPrev'), wpNext: t('wpNext'), wpMode: t('wpMode') })} />
+  <body data-page={page} data-pagefind-ignore={pagefindIgnore ? "" : undefined}>
+    <a class="skip-link" href="#main">{t('skipToContent')}</a>
+    <Header />
     <!-- 统一壁纸 stage（§4.98）：单容器承载图/视频/蒙层/装饰/hero，四种形态由
          html[data-wallpaper-mode] 驱动（CSS 切换 banner/fullscreen/overlay/none）；
-         无图或 none 模式不渲染；homeOnly 非首页渲染但标 hidden（访客切换即解除） -->
+         无图或 none 模式不渲染；homeOnly 非首页渲染但标 hidden（访客切换即解除）。
+         stage 位于 Header 之后（DOM 序），banner/fullscreen 的 margin-top: -header-h
+         将 stage 上缘拉入 sticky Header 底下，壁纸从视口顶铺满而非独立于导航栏之上 -->
     {
       stageMode && (
         <div
@@ -282,8 +303,8 @@ const fontRoleCss = config.fonts
           )}
           {heroInStage && (
             <div class="wp-hero reveal">
-              {homeText.title && <h1 class="hero-quote" set:html={homeText.title} />}
-              {typerOn ? (
+              {heroTitle && <h1 class="hero-quote" set:html={heroTitle} />}
+              {heroTyperOn ? (
                 <p class="hero-sub">
                   <span
                     class="typewriter"
@@ -295,26 +316,29 @@ const fontRoleCss = config.fonts
                   />
                 </p>
               ) : (
-                staticSub && <p class="hero-sub">{staticSub}</p>
+                heroSub && <p class="hero-sub">{heroSub}</p>
               )}
             </div>
           )}
+          {/* 全屏首屏滚动提示（§4.98）：仅 fullscreen 模式可见（CSS 门控，SSR 始终渲染，
+              访客切换到 fullscreen 即可用）；点击平滑滚过首屏；
+              hero 布局滚动后随 .wp-hero 一起淡出（共用 wp-scrolled 规则） */}
+          <button
+            type="button"
+            class="wp-scroll-hint"
+            aria-label={t("scrollDown")}
+            onclick="document.querySelector('.site-main')?.scrollIntoView({behavior:'smooth'})"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 5v14" />
+              <path d="m19 12-7 7-7-7" />
+            </svg>
+          </button>
         </div>
       )
     }
-    <a class="skip-link" href="#main">{t('skipToContent')}</a>
-    <Header />
     <main id="main" class="site-main">
       <div class="shell">
-        {/* hero 独立区块形态（§4.98）：无壁纸（none/无图）时的首页 hero 文案，保持原列表上方位置 */}
-        {
-          heroStandalone && (
-            <section class="hero reveal">
-              {homeText.title && <h1 class="hero-quote" set:html={homeText.title} />}
-              {staticSub && <p class="hero-sub">{staticSub}</p>}
-            </section>
-          )
-        }
         <slot />
       </div>
     </main>

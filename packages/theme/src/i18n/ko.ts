@@ -4,7 +4,8 @@
 import type { UiKey } from "./zh-CN.js";
 
 const ko: Record<UiKey, string> = {
-	skipToContent: "본문으로 건너뛰기",
+	skipToContent: "본문으로 건어뛰기",
+	scrollDown: "아래로 스크롤",
 	backToTop: "맨 위로",
 	mainNav: "메인 내비게이션",
 	toggleMode: "다크 모드 전환",
@@ -97,6 +98,8 @@ const ko: Record<UiKey, string> = {
 	searchNoResults: "관련 결과를 찾을 수 없습니다",
 	searchUnavailable: "검색 인덱스는 빌드 후 사용할 수 있습니다",
 	searchTypeSomething: "키워드를 입력해 검색하세요",
+	searchMore: "전체 {n}개 결과 보기",
+	searchResultsTotal: "{n}개 결과",
 	galleryPhotos: "사진 {n}장",
 	backToAlbums: "앨범으로 돌아가기",
 	searchAlbums: "앨범 검색…",

@@ -5,6 +5,7 @@ import type { UiKey } from "./zh-CN.js";
 
 const ja: Record<UiKey, string> = {
 	skipToContent: "本文へスキップ",
+	scrollDown: "下にスクロール",
 	backToTop: "トップへ戻る",
 	mainNav: "メインナビゲーション",
 	toggleMode: "ダークモード切り替え",
@@ -98,6 +99,8 @@ const ja: Record<UiKey, string> = {
 	searchNoResults: "関連する結果が見つかりません",
 	searchUnavailable: "検索インデックスはビルド後に利用可能です",
 	searchTypeSomething: "キーワードを入力して検索",
+	searchMore: "すべての結果（{n} 件）を見る",
+	searchResultsTotal: "{n} 件の結果",
 	galleryPhotos: "写真 {n} 枚",
 	backToAlbums: "アルバムに戻る",
 	searchAlbums: "アルバムを検索…",
