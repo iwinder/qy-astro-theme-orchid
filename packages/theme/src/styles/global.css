@@ -710,7 +710,9 @@ html.dark #modeToggle .i-sun {
 	border-radius: 12px;
 	background: var(--surface);
 	color: var(--muted);
-	transition: border-color 0.15s, color 0.15s;
+	transition:
+		border-color 0.15s,
+		color 0.15s;
 }
 .search-page-bar:focus-within {
 	border-color: var(--accent-ink);
@@ -790,7 +792,9 @@ html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home]):not(
 	height: var(--banner-h, 60vh);
 	margin-top: calc(-1 * var(--header-h));
 }
-html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home])[data-wp-fs-layout="hero"]
+html[data-wallpaper-mode="fullscreen"]:not(
+		[data-wp-is-home]
+	)[data-wp-fs-layout="hero"]
 	.wp-stage {
 	position: fixed;
 	inset: 0;
@@ -886,7 +890,9 @@ html[data-wallpaper-mode="fullscreen"][data-wp-is-home] .wp-img {
 /* overlay 形态的图片模糊/放大补偿（服务端算好 scale 防边缘露底），与 body 级旧口径一致；
    非首页 fullscreen-hero 降级为 overlay，复用同一套模糊参数 */
 html[data-wallpaper-mode="overlay"] .wp-img,
-html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home])[data-wp-fs-layout="hero"]
+html[data-wallpaper-mode="fullscreen"]:not(
+		[data-wp-is-home]
+	)[data-wp-fs-layout="hero"]
 	.wp-img {
 	filter: blur(var(--wp-overlay-blur, 0px));
 	transform: scale(var(--wp-overlay-scale, 1));
@@ -1119,7 +1125,8 @@ html[data-wallpaper-mode="fullscreen"][data-wp-is-home] .wp-scroll-hint {
 }
 /* hero 布局：stage fixed 且 pointer-events:none，箭头需单独恢复可点击；
    滚动后随 .wp-hero 同步淡出 */
-html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"] .wp-scroll-hint {
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"]
+.wp-scroll-hint {
 	pointer-events: auto;
 }
 html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"].wp-scrolled
@@ -1169,7 +1176,7 @@ html[data-wallpaper-mode="overlay"] .card {
    classic 滚下后正文区纯色背景（旧行为，无需额外规则）。
    首屏两种布局一致：壁纸占满一屏 + 中央 hero 文案。 */
 html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
-	.wp-stage {
+.wp-stage {
 	position: fixed;
 	inset: 0;
 	height: auto;
@@ -1180,15 +1187,14 @@ html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home
 /* 首屏让给 hero：正文流向下推一屏，滚上后覆盖 fixed 壁纸；
    stage 隐藏（homeOnly 非首页 / JS 切走）时取消下推，避免顶部整屏空白 */
 html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]:not(
-		[data-wp-stage-hidden]
-	)
-	.site-main {
+	[data-wp-stage-hidden]
+) .site-main {
 	margin-top: 100vh;
 }
 /* hero 交互：fixed 后 pointer-events 被关，hero 文案纯展示无需点击（打字机亦然） */
 /* hero 文字滚动淡出：滚离首屏后标题/副标题渐隐，不盖在正文区模糊壁纸上 */
 html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
-	.wp-hero {
+.wp-hero {
 	transition: opacity 0.5s ease;
 }
 html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home].wp-scrolled
@@ -1198,7 +1204,7 @@ html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home
 /* 滚动模糊过渡：滚过 40px（html.wp-scrolled，app.ts updateWallpaperScroll）后
    壁纸加模糊 + 放大补偿 + 底部渐隐蒙层加深，保证模糊渐变在 blur=0 时也可见 */
 html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
-	.wp-img {
+.wp-img {
 	transition:
 		opacity 0.8s ease,
 		transform 0.8s ease,
@@ -1228,16 +1234,22 @@ html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home
    文章列表 .post-card 与分页 .page-item 不走 .card 类，需一并覆盖；
    非首页 fullscreen-hero 降级为 overlay，同样需要半透明卡片 */
 html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
-	.card,
+.card,
 html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
 	.post-card,
 html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"][data-wp-is-home]
 	.page-item,
-html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home])[data-wp-fs-layout="hero"]
+html[data-wallpaper-mode="fullscreen"]:not(
+		[data-wp-is-home]
+	)[data-wp-fs-layout="hero"]
 	.card,
-html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home])[data-wp-fs-layout="hero"]
+html[data-wallpaper-mode="fullscreen"]:not(
+		[data-wp-is-home]
+	)[data-wp-fs-layout="hero"]
 	.post-card,
-html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home])[data-wp-fs-layout="hero"]
+html[data-wallpaper-mode="fullscreen"]:not(
+		[data-wp-is-home]
+	)[data-wp-fs-layout="hero"]
 	.page-item {
 	background: color-mix(
 		in srgb,
@@ -1258,7 +1270,9 @@ html[data-wallpaper-mode="fullscreen"]:not([data-wp-is-home])[data-wp-fs-layout=
    文字职责交还内容区标题（.page-title/.post-title-lg 等，见下方规则） */
 html[data-wallpaper-mode="overlay"] .wp-hero,
 html[data-wallpaper-mode="none"] .wp-hero,
-html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"]:not([data-wp-is-home])
+html[data-wallpaper-mode="fullscreen"][data-wp-fs-layout="hero"]:not(
+		[data-wp-is-home]
+	)
 	.wp-hero {
 	display: none;
 }
@@ -1272,10 +1286,22 @@ html[data-wp-hero="visible"][data-wallpaper-mode="banner"] .page-title,
 html[data-wp-hero="visible"][data-wallpaper-mode="banner"] .page-sub,
 html[data-wp-hero="visible"][data-wallpaper-mode="banner"] .post-title-lg,
 html[data-wp-hero="visible"][data-wallpaper-mode="banner"] .archive-head,
-html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not([data-wp-fs-layout="hero"]) .page-title,
-html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not([data-wp-fs-layout="hero"]) .page-sub,
-html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not([data-wp-fs-layout="hero"]) .post-title-lg,
-html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not([data-wp-fs-layout="hero"]) .archive-head {
+html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not(
+		[data-wp-fs-layout="hero"]
+	)
+	.page-title,
+html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not(
+		[data-wp-fs-layout="hero"]
+	)
+	.page-sub,
+html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not(
+		[data-wp-fs-layout="hero"]
+	)
+	.post-title-lg,
+html[data-wp-hero="visible"][data-wallpaper-mode="fullscreen"]:not(
+		[data-wp-fs-layout="hero"]
+	)
+	.archive-head {
 	display: none;
 }
 html[data-wp-waves="off"] .wp-waves {

@@ -20,7 +20,12 @@ export interface ThumbInfo {
 export function getThumbInfo(src: string): ThumbInfo {
 	const hit = thumbs[`public:${src.replace(/^\//, "")}`];
 	if (hit?.thumb && hit.width > 0 && hit.height > 0) {
-		return { full: src, src: `/${hit.thumb}`, width: hit.width, height: hit.height };
+		return {
+			full: src,
+			src: `/${hit.thumb}`,
+			width: hit.width,
+			height: hit.height,
+		};
 	}
 	return { full: src, src };
 }

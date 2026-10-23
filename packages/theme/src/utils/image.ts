@@ -76,7 +76,10 @@ export async function resolveSiteImage(src: string): Promise<string> {
 		const encoded = await getImage({ src: meta });
 		return encoded.src;
 	} catch (err) {
-		console.warn(`[orchid-theme] 图片优化失败，回退原图: ${toAssetKey(src)}`, err);
+		console.warn(
+			`[orchid-theme] 图片优化失败，回退原图: ${toAssetKey(src)}`,
+			err,
+		);
 		return meta.src;
 	}
 }

@@ -97,7 +97,8 @@ const staticSub = typerOn ? "" : wpSubs.length ? wpPick(wpSubs) : "";
 const heroTitle = isActualHome ? homeText.title : title;
 const heroSub = isActualHome ? staticSub : "";
 const heroTyperOn = isActualHome && typerOn;
-const heroInStage = Boolean(stageMode) && (isActualHome ? hasHeroText : Boolean(title));
+const heroInStage =
+	Boolean(stageMode) && (isActualHome ? hasHeroText : Boolean(title));
 /* 底部装饰分端归一化：布尔简写展开为两端同值 */
 const wpWaves =
 	typeof wp.common.waves === "boolean"

@@ -196,7 +196,10 @@ async function initLightbox() {
 		   优先打开原图；无数据时沿用 img 自身 src 与 natural 尺寸 */
 		if (img.dataset.fullSrc) {
 			itemData.src = img.dataset.fullSrc;
-			if (Number(img.dataset.fullWidth) > 0 && Number(img.dataset.fullHeight) > 0) {
+			if (
+				Number(img.dataset.fullWidth) > 0 &&
+				Number(img.dataset.fullHeight) > 0
+			) {
 				itemData.width = Number(img.dataset.fullWidth);
 				itemData.height = Number(img.dataset.fullHeight);
 			}
@@ -685,13 +688,16 @@ function pagerNums(page: number, total: number): Array<number | "ellipsis"> {
 
 function searchPageHref(q: string, page: number): string {
 	return (
-		"/search/?q=" +
-		encodeURIComponent(q) +
-		(page > 1 ? "&page=" + page : "")
+		"/search/?q=" + encodeURIComponent(q) + (page > 1 ? "&page=" + page : "")
 	);
 }
 
-function renderSearchPager(pager: HTMLElement, q: string, cur: number, pages: number) {
+function renderSearchPager(
+	pager: HTMLElement,
+	q: string,
+	cur: number,
+	pages: number,
+) {
 	if (pages <= 1) {
 		pager.hidden = true;
 		return;
@@ -712,7 +718,8 @@ function renderSearchPager(pager: HTMLElement, q: string, cur: number, pages: nu
 		s.textContent = label;
 		return s;
 	};
-	if (cur > 1) nums.appendChild(mk(searchPageHref(q, cur - 1), "‹", "page-item"));
+	if (cur > 1)
+		nums.appendChild(mk(searchPageHref(q, cur - 1), "‹", "page-item"));
 	else nums.appendChild(span("‹"));
 	for (const n of pagerNums(cur, pages)) {
 		if (n === "ellipsis") {
@@ -730,19 +737,22 @@ function renderSearchPager(pager: HTMLElement, q: string, cur: number, pages: nu
 			nums.appendChild(mk(searchPageHref(q, n), String(n), "page-item"));
 		}
 	}
-	if (cur < pages) nums.appendChild(mk(searchPageHref(q, cur + 1), "›", "page-item"));
+	if (cur < pages)
+		nums.appendChild(mk(searchPageHref(q, cur + 1), "›", "page-item"));
 	else nums.appendChild(span("›"));
 
 	const adj = doc.createElement("div");
 	adj.className = "pg-adj";
-	if (cur > 1) adj.appendChild(mk(searchPageHref(q, cur - 1), ui("prevPage"), "pg-prev"));
+	if (cur > 1)
+		adj.appendChild(mk(searchPageHref(q, cur - 1), ui("prevPage"), "pg-prev"));
 	else adj.appendChild(span(ui("prevPage")));
 	const mid = doc.createElement("span");
 	mid.textContent = ui("pageOf")
 		.replace("{current}", String(cur))
 		.replace("{total}", String(pages));
 	adj.appendChild(mid);
-	if (cur < pages) adj.appendChild(mk(searchPageHref(q, cur + 1), ui("nextPage"), "pg-next"));
+	if (cur < pages)
+		adj.appendChild(mk(searchPageHref(q, cur + 1), ui("nextPage"), "pg-next"));
 	else adj.appendChild(span(ui("nextPage")));
 
 	pager.replaceChildren(nums, adj);
@@ -750,7 +760,9 @@ function renderSearchPager(pager: HTMLElement, q: string, cur: number, pages: nu
 
 async function renderSearchPage() {
 	const seq = ++searchPageSeq;
-	const input = doc.getElementById("searchPageInput") as HTMLInputElement | null;
+	const input = doc.getElementById(
+		"searchPageInput",
+	) as HTMLInputElement | null;
 	const meta = doc.getElementById("searchPageMeta");
 	const box = doc.getElementById("searchPageResults");
 	const pager = doc.getElementById("searchPagePager");

@@ -169,8 +169,10 @@ function collectRemoteUrls() {
 		const walkMd = (dir) => {
 			const out = [];
 			for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-				if (entry.isDirectory()) out.push(...walkMd(path.join(dir, entry.name)));
-				else if (/\.(md|mdx)$/i.test(entry.name)) out.push(path.join(dir, entry.name));
+				if (entry.isDirectory())
+					out.push(...walkMd(path.join(dir, entry.name)));
+				else if (/\.(md|mdx)$/i.test(entry.name))
+					out.push(path.join(dir, entry.name));
 			}
 			return out;
 		};
@@ -229,7 +231,9 @@ async function mapPool(items, limit, fn) {
 			try {
 				out[idx] = await fn(items[idx]);
 			} catch (err) {
-				console.warn(`[lqip] 外链抓取失败，跳过: ${items[idx]} — ${err.message}`);
+				console.warn(
+					`[lqip] 外链抓取失败，跳过: ${items[idx]} — ${err.message}`,
+				);
 			}
 		}
 	}
@@ -282,11 +286,12 @@ try {
 
 	fs.writeFileSync(
 		lqipFile,
-		JSON.stringify(Object.fromEntries(lqipEntries), null, 2) + "\n",
+		// tab 缩进与 Biome format 一致：生成物入库即合规，重跑不会反复触发 CI format 报错
+		JSON.stringify(Object.fromEntries(lqipEntries), null, "\t") + "\n",
 	);
 	fs.writeFileSync(
 		thumbsFile,
-		JSON.stringify(Object.fromEntries(thumbEntries), null, 2) + "\n",
+		JSON.stringify(Object.fromEntries(thumbEntries), null, "\t") + "\n",
 	);
 	console.log(
 		`[lqip] public ${files.length} 张 + 外链 ${remoteUrls.length - pending.length + fetched.filter(Boolean).length} 条 → ${path.relative(cwd, lqipFile)} + ${path.relative(cwd, thumbsFile)}`,
