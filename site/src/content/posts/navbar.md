@@ -1,5 +1,6 @@
 ---
 title: 导航栏（nav）
+image: api
 description: 导航栏 navBarConfig 纯数组配置——菜单项、下拉子菜单、外链标记（external）与三条校验规则，以及桌面/移动端渲染效果。
 published: 2026-10-18
 tags:

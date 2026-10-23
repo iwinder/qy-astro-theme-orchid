@@ -1,5 +1,6 @@
 ---
 title: 壁纸（wallpaper）
+image: api
 description: 统一壁纸 wallpaperConfig 全部配置——横幅/全屏/覆盖透明/纯色四种模式、访客模式切换按钮、视频壁纸、图片轮播动效、首页标题打字机、导航栏透明档与底部波浪渐变装饰。
 published: 2026-10-22
 tags:

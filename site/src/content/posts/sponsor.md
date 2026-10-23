@@ -1,5 +1,6 @@
 ---
 title: 赞助（sponsor）
+image: api
 description: sponsorConfig 完整参考——打赏方式（收款码图片/跳转链接）、资金用途说明、文章页「打赏支持」按钮与历史赞助名单时间线。
 published: 2026-10-18
 tags:

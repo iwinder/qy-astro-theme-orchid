@@ -1,5 +1,6 @@
 ---
 title: 功能演示：公式、图表与邮箱保护
+image: api
 description: 一篇文章集齐 LaTeX 公式、Mermaid、PlantUML、邮箱防爬、图片网格、仓库卡片与 Callout 等内容特性。
 published: 2026-10-11
 tags:

@@ -1,5 +1,6 @@
 ---
 title: PWA（可安装与离线访问）
+image: api
 description: pwaConfig 完整参考——构建期生成 manifest 与手写 Service Worker，站点可安装、离线兜底、三条缓存策略与发布即换缓存机制。
 published: 2026-10-20
 tags:

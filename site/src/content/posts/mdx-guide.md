@@ -1,5 +1,6 @@
 ---
 title: MDX 指南：启用、组件写作与 style-to-js 踩坑
+image: api
 description: MDX 能力定位与启用三步、在 .mdx 文章里写组件、style-to-js CJS/ESM 互操作坑的完整机理与 pnpm overrides 根治配方，以及 .md 与 .mdx 的选型建议。
 published: 2026-10-18
 tags:

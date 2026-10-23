@@ -1,5 +1,6 @@
 ---
 title: 站点基础配置：siteConfig 全部可配置项
+image: api
 description: siteConfig 模块 17 个配置键的完整参考——按基础信息、站点标识、语言时区、强调色派生机制、页宽算法、深浅模式、独立页开关与页脚备案等功能组讲解。
 published: 2026-10-18
 tags:

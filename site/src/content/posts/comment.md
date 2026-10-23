@@ -1,5 +1,6 @@
 ---
 title: 评论系统（comment）
+image: api
 description: 五套评论系统全字段参考——Artalk / Twikoo / Waline / giscus / Disqus 任选其一，provider 一键切换，未开启零注入。
 published: 2026-10-18
 tags:
@@ -116,5 +117,6 @@ disqus: { shortname: "your-shortname" },
 ## 使用效果
 
 - 文章底部（版权声明之后）渲染所选评论系统；未开启则该区域整体不渲染
+- **留言板页**与**友链页**（申请区块下方，可直接留言申请友链）挂载同一评论区，共用本配置
 - 五套切换只改 `provider`，评论区 UI 由主题统一定宽与深浅适配
 - 加密文章需解锁后才加载评论脚本

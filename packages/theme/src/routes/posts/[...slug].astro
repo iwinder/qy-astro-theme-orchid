@@ -111,6 +111,11 @@ const { cover: rawArticleCover, retries: coverRetries } = resolveCover(
 const articleCover = rawArticleCover
 	? await resolveSiteImage(rawArticleCover)
 	: rawArticleCover;
+/* §4.114：普通封面图失效的客户端兜底（api 文章 retries 末尾已含 fallbackCover，无需重复） */
+const coverFallback =
+	!coverRetries && config.postList.fallbackCover
+		? await resolveSiteImage(config.postList.fallbackCover)
+		: "";
 const { Content, headings, remarkPluginFrontmatter } = await render(post);
 const { words, minutes } = remarkPluginFrontmatter as {
 	words?: number;
@@ -240,6 +245,7 @@ const jsonLd = {
           loading="eager"
           data-lqip
           data-api-retries={coverRetries ? JSON.stringify(coverRetries) : undefined}
+          data-cover-fallback={coverFallback || undefined}
         />
       </figure>
     )

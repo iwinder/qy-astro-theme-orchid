@@ -2,13 +2,17 @@
 import { getCollection } from "astro:content";
 import BaseLayout from "virtual:theme/components/BaseLayout.astro";
 import Pagination from "virtual:theme/components/Pagination.astro";
+import PostCard from "virtual:theme/components/PostCard.astro";
+import Sidebar from "virtual:theme/components/Sidebar.astro";
 import config from "virtual:theme/config";
 import { t } from "../../../i18n/index.js";
-import { collectTags, formatDate, getSortedPosts } from "../../../utils.js";
+import { collectTags, getSortedPosts } from "../../../utils.js";
+import { hydratePosts } from "../../_hydrate.js";
 
 /**
  * 标签详情（§4.87 分页）：每标签按 postList.pageSize 分页，第一页
- * /tags/<tag>/（page 段省略），后续 /tags/<tag>/2/ 起。结构与分类详情页一致。
+ * /tags/<tag>/（page 段省略），后续 /tags/<tag>/page/N/。结构与分类详情页一致。
+ * 分页段 page/N/ 与布局同构改造见分类详情页注释（§4.113）。
  */
 export async function getStaticPaths({ paginate }: { paginate: any }) {
 	const all = await getCollection("posts", ({ data }) =>
@@ -19,33 +23,40 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
 	return [...collectTags(sorted).entries()].flatMap(([tag, posts]) =>
 		paginate(posts, {
 			params: { tag },
-			props: { tag },
+			props: { tag, sorted },
 			pageSize: config.postList.pageSize,
-		}),
+		}).map((entry: any, i: number) => ({
+			params: { tag, page: i > 0 ? `page/${i + 1}` : undefined },
+			props: entry.props,
+		})),
 	);
 }
 
-const { page, tag } = Astro.props;
-const posts = page.data;
+const { page, tag, sorted } = Astro.props;
+const pagePosts = await hydratePosts(page.data);
 ---
 
 <BaseLayout title={t('tagTitle', { tag })} page="tags">
-  <header class="archive-head reveal">
-    <h1 class="page-title">{tag}</h1>
-    <p class="page-sub">{t('totalPosts', { n: page.total })}</p>
-  </header>
-  <div class="tag-list">
-    {
-      posts.map((post: any) => (
-        <a class="related-card card tag-item reveal" href={`/posts/${post.id}/`}>
-          <div class="rc-title">{post.data.title}</div>
-          <div class="rc-meta">
-            {formatDate(post.data.published)}
-            {post.data.category ? ` · ${post.data.category}` : ''}
-          </div>
-        </a>
-      ))
-    }
+  <div class="home-layout">
+    {/* 文章列表：与首页同一容器约定，供 app.ts 恢复与切换网格/列表形态 */}
+    <div
+      class="post-list"
+      id="postList"
+      data-allow-switch={config.postList.allowSwitch ? "true" : undefined}
+      data-default-layout={config.postList.defaultLayout}
+      data-grid-col={config.postList.gridColumnWidth}
+    >
+      <header class="archive-head reveal">
+        <h1 class="page-title">{tag}</h1>
+        <p class="page-sub">{t('totalPosts', { n: page.total })}</p>
+      </header>
+      {
+        pagePosts.map((post: any) => (
+          <PostCard post={post} featured={post.data.pinned} />
+        ))
+      }
+      <Pagination page={page.currentPage} total={page.lastPage} basePath={`/tags/${tag}/`} />
+    </div>
+    <Sidebar posts={sorted} />
   </div>
-  <Pagination page={page.currentPage} total={page.lastPage} basePath={`/tags/${tag}/`} />
 </BaseLayout>

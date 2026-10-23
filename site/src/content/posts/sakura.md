@@ -1,5 +1,6 @@
 ---
 title: 樱花特效（sakura）
+image: api
 description: sakuraConfig 樱花飘落特效配置——总开关与花瓣密度两个键，程序化绘制零贴图资产，尊重系统无障碍偏好。
 published: 2026-10-18
 tags:

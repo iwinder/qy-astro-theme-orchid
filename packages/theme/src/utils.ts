@@ -212,8 +212,9 @@ export function randomCoverUrl(template: string, slug: string): string {
 
 /**
  * 解析文章封面（§4.33）：frontmatter image 为 "api" 且配置了图源时，
- * 返回 { cover, retries }——cover 为主图 URL，retries 为客户端
- * 加载失败时的依次重试列表（图源全量 + fallbackCover 兜底）。
+ * 返回 { cover, retries }——cover 按 slug 确定性轮转选一条（§4.113，
+ * 支持本地图片列表做多源随机；单图源退化为恒取第一条，行为不变），
+ * retries 为客户端加载失败时的依次重试列表（其余图源 + fallbackCover 兜底）。
  * 非 "api" 或未配置图源时原样返回，行为与之前一致。
  */
 export function resolveCover(
@@ -226,8 +227,9 @@ export function resolveCover(
 	if (image !== "api" || apis.length === 0) {
 		return { cover: image || firstImage || fallbackCover, retries: undefined };
 	}
-	const cover = randomCoverUrl(apis[0], slug);
-	const retries = [...apis.map((u) => randomCoverUrl(u, slug))];
+	const urls = apis.map((u) => randomCoverUrl(u, slug));
+	const idx = seedHash(slug) % urls.length;
+	const retries = [...urls.slice(idx + 1), ...urls.slice(0, idx)];
 	if (fallbackCover) retries.push(fallbackCover);
-	return { cover, retries };
+	return { cover: urls[idx], retries };
 }

@@ -1,5 +1,6 @@
 ---
 title: URL 迁移与重定向：旧博客链接迁到 /posts/
+image: api
 description: 从旧站扁平路径 /slug/ 迁到主题 /posts/slug/ 的完整处理——为什么保留前缀、部署平台 301 与 Astro redirects 两种方案与选型、迁移检查清单。
 published: 2026-10-18
 tags:

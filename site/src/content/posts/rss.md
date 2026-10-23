@@ -1,5 +1,6 @@
 ---
 title: RSS 订阅
+image: api
 description: 站点 RSS 输出 /rss.xml——输出条数 limit 与全文输出 fullText 开关；加密文章自动跳过全文，输出的是摘要不是密文。
 published: 2026-10-20
 tags:

@@ -1,5 +1,6 @@
 ---
 title: 加密文章功能演示
+image: api
 description: 这是一篇受密码保护的文章，用于演示主题的构建期加密与客户端解密能力。
 published: 2026-10-11
 tags:

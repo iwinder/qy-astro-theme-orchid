@@ -1,5 +1,6 @@
 ---
 title: 悬浮音乐播放器（music）
+image: api
 description: musicConfig 悬浮音乐播放器全量配置——悬浮球位置、音量、播放模式、歌词面板与播放列表，跨页不断播。
 published: 2026-10-18
 tags:

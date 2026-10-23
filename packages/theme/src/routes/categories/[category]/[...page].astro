@@ -2,18 +2,19 @@
 import { getCollection } from "astro:content";
 import BaseLayout from "virtual:theme/components/BaseLayout.astro";
 import Pagination from "virtual:theme/components/Pagination.astro";
+import PostCard from "virtual:theme/components/PostCard.astro";
+import Sidebar from "virtual:theme/components/Sidebar.astro";
 import config from "virtual:theme/config";
 import { t } from "../../../i18n/index.js";
-import {
-	collectCategories,
-	formatDate,
-	getSortedPosts,
-} from "../../../utils.js";
+import { collectCategories, getSortedPosts } from "../../../utils.js";
+import { hydratePosts } from "../../_hydrate.js";
 
 /**
  * 分类详情（§4.87 分页）：每分类按 postList.pageSize 分页，第一页
- * /categories/<category>/（page 段省略），后续 /categories/<category>/2/ 起。
- * paginate() helper 生成 Page 对象（props.page），Page.data 即当前页文章。
+ * /categories/<category>/（page 段省略），后续 /categories/<category>/page/N/。
+ * 注意：分页段必须是 page/N/（§4.113）——Pagination 组件按此约定生成 href，
+ * paginate() 默认产出的 /N/ 会与组件链接错位导致 404，这里统一 remap。
+ * 布局与首页同构（§4.113）：PostCard 列表 + Sidebar，替代原单列窄卡片。
  */
 export async function getStaticPaths({ paginate }: { paginate: any }) {
 	const all = await getCollection("posts", ({ data }) =>
@@ -24,30 +25,40 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
 	return [...collectCategories(sorted).entries()].flatMap(([category, posts]) =>
 		paginate(posts, {
 			params: { category },
-			props: { category },
+			props: { category, sorted },
 			pageSize: config.postList.pageSize,
-		}),
+		}).map((entry: any, i: number) => ({
+			params: { category, page: i > 0 ? `page/${i + 1}` : undefined },
+			props: entry.props,
+		})),
 	);
 }
 
-const { page, category } = Astro.props;
-const posts = page.data;
+const { page, category, sorted } = Astro.props;
+const pagePosts = await hydratePosts(page.data);
 ---
 
 <BaseLayout title={t('categoryTitle', { category })} page="categories">
-  <header class="archive-head reveal">
-    <h1 class="page-title">{category}</h1>
-    <p class="page-sub">{t('totalPosts', { n: page.total })}</p>
-  </header>
-  <div class="tag-list">
-    {
-      posts.map((post: any) => (
-        <a class="related-card card tag-item reveal" href={`/posts/${post.id}/`}>
-          <div class="rc-title">{post.data.title}</div>
-          <div class="rc-meta">{formatDate(post.data.published)}</div>
-        </a>
-      ))
-    }
+  <div class="home-layout">
+    {/* 文章列表：与首页同一容器约定，供 app.ts 恢复与切换网格/列表形态 */}
+    <div
+      class="post-list"
+      id="postList"
+      data-allow-switch={config.postList.allowSwitch ? "true" : undefined}
+      data-default-layout={config.postList.defaultLayout}
+      data-grid-col={config.postList.gridColumnWidth}
+    >
+      <header class="archive-head reveal">
+        <h1 class="page-title">{category}</h1>
+        <p class="page-sub">{t('totalPosts', { n: page.total })}</p>
+      </header>
+      {
+        pagePosts.map((post: any) => (
+          <PostCard post={post} featured={post.data.pinned} />
+        ))
+      }
+      <Pagination page={page.currentPage} total={page.lastPage} basePath={`/categories/${category}/`} />
+    </div>
+    <Sidebar posts={sorted} />
   </div>
-  <Pagination page={page.currentPage} total={page.lastPage} basePath={`/categories/${category}/`} />
 </BaseLayout>

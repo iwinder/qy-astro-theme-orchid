@@ -30,6 +30,11 @@ const { cover: rawCover, retries } = resolveCover(
    下）构建期解析为产物 URL，public / 外链原样直通 */
 const resolvedCover = rawCover ? await resolveSiteImage(rawCover) : rawCover;
 const cover = config.postList.showCover ? resolvedCover : null;
+/* §4.114：普通封面图失效的客户端兜底（api 文章 retries 末尾已含 fallbackCover，无需重复） */
+const coverFallback =
+	!retries && config.postList.fallbackCover
+		? await resolveSiteImage(config.postList.fallbackCover)
+		: "";
 /* §4.106：列表封面用缩略图（外链/未命中自动回退原图；点击进文章页看正文原图） */
 const thumb = cover ? getThumbInfo(cover) : null;
 const classes = [
@@ -59,6 +64,7 @@ const excerpt = d.excerpt || d.description;
           loading="lazy"
           data-lqip
           data-api-retries={retries ? JSON.stringify(retries) : undefined}
+          data-cover-fallback={coverFallback || undefined}
         />
       </a>
     )

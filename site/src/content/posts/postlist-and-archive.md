@@ -57,16 +57,23 @@ cardStyle: cover    # 图卡
 
 ## 封面策略
 
-无图文章的封面来源策略：`fallbackCover` 兜底封面，`randomCover.apis` 随机封面 API 模板（配合 frontmatter `image: "api"`）。
+每张列表卡封面的来源优先级：frontmatter `image` → `randomCover`（`image: "api"` 时）→ `fallbackCover` → 纯文字卡。
 
 | 键 | 类型 | 默认值 | 说明 |
 |---|---|---|---|
-| `fallbackCover` | `string` | `""` | 无图文章的兜底封面（public 路径或外链）；不配置则该卡降级纯文字卡 |
-| `randomCover.apis` | `string[]` | `[]` | 随机封面 API 模板，配合 frontmatter `image: "api"`（见下） |
+| `fallbackCover` | `string` | `""` | 兜底封面（public 路径或外链）：无图文章构建期直接采用；封面加载失败时客户端换用它兜底；不配置则分别降级纯文字卡 / 渐变占位 |
+| `randomCover.apis` | `string[]` | `[]` | 随机封面图源列表，配合 frontmatter `image: "api"`（见下）；API 模板与本地 public 路径皆可 |
 
 ```ts
-// site/src/config/postListConfig.ts（节选）
+// site/src/config/postListConfig.ts（节选）——三种图源写法
+// ① 外链 API 模板（{slug} 占位符）
 randomCover: { apis: ["https://picsum.photos/seed/{slug}/540/304"] },
+// ② 本地图源：随机 public/thumb/ 下 40 张（路径相对 public/）
+randomCover: {
+	apis: Array.from({ length: 40 }, (_, i) => `/thumb/${i + 1}.jpg`),
+},
+// 兜底封面
+fallbackCover: "/thumb/40.jpg",
 ```
 
 ### 随机封面（randomCover）
@@ -81,6 +88,19 @@ title: 我没有配图
 image: "api"
 ---
 ```
+
+`apis` 传**多条图源**时（本地路径列表或多个 API 模板皆可），按 slug 哈希在图源间**轮转选主图**——
+把一批本地图路径铺进数组就是最简单的随机图库；只配一条时行为不变。
+
+只对想参与随机的文章写 `image: "api"`：已有配图的文章写真实图片 URL 即可，两者混排互不影响。
+
+### 封面失效兜底
+
+封面加载失败有三层兜底，全部自动生效，无需额外开关：
+
+1. `image: "api"` 文章：主图失败后按**其余图源**依次换源重试，末位尝试 `fallbackCover`
+2. 普通图片 URL 失效（外链图挂了/防盗链）：客户端直接换 `fallbackCover`（仅试一次）
+3. 全部失败：藏图露出底层 LQIP 渐变占位，不出现破图图标；无图文章在未配 `fallbackCover` 时降级纯文字卡
 
 ## 布局切换
 
@@ -123,8 +143,8 @@ export const archive: ThemeConfig["archive"] = { fold: true };
 ## 分类/标签分页
 
 分类页（`/categories/<分类>/`）与标签页（`/tags/<标签>/`）与首页共用 `postList.pageSize`：
-超出单页自动分页，第二页起为 `/categories/<分类>/2/` 形式，
-第一页不带 `/1/`——旧链接（原本不分页的单页 URL）天然兼容。
+超出单页自动分页，第二页起为 `/categories/<分类>/page/2/` 形式（说说页 `/moments/page/2/` 同理），
+第一页不带 `/page/1/`——旧的单页 URL 天然兼容。
 底部复用与首页相同的分页条，无需任何额外配置。
 
 ## 使用效果
@@ -135,6 +155,6 @@ export const archive: ThemeConfig["archive"] = { fold: true };
 
 ## 相关配置
 
-- 列表里各卡的封面来源优先级：frontmatter `image` → `randomCover`（`image: "api"` 时）→ `fallbackCover` → 纯文字卡
+- 列表里各卡的封面来源与失效兜底见上文[封面策略](#封面策略)
 - 文章 frontmatter `pinned: true` 的文章置顶在列表最前（见[写作指南](/posts/writing/)）
 - 分类/标签页数据来自文章 frontmatter 的 `category` / `tags`

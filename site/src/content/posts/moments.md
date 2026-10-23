@@ -1,5 +1,6 @@
 ---
 title: 说说页（moments）
+image: api
 description: 轻量动态流——每条说说一小段 Markdown，带心情 emoji、配图与标签；pages.moments 开关 + moments 内容集合，构建期分页渲染。
 published: 2026-10-20
 tags:

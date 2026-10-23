@@ -1,5 +1,6 @@
 ---
 title: 写作指南：frontmatter 全字段与增强语法
+image: api
 description: 文章 frontmatter 全部 19 个字段的类型与默认值、new-post 脚手架、草稿与置顶、加密文章，以及提示块/仓库卡片/图片网格/公式/图表全部写作语法。
 published: 2026-10-18
 tags:

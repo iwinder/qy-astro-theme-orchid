@@ -1,5 +1,6 @@
 ---
 title: 字体（fonts）
+image: api
 description: fontConfig 字体加载配置——基于 Astro Fonts API 构建期加载，六种 provider 与三角色映射全键参考。
 published: 2026-10-18
 tags:

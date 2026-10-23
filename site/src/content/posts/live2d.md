@@ -1,5 +1,6 @@
 ---
 title: Live2D 看板娘（live2d）
+image: api
 description: live2dConfig 看板娘全部配置——模型（单模型/多模型数组）、停靠位、自定义菜单与气泡提示全键参考。
 published: 2026-10-18
 tags:

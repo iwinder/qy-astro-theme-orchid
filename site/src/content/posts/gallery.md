@@ -1,5 +1,6 @@
 ---
 title: 画廊（gallery）
+image: api
 description: galleryConfig 完整参考——相册元数据（封面/日期地点/标签）、瀑布流列宽、构建期照片扫描（本地图片与 urls.txt 远程图）与加密相册。
 published: 2026-10-18
 tags:

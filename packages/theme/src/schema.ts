@@ -368,9 +368,10 @@ export const themeConfigSchema = z.object({
 			fallbackCover: z.string().optional(),
 			/**
 			 * 随机封面图源（§4.33）：apis 非空时，frontmatter 显式 image:"api" 的文章
-			 * 从该列表取封面。URL 支持 {slug} 占位符（替换为文章 id），
+			 * 按 slug 确定性轮转选一条（§4.113，可传本地 public 路径列表做多源随机；
+			 * 单条时恒为第一条）。URL 支持 {slug} 占位符（替换为文章 id），
 			 * 并自动追加 ?v=<hash>（Java hashCode(slug)），同 slug 每次构建稳定同图。
-			 * 客户端加载失败时按列表顺序依次重试，全部失败显示本地 fallbackCover。
+			 * 客户端加载失败时按其余图源顺序依次重试，全部失败显示本地 fallbackCover。
 			 */
 			randomCover: z
 				.object({

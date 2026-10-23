@@ -1,5 +1,6 @@
 ---
 title: 公告（announcement）
+image: api
 description: 侧栏公告卡完整配置——标题、正文、可选跳转按钮与关闭行为，content 留空即整卡不渲染。
 published: 2026-10-18
 tags:

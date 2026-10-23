@@ -1,5 +1,6 @@
 ---
 title: 版权声明（license）
+image: api
 description: 文章版权声明配置——许可证名称与链接、自定义前后缀文案、按篇覆盖（license / licenseName / licenseUrl）与文末渲染效果。
 published: 2026-10-18
 tags:

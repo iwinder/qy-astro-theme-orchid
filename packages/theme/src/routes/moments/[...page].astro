@@ -8,7 +8,9 @@ import { formatDate } from "../../utils.js";
 
 /**
  * 说说页（§4.87）：moments collection 时间流，按 published 新→旧，
- * 每页 20 条（第一页 /moments/，后续 /moments/2/）。
+ * 每页 20 条（第一页 /moments/，后续 /moments/page/N/）。
+ * 分页段必须是 page/N/（§4.113）——Pagination 组件按此约定生成 href，
+ * paginate() 默认产出的 /N/ 会与组件链接错位导致 404，这里统一 remap。
  * 正文走主题统一 markdown processor（全部增强语法可用）；配图 images 网格
  * 展示并接入通用灯箱（data-lightbox-group 组浏览）。
  */
@@ -19,7 +21,10 @@ export async function getStaticPaths({ paginate }: { paginate: any }) {
 	const sorted = [...all].sort(
 		(a, b) => b.data.published.valueOf() - a.data.published.valueOf(),
 	);
-	return paginate(sorted, { pageSize: 20 });
+	return paginate(sorted, { pageSize: 20 }).map((entry: any, i: number) => ({
+		params: { page: i > 0 ? `page/${i + 1}` : undefined },
+		props: entry.props,
+	}));
 }
 
 const { page } = Astro.props;

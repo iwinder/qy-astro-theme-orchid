@@ -1,5 +1,6 @@
 ---
 title: 文章页功能：toc / codeTheme / relatedPosts 等六个模块
+image: api
 description: 文章页六大功能模块全量配置——目录、Expressive Code 代码高亮与折叠、相关推荐、OG 分享图与分享海报、过时提醒。
 published: 2026-10-18
 tags:

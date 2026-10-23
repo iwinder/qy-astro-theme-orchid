@@ -1,5 +1,6 @@
 ---
 title: 侧边栏与小组件（sidebar）
+image: api
 description: 侧边栏 widgets 数组体系——侧栏开关（onPost）、九种组件挂载与渲染顺序、widget 通用属性与显隐（showOnPost/postOnly/hideOnMobile）、粘性定位与各 widget 专属布局参数。
 published: 2026-10-18
 tags:

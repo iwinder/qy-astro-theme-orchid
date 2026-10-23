@@ -1,5 +1,6 @@
 ---
 title: 内容渲染：LaTeX、图表、邮箱防爬与防盗链
+image: api
 description: 四个内容渲染模块的配置——KaTeX 数学公式、mermaid 与 plantuml 图表、mailto 邮箱防爬、外链图片防盗链，均在构建期处理，零客户端运行时。
 published: 2026-10-18
 tags:

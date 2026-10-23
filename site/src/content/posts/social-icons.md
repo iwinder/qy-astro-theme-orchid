@@ -1,5 +1,6 @@
 ---
 title: 社交图标配置：内置图标名替代手写 SVG
+image: api
 description: 资料卡社交链接的 icon 支持内置简名、Iconify 全名与内联 SVG 三种写法，构建期内联渲染；本文列出全部内置图标与用法。
 published: 2026-10-17
 tags:

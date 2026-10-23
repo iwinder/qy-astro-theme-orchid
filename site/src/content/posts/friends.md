@@ -1,6 +1,7 @@
 ---
 title: 友链（friends）
-description: friendsConfig 全部字段——申请友链区块、权重排序与列表项（头像兜底、标签、featured 优先、enabled 显隐），一份数据同时驱动友链页与侧栏 friends widget。
+image: api
+description: friendsConfig 全部字段——申请友链区块（支持评论区直接留言申请）、权重排序与列表项（头像兜底、标签、featured 优先、enabled 显隐），一份数据同时驱动友链页与侧栏 friends widget。
 published: 2026-10-18
 tags:
   - 主题机制
@@ -54,6 +55,13 @@ apply: {
 	label: "申请友链",
 },
 ```
+
+## 评论区留言申请
+
+申请区块下方是**评论区**：读者可以直接在评论区留言申请友链，不必跳转邮件或外部表单。
+友链页与文章页、留言板共用同一套评论系统（全局 `commentConfig.ts` 的 provider 配置），
+任一后端启用后自动出现；`comment.enabled: false` 或 provider 后端地址未配置时整体不渲染，
+页面不留空位。评论后端配置详见[评论系统](/posts/comment/)。
 
 ## 友链项
 

@@ -1,5 +1,6 @@
 ---
 title: 侧栏广告位（advertisement）
+image: api
 description: 侧栏广告位全量配置——广告图、文案、跳转按钮、展示次数限制与到期自动下线，默认关闭按需开启。
 published: 2026-10-18
 tags:

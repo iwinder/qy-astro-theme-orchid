@@ -1,5 +1,6 @@
 ---
 title: 个人资料卡（profile）
+image: api
 description: 侧栏个人资料卡的内容配置——头像、昵称、简介、跳转链接与社交链接数组，以及社交图标的三种写法（内置简名 / Iconify 全名 / 内联 SVG）。
 published: 2026-10-18
 tags:

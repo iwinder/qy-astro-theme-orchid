@@ -1110,8 +1110,9 @@ doc.addEventListener("click", (e) => {
 	}
 });
 
-/* 随机封面加载失败重试（§4.33）：img error 不冒泡，捕获阶段 document 级委托
-   （bundled 一次性执行，VT 换页后仍有效）。按 data-api-retries 顺序换源，
+/* 封面加载失败兜底（§4.33 随机重试 + §4.114 普通图兜底）：img error 不冒泡，捕获阶段
+   document 级委托（bundled 一次性执行，VT 换页后仍有效）。优先按 data-api-retries
+   顺序换源；无重试列表的普通封面图按 data-cover-fallback 换兜底图（仅试一次）；
    全部失败加 cover-broken 藏 img，露出底层 LQIP 渐变占位。 */
 doc.addEventListener(
 	"error",
@@ -1119,20 +1120,26 @@ doc.addEventListener(
 		const img = e.target as HTMLImageElement | null;
 		if (img?.tagName !== "IMG") return;
 		const raw = img.dataset.apiRetries;
-		if (!raw) return;
-		let list: string[] = [];
-		try {
-			list = JSON.parse(raw);
-		} catch {
+		if (raw) {
+			try {
+				const list: string[] = JSON.parse(raw);
+				const idx = Number(img.dataset.retryIdx ?? "1");
+				if (idx >= 0 && idx < list.length) {
+					img.dataset.retryIdx = String(idx + 1);
+					img.src = list[idx];
+					return;
+				}
+			} catch {
+				/* 列表损坏则落到兜底分支 */
+			}
+		}
+		const fb = img.dataset.coverFallback;
+		if (fb && !img.dataset.fallbackTried) {
+			img.dataset.fallbackTried = "1";
+			img.src = fb;
 			return;
 		}
-		const idx = Number(img.dataset.retryIdx ?? "1");
-		if (idx >= 0 && idx < list.length) {
-			img.dataset.retryIdx = String(idx + 1);
-			img.src = list[idx];
-		} else {
-			img.classList.add("cover-broken");
-		}
+		if (raw || fb) img.classList.add("cover-broken");
 	},
 	true,
 );

@@ -1,5 +1,6 @@
 ---
 title: 追番页（bangumi）
+image: api
 description: bangumiConfig 完整参考——构建期从 bgm.tv 拉取「在看」动画收藏生成静态追番页，路由门控、卡片字段与 fail-soft 行为。
 published: 2026-10-20
 tags:

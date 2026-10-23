@@ -1,5 +1,6 @@
 ---
 title: 组件覆盖（override）是怎么工作的
+image: api
 description: 演示站点如何用 src/overrides 同名文件替换主题组件，同时保留包装默认实现的能力。
 published: 2026-10-09
 tags:

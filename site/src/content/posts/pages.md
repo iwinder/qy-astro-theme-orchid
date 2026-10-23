@@ -1,5 +1,6 @@
 ---
 title: 独立页面（pages）
+image: api
 description: 七个独立页面的路由开关 siteConfig.pages，与 about / friends / guestbook 的正文写法（src/content/spec 集合）。
 published: 2026-10-18
 tags:

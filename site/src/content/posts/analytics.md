@@ -1,5 +1,6 @@
 ---
 title: 站点统计（analytics）
+image: api
 description: 四家站点统计按需填 ID——Google Analytics / Clarity / umami / 51.la，留空零注入；另有厂商无关的 Web Vitals 通用上报（自建端点）。
 published: 2026-10-18
 tags:
