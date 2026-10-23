@@ -1958,6 +1958,42 @@ Firefly 有侧栏音乐 widget，经确认补齐：**播放内核仍在 MusicPla
 
 **验证**：lqips.json 18 条键（11 public + 7 url，外链全部抓取成功）；build 侧 5 项 grep PASS——首页 api 封面卡 `#b6baa1`、列表页 features-demo 卡 `#ad694a`、demo-remote 相册卡与照片 `#959595` 等、正文外链首图 `#ad694a`、本地图回归 `#a9c1cb`；浏览器终验 4 页全过（首页 / /gallery/ / /gallery/demo-remote/ / /posts/features-demo/）——DOM 实测渐变均为真实采样色、`--muted` 灰色出现次数为 0（anyMuted:false）、正文外链图渐变 + lazy 保留；连续两次跑脚本产物稳定（缓存复用不丢键）。
 
+### 4.108 站点相对路径媒体资产统一语义：相对 src/ 目录（✅ 2026-10-23 完成）
+
+**背景**：用户报告 profileConfig 配 `avatar: "assets/images/avatar.png"` 依旧失效（字头像 fallback）。根因：文件实际在 `site/src/assets/images/avatar.png`，而 utils/image.ts `toAssetKey` 硬拼 `/src/assets/${src}` → 得到 `/src/assets/assets/images/avatar.png`（assets/ 前缀叠加）→ glob 未命中 → 原样输出相对路径 → 页面按当前路径请求 404。且原头注释示例恰好给的这种直觉写法，约定与示例自相矛盾（旧约定要求配置写 `"images/avatar.png"` 才能命中 src/assets/images/…）。用户随后明确语义要求：**不在系统中写死 assets/ 前缀，相对路径（不带 `/`）默认就是站点 src/ 下的路径**，适用范围为图片、视频等静态媒体内容。
+
+**修复**：`toAssetKey(src)` = `/src/${src.replace(/^\.?\//, "")}` 单一映射，无任何前缀特判——"assets/images/avatar.png" → /src/assets/images/avatar.png、"styles/x.svg" → /src/styles/x.svg，src 下任意目录均可直接书写；glob 模式同步从 src/assets 局部扩大到 src 全目录，扩展名追加视频 `mp4,webm,mov`（视频 glob 导出为产物 URL 字符串直接返回，`AssetMeta = ImageMetadata | string`，图片仍走 §4.106 sharp 管线）；未命中 warning 改「媒体文件未找到」。消费端（Sidebar profile.avatar、sponsor 赞赏头像等）零改动自动受益。
+
+**改动**：packages/theme/src/utils/image.ts（toAssetKey 单映射 + glob 扩大 + 视频分支）；schema.ts / site wallpaper.md 约定注释同步。site/src/config/profileConfig.ts 不用改——`"assets/images/avatar.png"` 即为新语义下的推荐写法。⚠️ **JSDoc 陷阱**：image.ts 头注释首版写了 glob 模式字面量（含双星斜杠），其中包含块注释终止符子串导致注释提前闭合、vite transform 语法报错——注释中禁用双星斜杠字面量（已在注释内留警示）。
+
+**验证**：site build 成功（0 error 0 warning）；dist/index.html 实测 `<img class="profile-avatar" src="/_astro/avatar.D1iXPask_1JNG4u.webp">`——头像经 sharp 管线产出优化 webp，不再 404；site 上下文 astro check 改动前后均 0 errors（theme 裸包下单独跑 check 报大量 virtual:theme 不可解析连锁错误，属环境噪音，与改动无关）。
+
+### 4.109 trailingSlash:"always" 连带 astro 图片端点 dev 全量 404（✅ 2026-10-23 完成）
+
+**背景**：§4.108 后 build 产物头像正常，但用户反馈 dev（4322 端口）页面头像依旧找不到。实测 dev 首页头像 src 为 `/_image?href=/@fs/...&w=…&f=webp`（glob 命中、getImage 生成正常），但该 URL 请求返回**整站 404 页 HTML** 而非纯文本——请求根本没路由进图片端点，落到 404 兜底路由。
+
+**根因**：主题为统一 URL 风格全局设置了 `trailingSlash: "always"`，astro 据此生成内部图片端点路由 pattern——routing/pattern.js `getPattern` 对 `/_image`（1 个 segment）按 trailingSlash:"always" 产出 `^/_image/$`（强制尾斜杠）；而图片服务 assets/services/service.js `getURL` 拼接的 URL 恒为 `/_image?href=...`（无尾斜杠）。两者永远匹配不上 → dev 下 `/_image` 全量 404，头像、md 内联图、封面等所有走图片管线的图全部裂图。静态构建不走该端点（构建期直接编码出图），故 build 产物一直正常，问题仅现于 dev/SSR。排查中曾疑 endpoint/node.js `loadLocalImage` 的 outDir 校验——实为误判：dev 用的是 endpoint/dev.js（`/@fs/` 转 fsPath + `isFileLoadingAllowed` 校验 + vite fetch 兜底），支持源文件路径；带尾斜杠请求 `/_image/?href=...` 实测即 200 image/webp。
+
+**修复**：主题 updateConfig 在设置 `trailingSlash: "always"` 的同时显式配置 `image.endpoint.route: "/_image/"`——astro 对注册路由与生成 URL 取的是同一份配置（parseRoute 生成 pattern 与 getURL 拼 query 均读 image.endpoint.route），带尾斜杠写法下两者自动同步；`parseURL` 只读 query 不看 pathname，端点内部逻辑不受影响。config schema 为 `z.literal("/_image").or(z.string())`，不剥尾斜杠。
+
+**改动**：packages/theme/src/index.ts（核心 integration updateConfig 增加 image.endpoint.route，含根因注释）。
+
+**验证**：dev 重启后首页头像 src 变为 `/_image/?href=…`，curl 实测 200 + image/webp（132090B，RIFF/WEBP 魔数正确）；site build 0 error、dist 产物与 §4.108 一致（avatar webp 正常）不受影响。
+
+### 4.110 封面链路接入 resolveSiteImage（三格式统一收口，✅ 2026-10-23 完成）
+
+**背景**：§4.109 修复 dev 图片端点后，用户确认头像（相对路径）恢复，但反馈「封面失效了」——frontmatter `image` 写相对路径时封面 404。调查确认：§4.108 只给直接调用 resolveSiteImage 的组件（Sidebar/sponsor/friends/Header/MusicPlayer/BaseLayout）接了三格式语义，**封面消费链完全没接**——resolveCover（utils.ts）只做「api 随机图/显式 image/首图/兜底」择优不解析路径；getThumbInfo 只查 `public:` 键；getLqipStyle 键为 `public:`/`url:`。相对路径封面（如 `assets/images/cover.avif`）三处均原样输出 → 列表卡片与文章页 figure 必 404。
+
+**修复**：PostCard.astro 与 routes/posts/[...slug].astro 在 resolveCover 之后统一接 `await resolveSiteImage(rawCover)`——相对路径构建期解析为产物 URL（dev 下经 §4.109 修复的 `/_image/` 端点），public（`/` 开头）与外链（http/data）原样直通（isLocalImagePath 判定）；解析后的 cover 再走 getThumbInfo/getLqipStyle/data-cover，四处消费点（列表 img、LQIP 占位、文章 figure、分享海报）共用同一解析结果。首图 firstImage 来自 rehypeFirstImage，提取的已是构建产物 URL（`/` 开头）自然直通；相对路径解析后的产物 URL 命中不了 thumbs/LQIP 缓存键，按既有机制自然降级（LQIP 主题色渐变、缩略图回退原图），可接受。
+
+**改动**：packages/theme/src/components/PostCard.astro、packages/theme/src/routes/posts/[...slug].astro（各 +1 import、resolveCover 后 +1 行 resolveSiteImage）。
+
+**验证**（dev 4322 + 浏览器/curl，临时改 hello-world.md 的 `image:` 逐一验证后还原为 `"api"`）：
+- 相对路径 `assets/images/cover.avif`：列表卡与文章 figure src 均解析为 `/_image/?href=/@fs/…cover.avif…&f=webp`，curl 200 image/webp（188232B），浏览器实测 `naturalWidth: 3840` 真实加载；
+- public `/gallery/demo-spring/photo-01.png`：src 直通且命中缩略图 `photo-01.thumb.webp`（curl 200 image/webp）、LQIP 命中 `public:` 键输出真实取色渐变（非兜底）；
+- 外链 `https://…`：src 原样直通，浏览器实测 `naturalWidth: 202` 真实加载，文章页 figure 与分享海报 `data-cover` 同步；picsum.photos 在本机网络 SSL 不可达（curl 重定向即断）属环境问题，与主题无关——该图源在可达网络下同样直通；
+- site build 0 error，dist hello-world 封面（api 模式随机图 URL）与改动前一致，无回归。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

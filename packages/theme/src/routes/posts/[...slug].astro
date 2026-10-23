@@ -15,6 +15,7 @@ import Sidebar from "virtual:theme/components/Sidebar.astro";
 import Toc from "virtual:theme/components/Toc.astro";
 import config from "virtual:theme/config";
 import { t } from "../../i18n/index.js";
+import { resolveSiteImage } from "../../utils/image.js";
 import { getLqipStyle } from "../../utils/lqip.js";
 import { getRelatedPosts } from "../../utils/related.js";
 import {
@@ -98,14 +99,18 @@ export async function getStaticPaths() {
 
 const { post, prev, next, related, posts, seriesInfo } = Astro.props;
 const d = post.data;
-/* 封面解析（§4.33）：image:"api" 时取确定性随机图；figure 与分享海报共用同一 URL */
-const { cover: articleCover, retries: coverRetries } = resolveCover(
+/* 封面解析（§4.33）：image:"api" 时取确定性随机图；figure 与分享海报共用同一 URL。
+   §4.110：三格式统一语义（同 PostCard）——相对路径构建期解析为产物 URL */
+const { cover: rawArticleCover, retries: coverRetries } = resolveCover(
 	d.image,
 	d.firstImage,
 	config.postList.fallbackCover,
 	config.postList.randomCover.apis,
 	post.id,
 );
+const articleCover = rawArticleCover
+	? await resolveSiteImage(rawArticleCover)
+	: rawArticleCover;
 const { Content, headings, remarkPluginFrontmatter } = await render(post);
 const { words, minutes } = remarkPluginFrontmatter as {
 	words?: number;

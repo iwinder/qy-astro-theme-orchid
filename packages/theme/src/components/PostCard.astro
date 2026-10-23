@@ -1,6 +1,7 @@
 ---
 import config from "virtual:theme/config";
 import { t } from "../i18n/index.js";
+import { resolveSiteImage } from "../utils/image.js";
 import { getLqipStyle } from "../utils/lqip.js";
 import { getThumbInfo } from "../utils/thumb.js";
 import { formatDate, type PostLike, resolveCover } from "../utils.js";
@@ -25,7 +26,10 @@ const { cover: rawCover, retries } = resolveCover(
 	config.postList.randomCover.apis,
 	post.id,
 );
-const cover = config.postList.showCover ? rawCover : null;
+/* §4.110：封面三格式统一语义（对齐 §4.108 其余消费点）——相对路径（站点 src/
+   下）构建期解析为产物 URL，public / 外链原样直通 */
+const resolvedCover = rawCover ? await resolveSiteImage(rawCover) : rawCover;
+const cover = config.postList.showCover ? resolvedCover : null;
 /* §4.106：列表封面用缩略图（外链/未命中自动回退原图；点击进文章页看正文原图） */
 const thumb = cover ? getThumbInfo(cover) : null;
 const classes = [

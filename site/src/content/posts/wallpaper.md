@@ -41,7 +41,7 @@ switchable: true,
 | `src.desktop` | `string[]` | `[]` | 桌面端壁纸图列表，为空则不渲染壁纸 |
 | `src.mobile` | `string[]` | `[]` | 移动端壁纸图列表（≤767px 生效），空则复用桌面图 |
 
-图源支持三种写法：`/` 开头的 public 绝对路径、`https://` 外链，或相对站点 `src/` 的相对路径（构建期自动解析 `src/assets` 下的图片并参与打包优化）。
+图源支持三种写法：`/` 开头的 public 绝对路径、`https://` 外链，或相对站点 `src/` 的相对路径（不带 `/` 即相对 `src/` 目录，构建期解析为产物 URL 并参与打包优化，支持图片/视频）。
 
 ```ts
 // site/src/config/wallpaperConfig.ts

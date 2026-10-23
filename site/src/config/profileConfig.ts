@@ -11,7 +11,7 @@ import type { ThemeConfig } from "@windcoder/astro-theme-orchid";
 // 3. 内联 SVG 字符串：以 "<" 开头（如 `<svg viewBox="0 0 24 24">...`），兼容自定义图标。
 // 名字未命中时跳过图标只渲染文字；showName: true 时在图标旁显示名称文字。
 export const profileConfig: ThemeConfig["profile"] = {
-	avatar: "",
+	avatar: "assets/images/avatar.png",
 	name: "windcoder",
 	bio: "写点技术，也写点生活。",
 	url: "/about/",

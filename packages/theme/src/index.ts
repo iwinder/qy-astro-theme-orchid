@@ -257,6 +257,17 @@ export function defineTheme(userConfig: ThemeConfig): AstroIntegration[] {
 				updateConfig({
 					// 主题路由全部按尾斜杠组织（如 /posts/xxx/），统一强制，dev 与 prod 行为一致
 					trailingSlash: "always",
+					// 尾斜杠强制的连带修复（§4.109）：trailingSlash:"always" 会把 astro
+					// 内部图片端点 /_image 的注册 pattern 变成 ^/_image/$（routing/pattern.js
+					// getPattern 按 trailingSlash 生成），而图片服务生成的 URL 恒为
+					// /_image?href=...（assets/services/service.js getURL 不加尾斜杠），
+					// 两者永远匹配不上 → dev 下 /_image 全量 404（落到 404 兜底页，
+					// 头像/md 内联图/封面等所有走图片管线的图全部裂图）。
+					// 端点路由改为带尾斜杠的 /_image/：注册 pattern（parseRoute 对
+					// "/_image/" 同样生成 ^/_image/$）与生成 URL（getURL 直接取本配置
+					// 拼 query）自动同步；parseURL 只读 query 不看 pathname，不受影响。
+					// 静态构建不走该端点（构建期直接编码出图），仅影响 dev/SSR 行为。
+					image: { endpoint: { route: "/_image/" } },
 					vite: {
 						plugins: [tailwindcss()],
 						// 构建优化说明（§4.63）：参考站的 vite.build 块（minify:"esbuild"、

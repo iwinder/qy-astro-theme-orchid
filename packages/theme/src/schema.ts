@@ -42,7 +42,8 @@ const sidebarWidgetBase = z.object({
  * 四种模式 html[data-wallpaper-mode] 驱动：banner 横幅 / fullscreen 全屏首屏 /
  * overlay 覆盖透明垫底 / none 纯色不渲染。
  * 图源遵循三格式约定（§4.97）："/" 开头按 public 路径原样输出；http(s)://、//、data:
- * 外链原样输出；其余相对路径相对站点 src/ 目录解析（构建期查表，支持 assets 内图片）。
+ * 外链原样输出；其余相对路径相对站点 src/ 目录解析（构建期查表，支持图片/视频，
+ * §4.108：不写死 assets/ 前缀）。
  * 提取为模块级 const 以便使用函数默认值 .default(() => wallpaperSchema.parse({}))：
  * Zod 的 .default(x) 在输入缺失时直接取 x、不做二次 parse（v3/v4 行为一致），
  * 本段嵌套深达 4 层，最外层再写一份完整字面量维护成本过高；改用 parse({}) 在
