@@ -1994,6 +1994,18 @@ Firefly 有侧栏音乐 widget，经确认补齐：**播放内核仍在 MusicPla
 - 外链 `https://…`：src 原样直通，浏览器实测 `naturalWidth: 202` 真实加载，文章页 figure 与分享海报 `data-cover` 同步；picsum.photos 在本机网络 SSL 不可达（curl 重定向即断）属环境问题，与主题无关——该图源在可达网络下同样直通；
 - site build 0 error，dist hello-world 封面（api 模式随机图 URL）与改动前一致，无回归。
 
+### 4.111 空壁纸 banner 模式正文上拉未取消，分类导航条顶入 Header（✅ 2026-10-23 完成）
+
+**背景**：windcoder-blog（未改配置的站点模板，依赖 0.4.1）dev 启动后首页分类导航条上半截被 sticky Header 盖住。实测：`html[data-wallpaper-mode="banner"]`、页面无 `.wp-stage`、`.site-main` computed margin-top 为 **-64px**（--wp-overlap 默认值）、分类栏 top=40 < Header 高 64 → 正文整体上移一个 header 高度。
+
+**根因**：站点配置仍是 §4.98 前的旧 `banner` 键（zod 非 strict 静默剥离），`wallpaper` 整段走默认值 = `mode:"banner"` + `src.desktop:[]`。BaseLayout 中无图 → `stageMode=null` → stage 不渲染，但 `data-wallpaper-mode="banner"` 照常输出；CSS 上拉规则 `html[data-wallpaper-mode="banner"]:not([data-wp-stage-hidden]) .site-main { margin-top: calc(-1*var(--wp-overlap)) }` 的守卫只覆盖「访客 JS 切走 stage」（app.ts setWallpaperMode/applySavedWallpaper 均以 `.wp-stage` 存在为前提才toggle该属性），**SSR 阶段「stage 根本未渲染」时没人输出 `data-wp-stage-hidden`** → 无 banner 也上拉，正文顶入 Header 底下。fullscreen-hero 的 100vh 首屏下推规则（`:not([data-wp-stage-hidden])` 同款守卫）同病。
+
+**修复**：`stageHidden` 从硬编码 `false` 改为 `!stageMode`——「未渲染」与「被隐藏」对 CSS 而言同义（都不可见），stage 缺席时 html 输出 `data-wp-stage-hidden="true"`，复用既有两条守卫取消上拉/下推，一处改动修两个模式。有图场景 `stageHidden=false` 行为零变化（demo 实测 stageHiddenAttr=null、上拉 -64px 保持「分类栏半压壁纸」设计）。app.ts 仅在 stage 存在时 toggle 该属性，与 SSR 无 stage 时输出 true 无冲突。
+
+**改动**：packages/theme/src/components/BaseLayout.astro（+2 行注释、`const stageHidden = !stageMode`）。
+
+**验证**：site dev 临时清空 `wallpaper.src.desktop` 复现 → 修复后无图 banner：`stageHiddenAttr="true"`、`mainMarginTop=0px`、分类栏 top≈117 不再被盖；还原配置后有图 banner：`stageHiddenAttr=null`、`mainMarginTop=-64px`、barTop≈367 半压 stage 底缘（设计行为）；`pnpm test` 34/34 通过；biome check 0 error。
+
 ## 5. 里程碑路线
 
 | 里程碑 | 内容 | 状态 |

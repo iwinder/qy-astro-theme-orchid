@@ -77,7 +77,9 @@ const visualMode =
    显示，不再隐藏整个 stage——保证非首页有页面标题横幅且刷新不丢失样式 */
 const stageMode =
 	visualMode === "none" || stageDesktop.length === 0 ? null : visualMode;
-const stageHidden = false;
+/* stage 未渲染（无图/none）同样视为隐藏：html[data-wp-stage-hidden] 驱动 CSS 取消
+   banner/fullscreen 的正文上拉与 hero 首屏下推，避免空壁纸时内容顶入 Header 底下 */
+const stageHidden = !stageMode;
 const stageVisible = Boolean(stageMode);
 /* hero 文案（§4.98）：首页用 homeText 配置（标题+副标题/打字机），非首页用页面
    传入的 title（归档→"归档"、文章→文章标题等）。仅 stage 可见时渲染，叠加在
