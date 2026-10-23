@@ -1,6 +1,6 @@
 {
 	"name": "@windcoder/astro-theme-orchid",
-	"version": "0.4.3",
+	"version": "0.4.4",
 	"description": "清新简约的 Astro 博客主题，以 Integration 形式提供，支持版本化升级与组件覆盖",
 	"type": "module",
 	"keywords": [
