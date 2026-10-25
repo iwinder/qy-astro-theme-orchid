@@ -150,6 +150,9 @@ const ru: Record<UiKey, string> = {
 		"Серий пока нет. Заполните поле series в frontmatter записи, чтобы создать.",
 	seriesProgress: "{cur} / {total}",
 	seriesCatalog: "Содержание серии",
+	/* Ресурсы статьи: карточка из frontmatter resources */
+	postResources: "Материалы",
+	resourcePassword: "Код доступа",
 	/* Музыкальный плеер */
 	musicOpen: "Музыкальный плеер",
 	musicClose: "Свернуть плеер",

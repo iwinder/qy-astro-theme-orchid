@@ -149,6 +149,9 @@ const ko: Record<UiKey, string> = {
 		"아직 시리즈가 없습니다. 글 frontmatter에 series를 입력하면 생성됩니다.",
 	seriesProgress: "{cur} / {total}",
 	seriesCatalog: "시리즈 목차",
+	/* 게시글 리소스: frontmatter resources 로 렌더링되는 리소스 카드 */
+	postResources: "관련 자료",
+	resourcePassword: "추출 코드",
 	/* 음악 플레이어 */
 	musicOpen: "음악 플레이어",
 	musicClose: "플레이어 접기",

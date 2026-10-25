@@ -150,6 +150,9 @@ const ja: Record<UiKey, string> = {
 		"シリーズがまだありません。記事の frontmatter に series を記入すると作成できます。",
 	seriesProgress: "{cur} / {total}",
 	seriesCatalog: "シリーズ目次",
+	/* 記事リソース：frontmatter resources から描画されるリソースカード */
+	postResources: "関連リソース",
+	resourcePassword: "パスワード",
 	/* 音楽プレイヤー */
 	musicOpen: "音楽プレイヤー",
 	musicClose: "プレイヤーを閉じる",

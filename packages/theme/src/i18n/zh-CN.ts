@@ -166,6 +166,9 @@ const zhCN = {
 	seriesEmpty: "还没有专题，在文章 frontmatter 中填写 series 字段即可创建。",
 	seriesProgress: "{cur} / {total}",
 	seriesCatalog: "专题目录",
+	/* 文章资源区：frontmatter resources 渲染的资源卡 */
+	postResources: "相关资源",
+	resourcePassword: "提取码",
 	/* 音乐播放器（§4.36）：data-labels 经组件 data-labels 属性带入客户端 */
 	musicOpen: "音乐播放器",
 	musicClose: "收起播放器",

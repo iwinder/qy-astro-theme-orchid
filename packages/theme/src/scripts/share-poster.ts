@@ -451,6 +451,8 @@ export async function openSharePoster(btn: HTMLElement) {
 			img.src = poster;
 			img.hidden = false;
 		}
+		/* 生成完成：移除 loading（否则转圈常驻在海报上方） */
+		modal.querySelector<HTMLElement>(".poster-loading")?.remove();
 		if (saveBtn) {
 			saveBtn.disabled = false;
 			saveBtn.addEventListener("click", () => {

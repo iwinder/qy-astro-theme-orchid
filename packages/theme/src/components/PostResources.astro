@@ -1,0 +1,75 @@
+---
+/**
+ * 文章资源区：frontmatter resources（name/url/password）在正文后渲染资源卡。
+ * 按 url 域名识别品牌图标（gitee/github），其余地址用通用外链图标；
+ * password 有值时展示提取码。新地址类型无需改组件，直接复用 name/url 展示。
+ */
+import { t } from "../i18n/index.js";
+
+interface ResourceItem {
+	name: string;
+	url: string;
+	password?: string;
+}
+
+interface Props {
+	resources?: ResourceItem[];
+}
+
+const { resources } = Astro.props;
+const items = (resources ?? []).filter((r) => r.url && r.url.trim() !== "");
+
+type IconKind = "gitee" | "github" | "link";
+function iconFor(url: string): IconKind {
+	let host = "";
+	try {
+		host = new URL(url).hostname.replace(/^www\./, "");
+	} catch {
+		return "link";
+	}
+	if (host === "gitee.com") return "gitee";
+	if (host === "github.com") return "github";
+	return "link";
+}
+---
+
+{
+  items.length > 0 && (
+    <section class="post-resources card reveal" aria-label={t("postResources")}>
+      <h2 class="post-resources-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        {t("postResources")}
+      </h2>
+      <ul class="post-resources-list">
+        {items.map((r) => {
+          const kind = iconFor(r.url);
+          return (
+            <li class="post-resources-item">
+              <a href={r.url} target="_blank" rel="noopener">
+                <span class="post-resources-icon" aria-hidden="true">
+                  {kind === "gitee" && (
+                    <svg viewBox="0 0 1024 1024" fill="currentColor"><path d="M512 1024C229.222 1024 0 794.778 0 512S229.222 0 512 0s512 229.222 512 512-229.222 512-512 512zm259.149-568.883h-290.74a25.293 25.293 0 0 0-25.292 25.293l-0.081 63.206c0 13.952 11.315 25.293 25.267 25.293h177.024c13.978 0 25.293 11.315 25.293 25.267v12.646a75.853 75.853 0 0 1-75.853 75.853h-240.23a25.293 25.293 0 0 1-25.267-25.293V417.203a75.853 75.853 0 0 1 75.827-75.853h353.946a25.293 25.293 0 0 0 25.267-25.292l0.077-63.207a25.293 25.293 0 0 0-25.268-25.293H417.152a189.62 189.62 0 0 0-189.62 189.645V771.15c0 13.977 11.316 25.293 25.294 25.293h372.94a170.65 170.65 0 0 0 170.65-170.65V480.384a25.293 25.293 0 0 0-25.267-25.267z"/></svg>
+                  )}
+                  {kind === "github" && (
+                    <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+                  )}
+                  {kind === "link" && (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  )}
+                </span>
+                <span class="post-resources-name">{r.name}</span>
+                {r.password && r.password.trim() !== "" && (
+                  <span class="post-resources-password">
+                    {t("resourcePassword")}
+                    <code>{r.password}</code>
+                  </span>
+                )}
+                <svg class="post-resources-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  )
+}

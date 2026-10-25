@@ -1639,6 +1639,20 @@ export function definePostSchema(extensions: z.ZodRawShape = {}) {
 			 * 组名直接来自本字段文本，无 i18n 参与。
 			 */
 			seriesGroup: z.string().optional(),
+			/**
+			 * 文章相关资源：正文后渲染资源卡区。name 展示名、url 跳转地址、
+			 * password 提取码（可空）。按 url 域名识别品牌图标（gitee/github），
+			 * 其余地址类型直接复用通用外链图标展示，无需再改 schema。
+			 */
+			resources: z
+				.array(
+					z.object({
+						name: z.string(),
+						url: z.string(),
+						password: z.string().optional(),
+					}),
+				)
+				.optional(),
 		})
 		.extend(extensions);
 }

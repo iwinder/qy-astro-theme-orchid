@@ -145,6 +145,9 @@ const zhTW: Record<UiKey, string> = {
 	seriesEmpty: "還沒有專題，在文章 frontmatter 中填寫 series 欄位即可建立。",
 	seriesProgress: "{cur} / {total}",
 	seriesCatalog: "專題目錄",
+	/* 文章資源區：frontmatter resources 渲染的資源卡 */
+	postResources: "相關資源",
+	resourcePassword: "提取碼",
 	/* 音樂播放器 */
 	musicOpen: "音樂播放器",
 	musicClose: "收起播放器",

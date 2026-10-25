@@ -10,6 +10,7 @@ import EncryptedContent from "virtual:theme/components/EncryptedContent.astro";
 import License from "virtual:theme/components/License.astro";
 import OutdatedCard from "virtual:theme/components/OutdatedCard.astro";
 import PostNav from "virtual:theme/components/PostNav.astro";
+import PostResources from "virtual:theme/components/PostResources.astro";
 import RecommendedPost from "virtual:theme/components/RecommendedPost.astro";
 import Sidebar from "virtual:theme/components/Sidebar.astro";
 import Toc from "virtual:theme/components/Toc.astro";
@@ -303,6 +304,8 @@ const jsonLd = {
     {/* 过时提醒（§4.11）：许可卡之前展示；加密文章不渲染 */}
     {!d.password && <OutdatedCard updated={d.updated ?? d.published} published={d.published} />}
     <License licenseName={d.licenseName} licenseUrl={d.licenseUrl} enabled={d.license} />
+    {/* 文章资源区：frontmatter resources 非空时渲染；加密文章随正文语义一并隐藏 */}
+    {!d.password && <PostResources resources={d.resources} />}
     <PostNav prev={prev ?? undefined} next={next ?? undefined} />
   {/* 支持卡（P2）：打赏入口 + 分享海报（share-poster.ts 仍按 #qy-share-btn 与 data-* 绑定） */}
   {

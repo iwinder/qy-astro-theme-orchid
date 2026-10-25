@@ -3339,6 +3339,94 @@ html.dark .outdated-warning {
 	border-radius: var(--radius-sm);
 	background: var(--bg-soft);
 }
+/* 文章资源区：frontmatter resources 渲染的资源卡（License 之后、上下篇之前） */
+.post-resources {
+	margin-top: 28px;
+	padding: 16px 20px;
+}
+.post-resources-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 10px;
+	font-size: 15.5px;
+	font-weight: 700;
+	color: var(--ink);
+}
+.post-resources-title svg {
+	width: 16px;
+	height: 16px;
+	color: var(--accent);
+}
+.post-resources-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+	gap: 4px;
+}
+.post-resources-item a {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 7px 8px;
+	border-radius: var(--radius-sm);
+	font-size: 14px;
+	color: var(--ink-2);
+	transition: background 0.15s ease, color 0.15s ease;
+}
+.post-resources-item a:hover {
+	background: var(--bg-soft);
+	color: var(--accent-deep);
+}
+.post-resources-icon {
+	flex: none;
+	display: inline-flex;
+	width: 18px;
+	height: 18px;
+	color: var(--muted);
+}
+.post-resources-item a:hover .post-resources-icon {
+	color: var(--accent);
+}
+.post-resources-icon svg {
+	width: 100%;
+	height: 100%;
+}
+.post-resources-name {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.post-resources-password {
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin-left: auto;
+	font-size: 12.5px;
+	color: var(--muted);
+}
+.post-resources-password code {
+	padding: 1px 6px;
+	border-radius: 4px;
+	border: 1px solid var(--border);
+	background: var(--bg-soft);
+	font-size: 12px;
+	color: var(--ink-2);
+}
+.post-resources-ext {
+	flex: none;
+	width: 14px;
+	height: 14px;
+	color: var(--muted);
+	opacity: 0.6;
+}
+.post-resources-item a:hover .post-resources-ext {
+	color: var(--accent);
+	opacity: 1;
+}
 .post-nav {
 	margin-top: 24px;
 	display: grid;
@@ -5591,6 +5679,10 @@ a[data-encoded-email] {
 	width: 100%;
 	height: auto;
 	border-radius: var(--radius-sm);
+}
+/* display:block 会覆盖 [hidden] 的 UA 样式，显式声明防生成前空框露出 */
+.poster-img[hidden] {
+	display: none;
 }
 .poster-loading {
 	display: flex;

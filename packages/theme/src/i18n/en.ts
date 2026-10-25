@@ -146,6 +146,9 @@ const en: Record<UiKey, string> = {
 		"No series yet. Add a series field to a post's frontmatter to create one.",
 	seriesProgress: "{cur} / {total}",
 	seriesCatalog: "Series catalog",
+	/* Post resources: resource card rendered from frontmatter resources */
+	postResources: "Related resources",
+	resourcePassword: "Code",
 	/* Music player (§4.36) */
 	musicOpen: "Music player",
 	musicClose: "Collapse player",
