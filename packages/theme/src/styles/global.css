@@ -3373,7 +3373,9 @@ html.dark .outdated-warning {
 	border-radius: var(--radius-sm);
 	font-size: 14px;
 	color: var(--ink-2);
-	transition: background 0.15s ease, color 0.15s ease;
+	transition:
+		background 0.15s ease,
+		color 0.15s ease;
 }
 .post-resources-item a:hover {
 	background: var(--bg-soft);
