@@ -2914,24 +2914,24 @@ a.page-item:hover {
 	background: var(--surface);
 }
 
-/* 左右两栏：≥768px 正文列 + 侧栏列（对齐参考模板 md 断点），≤767px 单列堆叠 */
+/* 左右两栏：≥1025px 正文列 + 侧栏列（断点与 .home-layout 统一），≤1024px 单列堆叠。
+   容器不设 max-width，跟随 .shell（min(92vw, --page-width)），
+   保证文章页与首页左右布局的左栏/右栏宽度完全一致（§4.32 迭代） */
 .post-layout {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
-	gap: 36px;
+	gap: 32px;
 	align-items: start;
-	max-width: 900px;
-	margin: 0 auto;
 }
 .post-main {
 	/* min-width:0 防 nowrap 标题/代码撑破网格轨道 */
 	min-width: 0;
 }
-@media (min-width: 768px) {
+@media (min-width: 1025px) {
 	.post-layout {
 		grid-template-columns: minmax(0, 1fr) 280px;
-		/* §4.46 侧栏统一 280px（与首页一致），max-width 同步 +60px 保持正文阅读行宽不变（§4.32 迭代） */
-		max-width: 1180px;
+		/* §4.46 对齐参考站 gap-4：桌面列距 16px（与 .home-layout 一致） */
+		gap: 16px;
 	}
 }
 .prose {
@@ -5339,6 +5339,9 @@ html.dark .friend-card:hover .friend-name {
 		text-align: left;
 	}
 	.home-layout {
+		gap: 24px;
+	}
+	.post-layout {
 		gap: 24px;
 	}
 	.back-top {
