@@ -77,6 +77,14 @@ const ko: Record<UiKey, string> = {
 	avatarAlt: "{name}의 아바타",
 	noFriends: "아직 링크가 없습니다",
 	applyFriend: "링크 신청",
+	friendSearch: "링크 검색…",
+	friendAll: "전체",
+	noFriendMatch: "일치하는 링크가 없습니다",
+	copy: "복사",
+	friendSiteName: "사이트 이름",
+	friendSiteDesc: "사이트 설명",
+	friendSiteUrl: "사이트 URL",
+	friendAvatarUrl: "아바타 URL",
 	/* 애니 시청 페이지 */
 	bangumiEmpty: "시청 중인 애니메이션이 없습니다",
 	bangumiFail:

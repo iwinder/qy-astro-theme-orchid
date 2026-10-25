@@ -4616,6 +4616,320 @@ html.dark .friend-card:hover .friend-name {
 	padding: 1px 9px;
 }
 
+/* ---------- 10.3 友链区块卡（标题 + 搜索 + 分组 + 网格） ---------- */
+.friend-zone {
+	margin-top: 26px;
+	padding: 22px 24px;
+}
+.friend-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+.friend-zone-title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 17px;
+}
+.friend-zone-title svg {
+	flex: none;
+	width: 20px;
+	height: 20px;
+	color: var(--accent);
+}
+.friend-zone-desc {
+	margin-top: 6px;
+	font-size: 14px;
+	color: var(--muted);
+	line-height: 1.7;
+}
+.friend-search {
+	margin-left: auto;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: min(230px, 100%);
+	padding: 7px 12px;
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	background: var(--bg-soft);
+	transition: border-color 0.15s;
+}
+.friend-search:focus-within {
+	border-color: var(--accent);
+}
+.friend-search svg {
+	flex: none;
+	width: 15px;
+	height: 15px;
+	color: var(--muted);
+}
+.friend-search input {
+	flex: 1;
+	min-width: 0;
+	border: none;
+	background: transparent;
+	outline: none;
+	font-size: 13.5px;
+	color: var(--ink);
+}
+.friend-search input::placeholder {
+	color: var(--muted);
+}
+.friend-pills {
+	margin-top: 14px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.friend-pills .chip {
+	cursor: pointer;
+	font-family: inherit;
+}
+.friend-zone .friend-grid {
+	margin-top: 18px;
+}
+/* .friend-card 的 display:flex 会覆盖 UA 的 [hidden]，需显式收回 */
+.friend-card[hidden],
+.tag-empty[hidden] {
+	display: none;
+}
+.friend-zone .tag-empty {
+	margin-top: 18px;
+}
+
+/* ---------- 10.4 本站信息 / 申请友链 双卡与注意事项 ---------- */
+.friend-duo {
+	margin-top: 20px;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 20px;
+}
+.friend-duo > .card:only-child {
+	grid-column: 1 / -1;
+}
+@media (max-width: 767px) {
+	.friend-duo {
+		grid-template-columns: 1fr;
+	}
+}
+.friend-siteinfo,
+.friend-apply-card {
+	display: flex;
+	flex-direction: column;
+}
+.friend-siteinfo,
+.friend-apply-card,
+.friend-notice {
+	padding: 22px 24px;
+}
+.friend-card-title {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 17px;
+}
+.friend-card-title svg {
+	flex: none;
+	width: 18px;
+	height: 18px;
+	color: var(--accent);
+}
+/* 本站信息卡头：头像 + 名称 + 描述（对齐参考布局） */
+.siteinfo-head {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 16px;
+}
+.siteinfo-avatar {
+	flex: none;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	overflow: hidden;
+	border: 1px solid var(--border);
+	background: var(--bg-soft);
+}
+.siteinfo-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+.siteinfo-meta {
+	min-width: 0;
+}
+.siteinfo-name {
+	font-family: var(--font-display);
+	font-weight: 700;
+	font-size: 15px;
+}
+.siteinfo-desc {
+	margin-top: 2px;
+	font-size: 13px;
+	color: var(--muted);
+	line-height: 1.5;
+}
+.kv-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 10px;
+	padding: 10px 12px;
+	background: var(--bg-soft);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+}
+.kv-main {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+.kv-label {
+	font-size: 12px;
+	color: var(--muted);
+}
+.kv-value {
+	font-size: 13.5px;
+	color: var(--ink);
+	line-height: 1.5;
+	word-break: break-all;
+}
+.copy-btn {
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: transparent;
+	color: var(--muted);
+	cursor: pointer;
+	transition:
+		color 0.15s,
+		border-color 0.15s;
+}
+.copy-btn:hover {
+	color: var(--accent-ink);
+	border-color: var(--accent);
+}
+.copy-btn svg {
+	width: 14px;
+	height: 14px;
+}
+.copy-btn .icon-check {
+	display: none;
+}
+.copy-btn.is-copied {
+	color: var(--accent-ink);
+	border-color: var(--accent);
+}
+.copy-btn.is-copied .icon-copy {
+	display: none;
+}
+.copy-btn.is-copied .icon-check {
+	display: block;
+}
+.friend-apply-card .fa-desc {
+	margin-top: 6px;
+	font-size: 14px;
+	color: var(--muted);
+	line-height: 1.7;
+}
+.apply-steps {
+	list-style: none;
+	margin: 16px 0 0;
+	padding: 0;
+	display: grid;
+	gap: 12px;
+}
+.apply-step {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+}
+.apply-step-num {
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background: var(--accent-soft);
+	color: var(--accent-ink);
+	font-size: 12px;
+	font-weight: 700;
+	margin-top: 1px;
+}
+.apply-step-title {
+	font-weight: 600;
+	font-size: 14.5px;
+}
+.apply-step-desc {
+	margin-top: 2px;
+	font-size: 13px;
+	color: var(--muted);
+	line-height: 1.6;
+}
+/* 申请资料模板：整块展示 + 右上角一键复制（对齐参考布局） */
+.apply-template {
+	position: relative;
+	margin-top: 14px;
+	padding: 12px 46px 12px 16px;
+	background: var(--bg-soft);
+	border: 1px solid var(--border);
+	border-radius: 8px;
+}
+.apply-template .copy-btn {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+}
+.apply-template-line {
+	font-size: 13px;
+	color: var(--ink);
+	line-height: 1.9;
+	word-break: break-all;
+}
+.friend-apply-card .btn {
+	margin-top: 16px;
+	width: 100%;
+	justify-content: center;
+}
+.friend-notice {
+	margin-top: 20px;
+}
+.notice-list {
+	margin: 14px 0 0;
+	padding: 0;
+	display: grid;
+	gap: 12px;
+}
+.notice-item dt {
+	font-weight: 700;
+	font-size: 14px;
+}
+.notice-item dd {
+	margin: 2px 0 0;
+	font-size: 13.5px;
+	color: var(--muted);
+	line-height: 1.7;
+}
+
 /* ---------- 10.1 字头像兜底（友链/打赏名单无图时） ---------- */
 .avatar-fallback {
 	display: inline-flex;

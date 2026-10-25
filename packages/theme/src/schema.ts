@@ -706,6 +706,29 @@ export const themeConfigSchema = z.object({
 			description: z.string().default(""),
 			/** 页面级排序：weight 权重降序 / random 随机（构建期） */
 			sort: z.enum(["weight", "random"]).default("weight"),
+			/** 友链区块卡工具条：搜索框与分组 pills 开关（分组由 list tags 聚合，无 tags 自动隐藏） */
+			filter: z
+				.object({
+					search: z.boolean().default(true),
+					groups: z.boolean().default(true),
+				})
+				.default({ search: true, groups: true }),
+			/** 本站信息卡（name/desc/site/avatar 任一非空才渲染整卡） */
+			siteInfo: z
+				.object({
+					title: z.string().default("本站信息"),
+					name: z.string().default(""),
+					desc: z.string().default(""),
+					site: z.string().default(""),
+					avatar: z.string().default(""),
+				})
+				.default({
+					title: "本站信息",
+					name: "",
+					desc: "",
+					site: "",
+					avatar: "",
+				}),
 			/** 申请友链卡片（title 留空则整卡不渲染） */
 			apply: z
 				.object({
@@ -714,8 +737,47 @@ export const themeConfigSchema = z.object({
 					/** 申请入口链接（mailto 或表单页） */
 					link: z.string().default(""),
 					label: z.string().default("申请友链"),
+					/** 申请步骤（空数组不渲染） */
+					steps: z
+						.array(
+							z.object({
+								title: z.string(),
+								description: z.string().default(""),
+							}),
+						)
+						.default([]),
+					/** 可复制申请资料模板行（空数组不渲染） */
+					template: z
+						.array(
+							z.object({
+								label: z.string(),
+								value: z.string(),
+							}),
+						)
+						.default([]),
 				})
-				.default({ title: "", description: "", link: "", label: "申请友链" }),
+				.default({
+					title: "",
+					description: "",
+					link: "",
+					label: "申请友链",
+					steps: [],
+					template: [],
+				}),
+			/** 注意事项卡（items 为空不渲染） */
+			notice: z
+				.object({
+					title: z.string().default("注意事项"),
+					items: z
+						.array(
+							z.object({
+								term: z.string(),
+								description: z.string().default(""),
+							}),
+						)
+						.default([]),
+				})
+				.default({ title: "注意事项", items: [] }),
 			list: z
 				.array(
 					z.object({
@@ -738,7 +800,17 @@ export const themeConfigSchema = z.object({
 			title: "友链",
 			description: "",
 			sort: "weight",
-			apply: { title: "", description: "", link: "", label: "申请友链" },
+			filter: { search: true, groups: true },
+			siteInfo: { title: "本站信息", name: "", desc: "", site: "", avatar: "" },
+			apply: {
+				title: "",
+				description: "",
+				link: "",
+				label: "申请友链",
+				steps: [],
+				template: [],
+			},
+			notice: { title: "注意事项", items: [] },
 			list: [],
 		}),
 	/**

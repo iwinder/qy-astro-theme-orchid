@@ -22,19 +22,47 @@ const friendImgs = await Promise.all(
 	),
 );
 
-// 可选 spec 正文（src/content/spec/friends.md），渲染在卡片列表上方
+// 可选 spec 正文（src/content/spec/friends.md），渲染在区块卡上方
 const entry = await getEntry("spec", "friends").catch(() => null);
 const { Content } = entry ? await render(entry) : { Content: null };
 
-const apply = config.friends.apply;
+const friendsCfg = config.friends;
+const apply = friendsCfg.apply;
+const siteInfo = friendsCfg.siteInfo;
+const notice = friendsCfg.notice;
+
+// 分组 pills：由 list tags 聚合去重（保持首次出现顺序），无 tags 自动隐藏
+const groupTags = [...new Set(friends.flatMap((f) => f.tags))].filter(Boolean);
+const showGroups = friendsCfg.filter.groups && groupTags.length > 0;
+const showSearch = friendsCfg.filter.search;
+
+// 本站信息卡：name/desc/site/avatar 任一非空才渲染
+const siteInfoRows = (
+	[
+		[t("friendSiteName"), siteInfo.name],
+		[t("friendSiteDesc"), siteInfo.desc],
+		[t("friendSiteUrl"), siteInfo.site],
+		[t("friendAvatarUrl"), siteInfo.avatar],
+	] as [string, string][]
+).filter(([, v]) => v);
+const hasSiteInfo = siteInfoRows.length > 0;
+// 本站头像三格式解析（§4.97），空串跳过用字头像兜底
+const siteAvatar = siteInfo.avatar
+	? await resolveSiteImage(siteInfo.avatar)
+	: "";
+
+// 申请模板整块复制文本：label: value 每行一条（模板块右上角一键复制）
+const applyTemplateText = apply.template
+	.map((r) => `${r.label}: ${r.value}`)
+	.join("\n");
+
+// 申请卡：有步骤或模板时渲染富卡（与站点信息并排）；否则回退旧的横向申请条
+const hasApplyRich = Boolean(
+	apply.title && (apply.steps.length > 0 || apply.template.length > 0),
+);
 ---
 
-<BaseLayout title={config.friends.title} page="friends">
-  <header class="archive-head reveal">
-    <h1 class="page-title">{config.friends.title}</h1>
-    {config.friends.description && <p class="page-sub">{config.friends.description}</p>}
-  </header>
-
+<BaseLayout title={friendsCfg.title} page="friends">
   {
     Content && (
       <article class="card page-card prose reveal" data-lightbox-gallery>
@@ -43,14 +71,87 @@ const apply = config.friends.apply;
     )
   }
 
-  {
-    friends.length > 0 ? (
-      <div class="friend-grid reveal">
-        {friends.map((f, i) => (
-          <a class="friend-card card" href={f.site} target="_blank" rel="noopener">
+  <section class="friend-zone card reveal" data-friend-zone>
+    <div class="friend-toolbar">
+      <div class="friend-zone-title">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+        <span>{friendsCfg.title}</span>
+      </div>
+      {
+        showSearch && (
+          <div class="friend-search">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input
+              type="search"
+              placeholder={t("friendSearch")}
+              aria-label={t("friendSearch")}
+              data-friend-search
+            />
+          </div>
+        )
+      }
+    </div>
+    {friendsCfg.description && <p class="friend-zone-desc">{friendsCfg.description}</p>}
+    {
+      showGroups && (
+        <div class="friend-pills" role="group" aria-label={t("friendAll")}>
+          <button type="button" class="chip is-on" data-friend-pill="">
+            {t("friendAll")}
+          </button>
+          {groupTags.map((gt) => (
+            <button type="button" class="chip" data-friend-pill={gt}>
+              {gt}
+            </button>
+          ))}
+        </div>
+      )
+    }
+    <div class="friend-grid">
+      {
+        friends.map((f, i) => (
+          <a
+            class="friend-card card"
+            href={f.site}
+            target="_blank"
+            rel="noopener"
+            data-friend-card
+            data-search={[f.title, f.desc, ...f.tags]
+              .filter(Boolean)
+              .join(" ")
+              .toLowerCase()}
+            data-tags={JSON.stringify(f.tags)}
+          >
             <div class="friend-avatar">
               {f.image ? (
-                <img src={friendImgs[i]} alt={t('avatarAlt', { name: f.title })} loading="lazy" />
+                <img
+                  src={friendImgs[i]}
+                  alt={t("avatarAlt", { name: f.title })}
+                  loading="lazy"
+                />
               ) : (
                 <span class="avatar-fallback">{f.title.slice(0, 1)}</span>
               )}
@@ -67,15 +168,191 @@ const apply = config.friends.apply;
               )}
             </div>
           </a>
-        ))}
+        ))
+      }
+    </div>
+    <p class="tag-empty" data-friend-empty hidden>
+      {t("noFriendMatch")}
+    </p>
+  </section>
+
+  {
+    (hasSiteInfo || hasApplyRich) && (
+      <div class="friend-duo">
+        {hasSiteInfo && (
+          <section class="friend-siteinfo card reveal">
+            <div class="friend-card-title">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
+              </svg>
+              <span>{siteInfo.title}</span>
+            </div>
+            <div class="siteinfo-head">
+              <div
+                class="siteinfo-avatar"
+                data-siteinfo-avatar
+                data-avatar-name={siteInfo.name}
+              >
+                {siteAvatar ? (
+                  <img src={siteAvatar} alt={siteInfo.name} loading="lazy" />
+                ) : (
+                  <span class="avatar-fallback">
+                    {(siteInfo.name || "?").slice(0, 1)}
+                  </span>
+                )}
+              </div>
+              <div class="siteinfo-meta">
+                <div class="siteinfo-name">{siteInfo.name}</div>
+                {siteInfo.desc && <p class="siteinfo-desc">{siteInfo.desc}</p>}
+              </div>
+            </div>
+            {siteInfoRows.map(([label, value]) => (
+              <div class="kv-row">
+                <div class="kv-main">
+                  <span class="kv-label">{label}</span>
+                  <span class="kv-value">{value}</span>
+                </div>
+                <button
+                  type="button"
+                  class="copy-btn"
+                  data-copy={value}
+                  aria-label={t("copy")}
+                  title={t("copy")}
+                >
+                  <svg
+                    class="icon-copy"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect width="14" height="14" x="8" y="8" rx="2" />
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                  </svg>
+                  <svg
+                    class="icon-check"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </section>
+        )}
+        {hasApplyRich && (
+          <section class="friend-apply-card card reveal">
+            <div class="friend-card-title">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <rect width="20" height="16" x="2" y="4" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+              </svg>
+              <span>{apply.title}</span>
+            </div>
+            {apply.description && <p class="fa-desc">{apply.description}</p>}
+            {apply.steps.length > 0 && (
+              <ol class="apply-steps">
+                {apply.steps.map((s, i) => (
+                  <li class="apply-step">
+                    <span class="apply-step-num">{i + 1}</span>
+                    <div>
+                      <div class="apply-step-title">{s.title}</div>
+                      {s.description && <p class="apply-step-desc">{s.description}</p>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
+            {apply.template.length > 0 && (
+              <div class="apply-template">
+                <button
+                  type="button"
+                  class="copy-btn"
+                  data-copy={applyTemplateText}
+                  aria-label={t("copy")}
+                  title={t("copy")}
+                >
+                  <svg
+                    class="icon-copy"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <rect width="14" height="14" x="8" y="8" rx="2" />
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                  </svg>
+                  <svg
+                    class="icon-check"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    aria-hidden="true"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </button>
+                <div class="apply-template-text">
+                  {apply.template.map((row) => (
+                    <div class="apply-template-line">
+                      {row.label}: {row.value}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {apply.link && (
+              <a class="btn" href={apply.link}>
+                {apply.label || t("applyFriend")}
+              </a>
+            )}
+          </section>
+        )}
       </div>
-    ) : (
-      <p class="tag-empty reveal">{t('noFriends')}</p>
     )
   }
 
   {
-    apply.title && (
+    // 兼容旧配置：无步骤无模板时保留原横向申请条
+    apply.title && !hasApplyRich && (
       <section class="friend-apply card reveal">
         <div>
           <div class="fa-title">{apply.title}</div>
@@ -83,9 +360,40 @@ const apply = config.friends.apply;
         </div>
         {apply.link && (
           <a class="btn" href={apply.link}>
-            {apply.label || t('applyFriend')}
+            {apply.label || t("applyFriend")}
           </a>
         )}
+      </section>
+    )
+  }
+
+  {
+    notice.items.length > 0 && (
+      <section class="friend-notice card reveal">
+        <div class="friend-card-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+            <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+          </svg>
+          <span>{notice.title}</span>
+        </div>
+        <dl class="notice-list">
+          {notice.items.map((item) => (
+            <div class="notice-item">
+              <dt>{item.term}</dt>
+              {item.description && <dd>{item.description}</dd>}
+            </div>
+          ))}
+        </dl>
       </section>
     )
   }
@@ -93,3 +401,75 @@ const apply = config.friends.apply;
   <!-- §4.113：友链页评论区，支持直接留言申请友链（provider 未启用时自动 no-op） -->
   <Comment path="/friends" />
 </BaseLayout>
+
+<script>
+	// 友链区块卡：搜索 + 分组 pills 叠加过滤
+	const zone = document.querySelector<HTMLElement>("[data-friend-zone]");
+	if (zone) {
+		const search = zone.querySelector<HTMLInputElement>("[data-friend-search]");
+		const pills = Array.from(
+			zone.querySelectorAll<HTMLButtonElement>("[data-friend-pill]"),
+		);
+		const cards = Array.from(
+			zone.querySelectorAll<HTMLElement>("[data-friend-card]"),
+		);
+		const empty = zone.querySelector<HTMLElement>("[data-friend-empty]");
+		let keyword = "";
+		let group = "";
+		const applyFilter = () => {
+			let visible = 0;
+			for (const card of cards) {
+				const okKeyword =
+					!keyword || (card.dataset.search || "").includes(keyword);
+				let tags: string[] = [];
+				try {
+					tags = JSON.parse(card.dataset.tags || "[]") as string[];
+				} catch {
+					/* data-tags 解析失败时按无分组处理 */
+				}
+				const okGroup = !group || tags.includes(group);
+				const show = okKeyword && okGroup;
+				card.hidden = !show;
+				if (show) visible++;
+			}
+			if (empty) empty.hidden = visible > 0;
+		};
+		search?.addEventListener("input", () => {
+			keyword = (search.value || "").trim().toLowerCase();
+			applyFilter();
+		});
+		for (const pill of pills) {
+			pill.addEventListener("click", () => {
+				group = pill.dataset.friendPill || "";
+				for (const p of pills) p.classList.toggle("is-on", p === pill);
+				applyFilter();
+			});
+		}
+	}
+
+	// 复制按钮：点击复制 data-copy 内容，短暂切换成功态
+	for (const btn of document.querySelectorAll<HTMLButtonElement>("[data-copy]")) {
+		btn.addEventListener("click", async () => {
+			const value = btn.dataset.copy || "";
+			try {
+				await navigator.clipboard.writeText(value);
+			} catch {
+				/* 剪贴板不可用时静默降级（按钮仍给出成功反馈） */
+			}
+			btn.classList.add("is-copied");
+			setTimeout(() => btn.classList.remove("is-copied"), 1500);
+		});
+	}
+
+	// 本站头像加载失败时回退字头像（外链头像 404 / 防盗链兜底）
+	const avatarBox = document.querySelector<HTMLElement>("[data-siteinfo-avatar]");
+	const avatarImg = avatarBox?.querySelector("img");
+	if (avatarBox && avatarImg) {
+		avatarImg.addEventListener("error", () => {
+			const fb = document.createElement("span");
+			fb.className = "avatar-fallback";
+			fb.textContent = (avatarBox.dataset.avatarName || "?").slice(0, 1);
+			avatarImg.replaceWith(fb);
+		});
+	}
+</script>

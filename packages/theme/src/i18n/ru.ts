@@ -77,6 +77,14 @@ const ru: Record<UiKey, string> = {
 	avatarAlt: "Аватар {name}",
 	noFriends: "Ссылок пока нет",
 	applyFriend: "Заявка на обмен ссылками",
+	friendSearch: "Поиск ссылок…",
+	friendAll: "Все",
+	noFriendMatch: "Ничего не найдено",
+	copy: "Копировать",
+	friendSiteName: "Название сайта",
+	friendSiteDesc: "Описание сайта",
+	friendSiteUrl: "Ссылка на сайт",
+	friendAvatarUrl: "Ссылка на аватар",
 	/* Страница отслеживания аниме */
 	bangumiEmpty: "Пока ничего не смотрю",
 	bangumiFail:

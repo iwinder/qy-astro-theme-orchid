@@ -78,6 +78,14 @@ const ja: Record<UiKey, string> = {
 	avatarAlt: "{name} のアバター",
 	noFriends: "リンクはまだありません",
 	applyFriend: "リンク申請",
+	friendSearch: "リンクを検索…",
+	friendAll: "すべて",
+	noFriendMatch: "該当するリンクがありません",
+	copy: "コピー",
+	friendSiteName: "サイト名",
+	friendSiteDesc: "サイト説明",
+	friendSiteUrl: "サイトURL",
+	friendAvatarUrl: "アバターURL",
 	/* 番組視聴ページ */
 	bangumiEmpty: "視聴中の番組はまだありません",
 	bangumiFail:
