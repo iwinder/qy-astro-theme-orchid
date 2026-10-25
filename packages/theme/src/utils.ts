@@ -81,10 +81,12 @@ export function hexToHsl(hex: string): { h: number; s: number; l: number } {
 	};
 }
 
-/** 过滤草稿并排序：置顶优先，其余按发布时间倒序 */
+/** 排序：置顶优先，其余按发布时间倒序；草稿过滤跟随环境（PROD 剪除，dev 放行以供预览，
+ *  与 14 处 getCollection 的 PROD/dev 分支同口径——否则 dev 下 getCollection 放行的草稿
+ *  会在此被二次剪除，导致分类/文章详情等 getStaticPaths 链路 404） */
 export function getSortedPosts<T extends PostLike>(posts: T[]): T[] {
 	return posts
-		.filter((p) => !p.data.draft)
+		.filter((p) => (import.meta.env.PROD ? !p.data.draft : true))
 		.sort((a, b) => {
 			if (a.data.pinned !== b.data.pinned) return a.data.pinned ? -1 : 1;
 			return b.data.published.getTime() - a.data.published.getTime();
